@@ -13,15 +13,19 @@ namespace eval ::thtml {
     }
 }
 
-proc ::thtml::render {template data} {
+proc ::thtml::render {template __data__} {
     set compiled_template [compile $template]
-    return [eval $compiled_template]
+    return "<!doctype html>[eval $compiled_template]"
 }
 
 proc ::thtml::compile {template} {
     dom parse $template doc
     set root [$doc documentElement]
-    set compiled_template [transform \x02[compile_helper $root]\x03]
+
+    array set codearr [list blocks {}]
+    set compiled_template [transform \x02[compile_helper codearr $root]\x03]
+    append compiled_template "\n" "return \$ds" "\n"
+    return $compiled_template
 }
 
 # special characters that denote the start and end of html Vs code blocks:
@@ -59,27 +63,31 @@ proc ::thtml::transform {intermediate_code} {
     return $compiled_template
 }
 
-proc ::thtml::compile_helper {node} {
+proc ::thtml::compile_helper {codearrVar node} {
+    upvar $codearrVar codearr
+
     set node_type [$node nodeType]
     if { $node_type eq {TEXT_NODE} } {
-        return [compile_subst [$node nodeValue]]
+        return [compile_subst codearr [$node nodeValue]]
     } elseif { $node_type eq {ELEMENT_NODE} } {
         set tag [$node tagName]
         if { $tag eq {tpl} } {
-            return [compile_statement $node]
+            return [compile_statement codearr $node]
         } else {
-            return [compile_element $node]
+            return [compile_element codearr $node]
         }
     }
 }
 
-proc ::thtml::compile_element {node} {
+proc ::thtml::compile_element {codearrVar node} {
+    upvar $codearrVar codearr
     variable EMPTY_ELEMENTS_IN_HTML
+
     set tag [$node tagName]
     set compiled_element "<${tag}"
     foreach attname [$node attributes] {
         set attvalue [$node @$attname]
-        set compiled_attvalue [compile_subst $attvalue]
+        set compiled_attvalue [compile_subst codearr $attvalue]
         append compiled_element " ${attname}=\"${compiled_attvalue}\""
     }
 
@@ -91,45 +99,169 @@ proc ::thtml::compile_element {node} {
         set ctag "</${tag}>"
     }
 
-    append compiled_element [compile_children $node]
+    append compiled_element [compile_children codearr $node]
     append compiled_element $ctag
     return $compiled_element
 }
 
-proc ::thtml::compile_statement {node} {
+proc ::thtml::compile_statement {codearrVar node} {
+    upvar $codearrVar codearr
+
     if { [$node hasAttribute "if"] } {
-        return [compile_statement_if $node]
-    } elseif { [$node hasAttribute "for"] } {
-        return [compile_statement_for $node]
+        return [compile_statement_if codearr $node]
+    } elseif { [$node hasAttribute "foreach"] } {
+        return [compile_statement_foreach codearr $node]
     } elseif { [$node hasAttribute "include"] } {
-        return [compile_statement_include $node]
+        return [compile_statement_include codearr $node]
     } else {
-        return [compile_children $node]
+        return [compile_children codearr $node]
     }
 }
 
-proc ::thtml::compile_statement_if {node} {
+proc ::thtml::compile_statement_if {codearrVar node} {
+    upvar $codearrVar codearr
+
     set conditional [$node @if]
-    set compiled_conditional [compile_statement_if_expr $conditional]
+    set compiled_conditional [compile_statement_if_expr codearr $conditional]
 
     set compiled_statement ""
     append compiled_statement "\x03" "\n" "if \{ $compiled_conditional \} \{ " "\x02"
-    append compiled_statement [compile_children $node]
+    append compiled_statement [compile_children codearr $node]
     append compiled_statement "\x03" "\n" "\} " "\x02"
     return $compiled_statement
 }
 
-proc ::thtml::compile_statement_if_expr {conditional} {
+proc ::thtml::compile_statement_if_expr {codearrVar text} {
+    upvar $codearrVar codearr
+
+    set len [string length $text]
+    set escaped 0
+    set compiled_if_expr ""
+    # todo: temporary hack here, we should do a parser and then compile the parsed tree
+    append compiled_if_expr [compile_subst codearr $text]
+    return $compiled_if_expr
+}
+
+proc ::thtml::compile_statement_foreach {codearrVar node} {
+    upvar $codearrVar codearr
+
+    set foreach_varname [$node @foreach]
+    set foreach_list [$node @in]
+    set compiled_foreach_list [compile_subst codearr $foreach_list]
+
+    set compiled_statement ""
+    append compiled_statement "\x03" "\n" "foreach \{${foreach_varname}\} \"${compiled_foreach_list}\" \{ " "\x02"
+
+    ::thtml::push_block codearr [list varname $foreach_varname]
+    append compiled_statement [compile_children codearr $node]
+    ::thtml::pop_block codearr
+
+    append compiled_statement "\x03" "\n" "\} " "\x02"
+    return $compiled_statement
+}
+
+proc ::thtml::compile_statement_include {codearrVar node} {
+    upvar $codearrVar codearr
     # todo: implement
 }
 
-proc ::thtml::compile_statement_for {node} {
-    # todo: implement
+proc ::thtml::compile_children {codearrVar node} {
+    upvar $codearrVar codearr
+
+    set compiled_children ""
+    foreach child [$node childNodes] {
+        append compiled_children [compile_helper codearr $child]
+    }
+    return $compiled_children
 }
 
-proc ::thtml::compile_statement_include {node} {
-    # todo: implement
+proc ::thtml::compile_subst {codearrVar text} {
+    upvar $codearrVar codearr
+
+    set len [string length $text]
+    set escaped 0
+    set compiled_subst ""
+    for {set i 0} {$i < $len} {incr i} {
+        set ch [string index $text $i]
+        if { $ch eq "\\" } {
+            if { $escaped } {
+                append compiled_subst $ch
+                set escaped 0
+            } else {
+                set escaped 1
+            }
+        } elseif { $ch eq "\$" || $ch eq "\[" || $ch eq "\]" || $ch eq "\"" || $ch eq "\{" || $ch eq "\}" } {
+            if { $escaped } {
+                error "invalid escape sequence in substitution"
+            }
+            append compiled_subst "\\\${ch}"
+        } elseif { $ch eq "@" && $i + 1 < $len } {
+            set next_ch [string index $text [expr {$i + 1}]]
+            if { $next_ch eq "\{" } {
+                set count 1
+                for {set j $i} {$j < $len} {
+                    set ch [string index $text $j]
+                    if { $ch eq "\}" } {
+                        incr count -1
+                        if { $count == 0 } {
+                            break
+                        }
+                    }
+                }
+                if { $count != 0 } {
+                    error "unmatched braces in substitution"
+                }
+                set varname [string range $text [expr {$i + 2}] [expr {$j - 1}]]
+                append compiled_subst [compile_subst_var codearr $varname]
+                set i [expr { $j + 1 }]
+            }
+        } else {
+            if { $escaped } {
+                append compiled_subst $ch
+                set escaped 0
+            } else {
+                append compiled_subst $ch
+            }
+        }
+    }
+    return $compiled_subst
 }
+
+proc ::thtml::compile_subst_var {codearrVar varname} {
+    upvar codearrVar codearr
+
+    set parts [split $varname "."]
+    set parts_length [llength $parts]
+    foreach block $codearr(blocks) {
+        if { $parts_length == 1 } {
+            if { [dict get $block varname] eq ${varname} } {
+                return "\$\{${varname}\}"
+            }
+        } else {
+            return "\[dict get \"\$\{${varname}\}\" {*}${parts}\]"
+        }
+    }
+    return "\[dict get __data__ {*}${parts}\]"
+}
+
+### codearr manipulation
+
+proc ::thtml::push_block {codearrVar block} {
+    upvar $codearrVar codearr
+    set codearr(blocks) [linsert $codearr(blocks) 0 $block]
+}
+
+proc ::thtml::pop_block {codearrVar} {
+    upvar $codearrVar codearr
+    set codearr(blocks) [lrange $codearr(blocks) 1 end]
+}
+
+proc ::thml::top_block {codearrVar} {
+    upvar $codearrVar codearr
+    return [lindex $codearr(blocks) 0]
+}
+
+### helper procs
 
 proc ::thtml::doublequote {text} {
     return \"[string map {\" {\"}} ${text}]\"
