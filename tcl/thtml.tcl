@@ -55,7 +55,7 @@ proc ::thtml::transform {intermediate_code} {
 
         set start $matchEnd
     }
-    set after_text [string range $text $start end]
+    set after_text [string range $intermediate_code $start end]
     if { $after_text ne {} } {
 	    append compiled_template "\n" $after_text
     }
@@ -199,7 +199,7 @@ proc ::thtml::compile_subst {codearrVar text} {
             set next_ch [string index $text [expr {$i + 1}]]
             if { $next_ch eq "\{" } {
                 set count 1
-                for {set j $i} {$j < $len} {
+                for {set j $i} {$j < $len} {incr j} {
                     set ch [string index $text $j]
                     if { $ch eq "\}" } {
                         incr count -1
@@ -213,7 +213,7 @@ proc ::thtml::compile_subst {codearrVar text} {
                 }
                 set varname [string range $text [expr {$i + 2}] [expr {$j - 1}]]
                 append compiled_subst [compile_subst_var codearr $varname]
-                set i [expr { $j + 1 }]
+                set i $j
             }
         } else {
             if { $escaped } {
@@ -228,7 +228,7 @@ proc ::thtml::compile_subst {codearrVar text} {
 }
 
 proc ::thtml::compile_subst_var {codearrVar varname} {
-    upvar codearrVar codearr
+    upvar $codearrVar codearr
 
     set parts [split $varname "."]
     set parts_length [llength $parts]
@@ -241,7 +241,7 @@ proc ::thtml::compile_subst_var {codearrVar varname} {
             return "\[dict get \"\$\{${varname}\}\" {*}${parts}\]"
         }
     }
-    return "\[dict get __data__ {*}${parts}\]"
+    return "\[dict get \$\{__data__\} {*}${parts}\]"
 }
 
 ### codearr manipulation
@@ -256,7 +256,7 @@ proc ::thtml::pop_block {codearrVar} {
     set codearr(blocks) [lrange $codearr(blocks) 1 end]
 }
 
-proc ::thml::top_block {codearrVar} {
+proc ::thtml::top_block {codearrVar} {
     upvar $codearrVar codearr
     return [lindex $codearr(blocks) 0]
 }
@@ -273,6 +273,6 @@ proc ::thtml::doublequote_and_escape_newlines {str {lengthVar ""}} {
         set length [string bytelength ${str}]
     }
 
-    return [::util::doublequote [string map {"\n" {\n} "\r" {\r} "\\" {\\}} ${str}]]
+    return [doublequote [string map {"\n" {\n} "\r" {\r} "\\" {\\}} ${str}]]
 }
 
