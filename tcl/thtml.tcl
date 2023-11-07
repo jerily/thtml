@@ -23,7 +23,9 @@ proc ::thtml::compile {template} {
     set root [$doc documentElement]
 
     array set codearr [list blocks {}]
-    set compiled_template [transform \x02[compile_helper codearr $root]\x03]
+    set compiled_template ""
+    append compiled_template "\n" "set ds \"\"" "\n"
+    append compiled_template [transform \x02[compile_helper codearr $root]\x03]
     append compiled_template "\n" "return \$ds" "\n"
     return $compiled_template
 }
@@ -155,7 +157,7 @@ proc ::thtml::compile_statement_foreach {codearrVar node} {
     set compiled_statement ""
     append compiled_statement "\x03" "\n" "foreach \{${foreach_varname}\} \"${compiled_foreach_list}\" \{ " "\x02"
 
-    ::thtml::push_block codearr [list varname $foreach_varname]
+    ::thtml::push_block codearr [list varnames $foreach_varname]
     append compiled_statement [compile_children codearr $node]
     ::thtml::pop_block codearr
 
@@ -165,7 +167,60 @@ proc ::thtml::compile_statement_foreach {codearrVar node} {
 
 proc ::thtml::compile_statement_include {codearrVar node} {
     upvar $codearrVar codearr
-    # todo: implement
+
+    set dir [file join [file dirname [info script]] ..]
+    set filepath [file join $dir [$node @include]]
+
+    set fp [open $filepath]
+    set template [read $fp]
+    close $fp
+
+    dom parse $template doc
+    set root [$doc documentElement]
+
+    # replace the slave node with the children of the include node
+    set slave [lindex [$root getElementsByTagName "slave"] 0]
+    if { $slave ne {} } {
+        set pn [$slave parentNode]
+        foreach child [$node childNodes] {
+            $pn insertBefore $child $slave
+        }
+        $slave delete
+    }
+
+    # compile the include template into a procedure and call it
+
+    set proc_name "__include__"
+
+    set compiled_include "\x03"
+
+    set argnames [list]
+    foreach attname [$node attributes] {
+        if { $attname eq {include} } { continue }
+        lappend argnames $attname
+    }
+
+    set argvalues [list]
+    foreach attname [$node attributes] {
+        if { $attname eq {include} } { continue }
+        lappend argvalues [compile_subst codearr [$node @$attname]]
+    }
+
+    push_block codearr [list varnames $argnames stop 1]
+
+    append compiled_include "\n" "proc ${proc_name} {${argnames}} \{" "\n"
+    append compiled_include "\n" "set ds \"\"" "\n"
+    append compiled_include [transform \x02[compile_helper codearr $root]\x03]
+    append compiled_include "\n" "return \$ds" "\n"
+    append compiled_include "\n" "\}" "\n"
+    append compiled_include "\n" "append ds \[eval \"${proc_name} ${argvalues}\"\]" "\n"
+    append compiled_include "\x02"
+
+    pop_block codearr
+
+    #puts compiled_include=$compiled_include
+
+    return $compiled_include
 }
 
 proc ::thtml::compile_children {codearrVar node} {
@@ -197,7 +252,7 @@ proc ::thtml::compile_subst {codearrVar text} {
             if { $escaped } {
                 error "invalid escape sequence in substitution"
             }
-            append compiled_subst "\\\${ch}"
+            append compiled_subst "\\${ch}"
         } elseif { $ch eq "@" && $i + 1 < $len } {
             set next_ch [string index $text [expr {$i + 1}]]
             if { $next_ch eq "\{" } {
@@ -236,12 +291,14 @@ proc ::thtml::compile_subst_var {codearrVar varname} {
     set parts [split $varname "."]
     set parts_length [llength $parts]
     foreach block $codearr(blocks) {
-        if { $parts_length == 1 } {
-            if { [dict get $block varname] eq ${varname} } {
-                return "\$\{${varname}\}"
+        foreach block_varname [dict get $block varnames] {
+            if { ${block_varname} eq ${varname} } {
+                if { $parts_length == 1 } {
+                    return "\$\{${varname}\}"
+                } else {
+                    return "\[dict get \"\$\{${varname}\}\" {*}${parts}\]"
+                }
             }
-        } else {
-            return "\[dict get \"\$\{${varname}\}\" {*}${parts}\]"
         }
     }
     return "\[dict get \$\{__data__\} {*}${parts}\]"

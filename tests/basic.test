@@ -121,3 +121,28 @@ test nested-foreach-1 {} -body {
     }
     set html [::thtml::render $template $data]
 } -result {<html><head><title>Hello, World!</title></head><body><h1>Hello, World!</h1><p>1 is odd</p><p>2 is even</p><p>3 is odd</p><p>4 is even</p><p>5 is odd</p><p>6 is even</p></body></html>}
+
+test include-1 {} -body {
+    set data {
+        title "Hello, World!"
+        name "John Smith"
+        age 47
+    }
+    set template {
+        <html>
+            <head>
+                <title>@{title}</title>
+            </head>
+            <body>
+                <h1>@{title}</h1>
+                <tpl include="./tests/templates/name_and_age.tht" name="@{name}" age="@{age} ye[a]rs">
+                    <tpl if="@{age} > 21">
+                        You are an adult.
+                    </tpl>
+                </tpl>
+            </body>
+        </html>
+    }
+    set html [::thtml::render $template $data]
+    escape $html
+} -result {<html><head><title>Hello, World!</title></head><body><h1>Hello, World!</h1><div><h2>Name and age</h2>\n    John Smith is 47 ye[a]rs old.\n    \n                        You are an adult.\n                    <div>This is the footer</div>.\n</div></body></html>}
