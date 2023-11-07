@@ -1,5 +1,5 @@
-set dir [file dirname [info script]]
-set auto_path [linsert $auto_path 0 [file join $dir ..]]
+#set dir [file dirname [info script]]
+#set auto_path [linsert $auto_path 0 [file join $dir ..]]
 
 package require tcltest
 package require thtml

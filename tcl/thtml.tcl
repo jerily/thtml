@@ -137,7 +137,10 @@ proc ::thtml::compile_statement_if_expr {codearrVar text} {
     set len [string length $text]
     set escaped 0
     set compiled_if_expr ""
-    # todo: temporary hack here, we should do a parser and then compile the parsed tree
+    # todo: implementation of valid_if_expr in C
+    #if { ![valid_if_expr $text] } {
+    #    error "invalid if expression"
+    #}
     append compiled_if_expr [compile_subst codearr $text]
     return $compiled_if_expr
 }
