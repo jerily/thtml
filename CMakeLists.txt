@@ -15,7 +15,7 @@ find_package(TCL EXACT 8.6.13 REQUIRED)  # TCL_INCLUDE_PATH TCL_LIBRARY
 message(STATUS "TCL_INCLUDE_PATH: ${TCL_INCLUDE_PATH}")
 message(STATUS "TCL_LIBRARY: ${TCL_LIBRARY}")
 
-add_library(${PROJECT_NAME} SHARED src/library.c src/expr.c)
+add_library(${PROJECT_NAME} SHARED src/library.c src/expr.c src/md5.c)
 set_target_properties(${PROJECT_NAME}
         PROPERTIES POSITION_INDEPENDENT_CODE ON
         INSTALL_RPATH_USE_LINK_PATH ON

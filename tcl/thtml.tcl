@@ -2,8 +2,6 @@
 # SPDX-FileCopyrightText: 2023 Neofytos Dimitriou (neo@jerily.cy)
 # SPDX-License-Identifier: MIT.
 
-package provide thtml 1.0.0
-
 package require tdom
 
 namespace eval ::thtml {
@@ -11,7 +9,10 @@ namespace eval ::thtml {
         area base basefont br col frame
         hr img input isindex link meta param
     }
+    variable rootdir
 }
+
+namespace eval ::thtml::cache {}
 
 proc ::thtml::render {template __data__} {
     set compiled_template [compile $template]
@@ -150,14 +151,14 @@ proc ::thtml::compile_statement_if_expr {codearrVar text} {
 proc ::thtml::compile_statement_foreach {codearrVar node} {
     upvar $codearrVar codearr
 
-    set foreach_varname [$node @foreach]
+    set foreach_varnames [$node @foreach]
     set foreach_list [$node @in]
     set compiled_foreach_list [compile_subst codearr $foreach_list]
 
     set compiled_statement ""
-    append compiled_statement "\x03" "\n" "foreach \{${foreach_varname}\} \"${compiled_foreach_list}\" \{ " "\x02"
+    append compiled_statement "\x03" "\n" "foreach \{${foreach_varnames}\} \"${compiled_foreach_list}\" \{ " "\x02"
 
-    ::thtml::push_block codearr [list varnames $foreach_varname]
+    ::thtml::push_block codearr [list varnames $foreach_varnames]
     append compiled_statement [compile_children codearr $node]
     ::thtml::pop_block codearr
 
@@ -168,8 +169,16 @@ proc ::thtml::compile_statement_foreach {codearrVar node} {
 proc ::thtml::compile_statement_include {codearrVar node} {
     upvar $codearrVar codearr
 
-    set dir [file join [file dirname [info script]] ..]
-    set filepath [file join $dir [$node @include]]
+    set filepath [resolve_filepath [$node @include]]
+    set filepath_from_rootdir [string range $filepath [string length [get_rootdir]] end]
+    set filepath_md5 [md5 $filepath_from_rootdir]
+
+    # check that we do not have circular dependencies
+    foreach block $codearr(blocks) {
+        if { [dict exists $block include] && [dict get $block include filepath_md5] eq $filepath_md5 } {
+            error "circular dependency detected"
+        }
+    }
 
     set fp [open $filepath]
     set template [read $fp]
@@ -190,7 +199,7 @@ proc ::thtml::compile_statement_include {codearrVar node} {
 
     # compile the include template into a procedure and call it
 
-    set proc_name "__include__"
+    set proc_name ::thtml::cache::__include__$filepath_md5
 
     set compiled_include "\x03"
 
@@ -206,19 +215,18 @@ proc ::thtml::compile_statement_include {codearrVar node} {
         lappend argvalues [compile_subst codearr [$node @$attname]]
     }
 
-    push_block codearr [list varnames $argnames stop 1]
+    push_block codearr [list varnames $argnames stop 1 include [list filepath $filepath_from_rootdir filepath_md5 $filepath_md5]]
 
-    append compiled_include "\n" "proc ${proc_name} {${argnames}} \{" "\n"
+    append compiled_include "\n" "\# " $filepath_from_rootdir
+    append compiled_include "\n" "proc ${proc_name} {${argnames}} \{"
     append compiled_include "\n" "set ds \"\"" "\n"
     append compiled_include [transform \x02[compile_helper codearr $root]\x03]
-    append compiled_include "\n" "return \$ds" "\n"
-    append compiled_include "\n" "\}" "\n"
+    append compiled_include "\n" "return \$ds"
+    append compiled_include "\n" "\}"
     append compiled_include "\n" "append ds \[eval \"${proc_name} ${argvalues}\"\]" "\n"
     append compiled_include "\x02"
 
     pop_block codearr
-
-    #puts compiled_include=$compiled_include
 
     return $compiled_include
 }
@@ -300,6 +308,9 @@ proc ::thtml::compile_subst_var {codearrVar varname} {
                 }
             }
         }
+        if { [dict exists $block stop] } {
+            error "variable ${varname} not found"
+        }
     }
     return "\[dict get \$\{__data__\} {*}${parts}\]"
 }
@@ -336,3 +347,16 @@ proc ::thtml::doublequote_and_escape_newlines {str {lengthVar ""}} {
     return [doublequote [string map {"\n" {\n} "\r" {\r} "\\" {\\}} ${str}]]
 }
 
+proc ::thtml::get_rootdir {} {
+    variable rootdir
+    if { ![info exists rootdir] || $rootdir eq {} } {
+        set rootdir [file normalize [file dirname [info script]]]
+    }
+    return $rootdir
+}
+
+proc ::thtml::resolve_filepath {filepath} {
+
+    set rootdir [get_rootdir]
+    return [file normalize [file join $rootdir $filepath]]
+}
