@@ -19,6 +19,9 @@ proc ::thtml::render {template __data__} {
     return "<!doctype html>[eval $compiled_template]"
 }
 
+# special characters that denote the start and end of html Vs code blocks:
+# \x02 - start of text
+# \x03 - end of text
 proc ::thtml::compile {template} {
     dom parse $template doc
     set root [$doc documentElement]
@@ -28,41 +31,6 @@ proc ::thtml::compile {template} {
     append compiled_template "\n" "set ds \"\"" "\n"
     append compiled_template [transform \x02[compile_helper codearr $root]\x03]
     append compiled_template "\n" "return \$ds" "\n"
-    return $compiled_template
-}
-
-# special characters that denote the start and end of html Vs code blocks:
-# \x02 - start of text
-# \x03 - end of text
-proc ::thtml::transform {intermediate_code} {
-    set compiled_template ""
-
-    set re {\x02([^\x02\x03]*)\x03}
-    set start 0
-    while {[regexp -start $start -indices -- $re $intermediate_code match submatch]} {
-        lassign $submatch subStart subEnd
-        lassign $match matchStart matchEnd
-        incr matchStart -1
-        incr matchEnd
-
-        set before_text [string range $intermediate_code $start $matchStart]
-        if { $before_text ne {} } {
-            append compiled_template " " $before_text
-        }
-
-        set in_text [string range $intermediate_code $subStart $subEnd]
-        if { $in_text ne {} } {
-            set bytes [doublequote_and_escape_newlines $in_text length]
-            append compiled_template "\n" "append ds ${bytes}" "\n"
-        }
-
-        set start $matchEnd
-    }
-    set after_text [string range $intermediate_code $start end]
-    if { $after_text ne {} } {
-	    append compiled_template "\n" $after_text
-    }
-
     return $compiled_template
 }
 
@@ -116,6 +84,8 @@ proc ::thtml::compile_statement {codearrVar node} {
         return [compile_statement_foreach codearr $node]
     } elseif { [$node hasAttribute "include"] } {
         return [compile_statement_include codearr $node]
+    } elseif { [$node hasAttribute "eval"] } {
+        return [compile_statement_eval codearr $node]
     } else {
         return [compile_children codearr $node]
     }
@@ -219,11 +189,12 @@ proc ::thtml::compile_statement_include {codearrVar node} {
 
     append compiled_include "\n" "\# " $filepath_from_rootdir
     append compiled_include "\n" "proc ${proc_name} {${argnames}} \{"
+    append compiled_include "\n" "set __data__ \{\}" "\n"
     append compiled_include "\n" "set ds \"\"" "\n"
     append compiled_include [transform \x02[compile_helper codearr $root]\x03]
     append compiled_include "\n" "return \$ds"
     append compiled_include "\n" "\}"
-    append compiled_include "\n" "append ds \[eval \"${proc_name} ${argvalues}\"\]" "\n"
+    append compiled_include "\n" "append ds \[eval ${proc_name} \"${argvalues}\"\]" "\n"
     append compiled_include "\x02"
 
     pop_block codearr
@@ -309,7 +280,11 @@ proc ::thtml::compile_subst_var {codearrVar varname} {
             }
         }
         if { [dict exists $block stop] } {
-            error "variable ${varname} not found"
+            # variable not found in blocks
+            # break out of the loop and try
+            # the __data__ dictionary of the
+            # current proc
+            break
         }
     }
     return "\[dict get \$\{__data__\} {*}${parts}\]"
