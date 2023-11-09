@@ -10,11 +10,36 @@ namespace eval ::thtml {
         hr img input isindex link meta param
     }
     variable rootdir
+    variable cache 0
 }
 namespace eval ::thtml::cache {}
 namespace eval ::thtml::runtime::tcl {}
 
+proc ::thtml::init {option_dict} {
+    variable rootdir
+    variable cache
+
+    if { [dict exists $option_dict rootdir] } {
+        set rootdir [dict get $option_dict rootdir]
+    }
+
+    if { [dict exists $option_dict cache] } {
+        set cache [dict get $option_dict cache]
+    }
+}
+
 proc ::thtml::render {template __data__} {
+    variable cache
+    variable rootdir
+    if { $cache } {
+        set md5 [md5 $template]
+        set proc_name ::thtml::cache::__render__$md5
+        if { [info proc $proc_name] eq {} } {
+            set compiled_template [compile $template]
+            proc $proc_name {__data__} "return \"<!doctype html>\[eval \{${compiled_template}\}\]\""
+        }
+        return [$proc_name $__data__]
+    }
     set compiled_template [compile $template]
     return "<!doctype html>[eval $compiled_template]"
 }
