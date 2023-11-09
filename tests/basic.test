@@ -165,10 +165,10 @@ test include-2-circular-dependency {} -body {
             </head>
             <body>
                 <h1>@{title}</h1>
-                <tpl include="./templates/name_and_age.tht" name="@{name}" age="@{age} ye[a]rs">
+                <tpl include="./templates/name_and_age.thtml" name="@{name}" age="@{age} ye[a]rs">
                     <tpl if="@{age} > 21">
                         You are an adult.
-                        <tpl include="./templates/name_and_age.tht" name="@{name}" age="@{age} ye[a]rs" />
+                        <tpl include="./templates/name_and_age.thtml" name="@{name}" age="@{age} ye[a]rs" />
                     </tpl>
                 </tpl>
             </body>

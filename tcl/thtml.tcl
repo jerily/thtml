@@ -41,6 +41,7 @@ proc ::thtml::render {template __data__} {
         return [$proc_name $__data__]
     }
     set compiled_template [compile $template]
+    puts compiled_template=$compiled_template
     return "<!doctype html>[eval $compiled_template]"
 }
 
@@ -64,7 +65,7 @@ proc ::thtml::compile_helper {codearrVar node} {
 
     set node_type [$node nodeType]
     if { $node_type eq {TEXT_NODE} } {
-        return [compile_subst codearr [$node nodeValue]]
+        return [compile_subst codearr [$node nodeValue] 0]
     } elseif { $node_type eq {ELEMENT_NODE} } {
         set tag [$node tagName]
         if { $tag eq {tpl} } {
@@ -83,7 +84,7 @@ proc ::thtml::compile_element {codearrVar node} {
     set compiled_element "<${tag}"
     foreach attname [$node attributes] {
         set attvalue [$node @$attname]
-        set compiled_attvalue [compile_subst codearr $attvalue]
+        set compiled_attvalue [compile_subst codearr $attvalue 0]
         append compiled_element " ${attname}=\"${compiled_attvalue}\""
     }
 
@@ -123,7 +124,7 @@ proc ::thtml::compile_statement_val {codearrVar node} {
     set script [$node asText]
 
     # substitute template variables in script
-    set compiled_script [compile_subst codearr $script]
+    set compiled_script [compile_subst codearr $script 1]
 
     set compiled_statement ""
     append compiled_statement "\x03" "\n" "dict set __data__ {*}${chain_of_keys} \[::thtml::runtime::tcl::evaluate_script \"${compiled_script}\"\]" "\x02"
@@ -149,7 +150,7 @@ proc ::thtml::compile_statement_if_expr {codearrVar text} {
     set len [string length $text]
     set escaped 0
     set compiled_if_expr ""
-    append compiled_if_expr [compile_subst codearr $text]
+    append compiled_if_expr [compile_subst codearr $text 1]
     return $compiled_if_expr
 }
 
@@ -158,7 +159,7 @@ proc ::thtml::compile_statement_foreach {codearrVar node} {
 
     set foreach_varnames [$node @foreach]
     set foreach_list [$node @in]
-    set compiled_foreach_list [compile_subst codearr $foreach_list]
+    set compiled_foreach_list [compile_subst codearr $foreach_list 1]
 
     set compiled_statement ""
     append compiled_statement "\x03" "\n" "foreach \{${foreach_varnames}\} \"${compiled_foreach_list}\" \{ " "\x02"
@@ -217,7 +218,7 @@ proc ::thtml::compile_statement_include {codearrVar node} {
     set argvalues [list]
     foreach attname [$node attributes] {
         if { $attname eq {include} } { continue }
-        lappend argvalues [compile_subst codearr [$node @$attname]]
+        lappend argvalues [compile_subst codearr [$node @$attname] 0]
     }
 
     push_block codearr [list varnames $argnames stop 1 include [list filepath $filepath_from_rootdir filepath_md5 $filepath_md5]]
@@ -247,7 +248,7 @@ proc ::thtml::compile_children {codearrVar node} {
     return $compiled_children
 }
 
-proc ::thtml::compile_subst {codearrVar text} {
+proc ::thtml::compile_subst {codearrVar text inside_code_block} {
     upvar $codearrVar codearr
 
     set len [string length $text]
@@ -284,7 +285,7 @@ proc ::thtml::compile_subst {codearrVar text} {
                     error "unmatched braces in substitution"
                 }
                 set varname [string range $text [expr {$i + 2}] [expr {$j - 1}]]
-                append compiled_subst [compile_subst_var codearr $varname]
+                append compiled_subst [compile_subst_var codearr $varname $inside_code_block]
                 set i $j
             }
         } else {
@@ -299,18 +300,25 @@ proc ::thtml::compile_subst {codearrVar text} {
     return $compiled_subst
 }
 
-proc ::thtml::compile_subst_var {codearrVar varname} {
+# when inside_code_block is false, we are inside a text block
+# so we need to append the result of the substitution to the
+# ds variable
+proc ::thtml::compile_subst_var {codearrVar varname inside_code_block} {
     upvar $codearrVar codearr
+
+    puts "varname=$varname inside_code_block=$inside_code_block"
 
     set parts [split $varname "."]
     set parts_length [llength $parts]
+    set varname_first_part [lindex $parts 0]
     foreach block $codearr(blocks) {
         foreach block_varname [dict get $block varnames] {
-            if { ${block_varname} eq ${varname} } {
+            if { ${block_varname} eq ${varname_first_part} } {
                 if { $parts_length == 1 } {
-                    return "\$\{${varname}\}"
+                    return [compile_subst_var_from_simple codearr $varname_first_part $inside_code_block]
                 } else {
-                    return "\[dict get \"\$\{${varname}\}\" {*}${parts}\]"
+                    set varname_remaining_parts [lrange $parts 1 end]
+                    return [compile_subst_var_from_dict codearr $varname_first_part $varname_remaining_parts $inside_code_block]
                 }
             }
         }
@@ -318,11 +326,37 @@ proc ::thtml::compile_subst_var {codearrVar varname} {
             # variable not found in blocks
             # break out of the loop and try
             # the __data__ dictionary of the
-            # current proc
+            # current evaluation context
             break
         }
     }
-    return "\[dict get \$\{__data__\} {*}${parts}\]"
+    return [compile_subst_var_from_dict codearr __data__ $parts $inside_code_block]
+}
+
+proc ::thtml::compile_subst_var_from_simple {codearrVar varname inside_code_block} {
+    upvar $codearrVar codearr
+    if { $inside_code_block } {
+        return "\$\{${varname}\}"
+    } else {
+        set compiled_subst_var ""
+        append compiled_subst_var "\x03"
+        append compiled_subst_var "\n" "append ds \$\{${varname}\}" "\n"
+        append compiled_subst_var "\x02"
+        return $compiled_subst_var
+    }
+}
+
+proc ::thtml::compile_subst_var_from_dict {codearrVar varname parts inside_code_block} {
+    upvar $codearrVar codearr
+    if { $inside_code_block } {
+        return "\[dict get \$\{${varname}\} {*}${parts}\]"
+    } else {
+        set compiled_subst_var ""
+        append compiled_subst_var "\x03"
+        append compiled_subst_var "\n" "append ds \[dict get \$\{${varname}\} {*}${parts}\]" "\n"
+        append compiled_subst_var "\x02"
+        return $compiled_subst_var
+    }
 }
 
 ### codearr manipulation
