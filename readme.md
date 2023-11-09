@@ -105,3 +105,28 @@ And ```footer.thtml``` is:
 ```html
 <strong>Footer</strong>
 ```
+
+### val
+
+Template:
+```html
+set template {
+    <html>
+        <tpl val="x">return 1</tpl>
+        <tpl val="y">return 2</tpl>
+        <tpl val="z">return [expr { @{x} + @{y} }]</tpl>
+        <head>
+            <title>@{title}</title>
+        </head>
+        <body>
+            <h1>@{title}</h1>
+            <p>@{z}</p>
+        </body>
+    </html>
+}
+```
+
+TCL:
+```tcl
+::thtml::render $template {title "Hello World!"}
+```

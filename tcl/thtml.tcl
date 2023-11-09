@@ -11,8 +11,8 @@ namespace eval ::thtml {
     }
     variable rootdir
 }
-
 namespace eval ::thtml::cache {}
+namespace eval ::thtml::runtime::tcl {}
 
 proc ::thtml::render {template __data__} {
     set compiled_template [compile $template]
@@ -84,11 +84,25 @@ proc ::thtml::compile_statement {codearrVar node} {
         return [compile_statement_foreach codearr $node]
     } elseif { [$node hasAttribute "include"] } {
         return [compile_statement_include codearr $node]
-    } elseif { [$node hasAttribute "eval"] } {
-        return [compile_statement_eval codearr $node]
+    } elseif { [$node hasAttribute "val"] } {
+        return [compile_statement_val codearr $node]
     } else {
         return [compile_children codearr $node]
     }
+}
+
+proc ::thtml::compile_statement_val {codearrVar node} {
+    upvar $codearrVar codearr
+
+    set chain_of_keys [$node @val]
+    set script [$node asText]
+
+    # substitute template variables in script
+    set compiled_script [compile_subst codearr $script]
+
+    set compiled_statement ""
+    append compiled_statement "\x03" "\n" "dict set __data__ {*}${chain_of_keys} \[::thtml::runtime::tcl::evaluate_script \"${compiled_script}\"\]" "\x02"
+    return $compiled_statement
 }
 
 proc ::thtml::compile_statement_if {codearrVar node} {
@@ -110,10 +124,6 @@ proc ::thtml::compile_statement_if_expr {codearrVar text} {
     set len [string length $text]
     set escaped 0
     set compiled_if_expr ""
-    # todo: implementation of valid_if_expr in C
-    #if { ![valid_if_expr $text] } {
-    #    error "invalid if expression"
-    #}
     append compiled_if_expr [compile_subst codearr $text]
     return $compiled_if_expr
 }
@@ -305,6 +315,12 @@ proc ::thtml::pop_block {codearrVar} {
 proc ::thtml::top_block {codearrVar} {
     upvar $codearrVar codearr
     return [lindex $codearr(blocks) 0]
+}
+
+### runtime
+
+proc ::thtml::runtime::tcl::evaluate_script {script} {
+    return [uplevel 1 $script]
 }
 
 ### helper procs

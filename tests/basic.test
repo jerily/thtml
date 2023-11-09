@@ -140,7 +140,7 @@ test include-1 {} -body {
             </head>
             <body>
                 <h1>@{title}</h1>
-                <tpl include="./templates/name_and_age.tht" name="@{name}" age="@{age} ye[a]rs">
+                <tpl include="./templates/name_and_age.thtml" name="@{name}" age="@{age} ye[a]rs">
                     <tpl if="@{age} > 21">
                         You are an adult.
                     </tpl>
@@ -177,3 +177,21 @@ test include-2-circular-dependency {} -body {
     set html [::thtml::render $template $data]
     escape $html
 } -returnCodes error -result {circular dependency detected}
+
+test eval-1 {} -body {
+    set template {
+        <html>
+            <tpl val="x">return @{loggedin}</tpl>
+            <tpl val="y">return 2</tpl>
+            <tpl val="z">return [expr { @{x} + @{y} }]</tpl>
+            <head>
+                <title>@{title}</title>
+            </head>
+            <body>
+                <h1>@{title}</h1>
+                <p>@{z}</p>
+            </body>
+        </html>
+    }
+    ::thtml::render $template {title "You rock!" loggedin 1}
+} -result {<html><head><title>You rock!</title></head><body><h1>You rock!</h1><p>3</p></body></html>}
