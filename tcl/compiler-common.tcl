@@ -78,21 +78,10 @@ proc ::thtml::compiler::compile_subst {codearrVar text inside_code_block} {
     upvar $codearrVar codearr
 
     set len [string length $text]
-    set escaped 0
     set compiled_subst ""
     for {set i 0} {$i < $len} {incr i} {
         set ch [string index $text $i]
-        if { $ch eq "\\" } {
-            if { $escaped } {
-                append compiled_subst $ch
-                set escaped 0
-            } else {
-                set escaped 1
-            }
-        } elseif { $ch eq "\$" || $ch eq "\[" || $ch eq "\]" || $ch eq "\"" || $ch eq "\{" || $ch eq "\}" } {
-            if { $escaped } {
-                error "invalid escape sequence in substitution"
-            }
+        if { $ch eq "\\" || $ch eq "\$" || $ch eq "\[" || $ch eq "\]" || $ch eq "\"" || $ch eq "\{" || $ch eq "\}" } {
             append compiled_subst "\\${ch}"
         } elseif { $ch eq "@" && $i + 1 < $len } {
             set next_ch [string index $text [expr {$i + 1}]]

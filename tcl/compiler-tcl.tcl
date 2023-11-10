@@ -20,6 +20,7 @@ proc ::thtml::compiler::tcl_compile_statement_val {codearrVar node} {
     set script [$node asText]
 
     # substitute template variables in script
+    # todo: compile_subst is a temporary hack here, we need to implement a proper compiler for the template language
     set compiled_script [compile_subst codearr $script 1]
 
     set compiled_statement ""
@@ -46,6 +47,7 @@ proc ::thtml::compiler::tcl_compile_statement_if_expr {codearrVar text} {
     set len [string length $text]
     set escaped 0
     set compiled_if_expr ""
+    # todo: compile_subst is a temporary hack here, we need to implement a proper compiler for the template language
     append compiled_if_expr [compile_subst codearr $text 1]
     return $compiled_if_expr
 }
