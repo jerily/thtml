@@ -31,8 +31,8 @@ static void thtml_AppendEscaped(const char *p, const char *end, Tcl_DString *dsP
     }
 }
 
-static int thtml_TransformCmd(ClientData  clientData, Tcl_Interp *interp, int objc, Tcl_Obj * const objv[]) {
-    DBG(fprintf(stderr, "TransformCmd\n"));
+static int thtml_TclTransformCmd(ClientData  clientData, Tcl_Interp *interp, int objc, Tcl_Obj * const objv[]) {
+    DBG(fprintf(stderr, "TclTransformCmd\n"));
 
     CheckArgs(2,2,1,"intermediate_code");
 
@@ -140,8 +140,12 @@ int Thtml_Init(Tcl_Interp *interp) {
 
     Tcl_CreateNamespace(interp, "::thmtl", NULL, NULL);
     Tcl_CreateObjCommand(interp, "::thtml::parse_expr", thtml_ParseExprCmd, NULL, NULL);
-    Tcl_CreateObjCommand(interp, "::thtml::transform", thtml_TransformCmd, NULL, NULL);
-    Tcl_CreateObjCommand(interp, "::thtml::md5", thtml_Md5Cmd, NULL, NULL);
+
+    Tcl_CreateNamespace(interp, "::thmtl::compiler", NULL, NULL);
+    Tcl_CreateObjCommand(interp, "::thtml::compiler::tcl_transform", thtml_TclTransformCmd, NULL, NULL);
+
+    Tcl_CreateNamespace(interp, "::thmtl::util", NULL, NULL);
+    Tcl_CreateObjCommand(interp, "::thtml::util::md5", thtml_Md5Cmd, NULL, NULL);
 
     return Tcl_PkgProvide(interp, "thtml", XSTR(PROJECT_VERSION));
 }

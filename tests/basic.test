@@ -13,7 +13,7 @@ proc escape {str} {
 }
 
 test transform-1 {} -body {
-    set compiled_template [::thtml::transform "\x02hello world\x03puts hey\x02this is a test\x03"]
+    set compiled_template [::thtml::compiler::tcl_transform "\x02hello world\x03puts hey\x02this is a test\x03"]
     escape $compiled_template
 } -result {\nappend ds "hello world"\nputs hey\nappend ds "this is a test"\n}
 
