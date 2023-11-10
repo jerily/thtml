@@ -104,12 +104,7 @@ proc ::thtml::compiler::compile_subst {codearrVar text inside_code_block} {
                 set i $j
             }
         } else {
-            if { $escaped } {
-                append compiled_subst $ch
-                set escaped 0
-            } else {
-                append compiled_subst $ch
-            }
+            append compiled_subst $ch
         }
     }
     return $compiled_subst
