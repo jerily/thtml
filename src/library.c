@@ -101,6 +101,37 @@ static int thtml_TclTransformCmd(ClientData  clientData, Tcl_Interp *interp, int
     return TCL_OK;
 }
 
+static int thtml_TclCompileStatementIfExprCmd(ClientData  clientData, Tcl_Interp *interp, int objc, Tcl_Obj * const objv[]) {
+    DBG(fprintf(stderr, "TclCompileStatementIfExprCmd\n"));
+
+    CheckArgs(3, 3, 1, "codearrVar text");
+
+    int text_length;
+    char *text = Tcl_GetStringFromObj(objv[2], &text_length);
+
+    Tcl_Parse parse;
+    if (TCL_OK != Tcl_ParseExpr(interp, text, text_length, &parse)) {
+        Tcl_FreeParse(&parse);
+        SetResult("error parsing expression");
+        return TCL_ERROR;
+    }
+
+    Tcl_DString ds;
+    Tcl_DStringInit(&ds);
+
+    if (TCL_OK != thtml_TclCompileExpr(interp, &ds, &parse)) {
+        Tcl_FreeParse(&parse);
+        Tcl_DStringFree(&ds);
+//        SetResult("error compiling expression");
+        return TCL_ERROR;
+    }
+
+    Tcl_DStringResult(interp, &ds);
+    Tcl_DStringFree(&ds);
+    Tcl_FreeParse(&parse);
+    return TCL_OK;
+}
+
 static int thtml_Md5Cmd(ClientData  clientData, Tcl_Interp *interp, int objc, Tcl_Obj * const objv[]) {
     DBG(fprintf(stderr,"Md5Cmd\n"));
 
@@ -139,10 +170,10 @@ int Thtml_Init(Tcl_Interp *interp) {
     thtml_InitModule();
 
     Tcl_CreateNamespace(interp, "::thmtl", NULL, NULL);
-    Tcl_CreateObjCommand(interp, "::thtml::parse_expr", thtml_ParseExprCmd, NULL, NULL);
 
     Tcl_CreateNamespace(interp, "::thmtl::compiler", NULL, NULL);
     Tcl_CreateObjCommand(interp, "::thtml::compiler::tcl_transform", thtml_TclTransformCmd, NULL, NULL);
+    Tcl_CreateObjCommand(interp, "::thtml::compiler::tcl_compile_statement_if_expr", thtml_TclCompileStatementIfExprCmd, NULL, NULL);
 
     Tcl_CreateNamespace(interp, "::thmtl::util", NULL, NULL);
     Tcl_CreateObjCommand(interp, "::thtml::util::md5", thtml_Md5Cmd, NULL, NULL);

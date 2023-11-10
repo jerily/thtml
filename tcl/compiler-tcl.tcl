@@ -41,7 +41,7 @@ proc ::thtml::compiler::tcl_compile_statement_if {codearrVar node} {
     return $compiled_statement
 }
 
-proc ::thtml::compiler::tcl_compile_statement_if_expr {codearrVar text} {
+proc ::thtml::compiler::temp_tcl_compile_statement_if_expr {codearrVar text} {
     upvar $codearrVar codearr
 
     set len [string length $text]
