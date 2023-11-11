@@ -48,7 +48,7 @@ test if-2 {} -body {
             </head>
             <body>
                 <h1>@{title}</h1>
-                <tpl if="$age > 21 && $name eq &quot;John\\ Smith&quot;">
+                <tpl if="$age > 21 && $name eq {John Smith}">
                     <p>You are an adult.</p>
                 </tpl>
             </body>
