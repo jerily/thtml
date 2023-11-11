@@ -31,7 +31,7 @@ proc ::thtml::compiler::tcl_compile_statement_val {codearrVar node} {
 proc ::thtml::compiler::tcl_compile_statement_if {codearrVar node} {
     upvar $codearrVar codearr
 
-    set conditional [subst -nocommands -novariables [$node @if]]
+    set conditional [$node @if]
     puts conditional=$conditional
     set compiled_conditional [tcl_compile_expr codearr $conditional]
 
