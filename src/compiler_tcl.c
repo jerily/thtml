@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: MIT.
  */
 
-#include "expr.h"
+#include "compiler_tcl.h"
 #include <ctype.h>
 #include <string.h>
 
@@ -91,7 +91,9 @@ thtml_TclAppendExpr_Variable(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_D
         for (int j = 0; j < num_blocks; j++) {
             Tcl_Obj *block_ptr = blocks[j];
 
-            Tcl_Obj *variables_key_ptr = Tcl_NewStringObj("variables", -1);
+//            fprintf(stderr, "block: %s\n", Tcl_GetString(block_ptr));
+
+            Tcl_Obj *variables_key_ptr = Tcl_NewStringObj("varnames", -1);
             Tcl_IncrRefCount(variables_key_ptr);
             Tcl_Obj *variables_ptr = NULL;
             if (TCL_OK != Tcl_DictObjGet(interp, block_ptr, variables_key_ptr, &variables_ptr)) {
@@ -102,6 +104,7 @@ thtml_TclAppendExpr_Variable(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_D
             Tcl_DecrRefCount(variables_key_ptr);
 
             if (variables_ptr == NULL) {
+//                fprintf(stderr, "no varnames\n");
                 continue;
             }
 
@@ -122,6 +125,11 @@ thtml_TclAppendExpr_Variable(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_D
                 Tcl_Obj *block_varname_ptr = variables[k];
                 int block_varname_length;
                 char *block_varname = Tcl_GetStringFromObj(block_varname_ptr, &block_varname_length);
+
+//                fprintf(stderr, "block_varname: %s\n", block_varname);
+//                fprintf(stderr, "varname_first_part: %s\n", varname_first_part);
+//                fprintf(stderr, "----\n");
+
                 if (block_varname_length == varname_first_part_length &&
                     0 == strncmp(block_varname, varname_first_part, block_varname_length)) {
                     // found a match
@@ -342,6 +350,29 @@ int thtml_TclCompileExpr(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DStri
     // the commentStart, commentSize, commandStart, and commandSize fields are not modified by Tcl_ParseExpr.
     if (TCL_OK != thtml_TclAppendExpr_Token(interp, blocks_list_ptr, ds_ptr, parse_ptr, 0)) {
         return TCL_ERROR;
+    }
+    return TCL_OK;
+}
+
+int thtml_TclCompileQuotedString(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DString *ds_ptr, Tcl_Parse *parse_ptr) {
+    for (int i = 0; i < parse_ptr->numTokens; i++) {
+        Tcl_Token *token = &parse_ptr->tokenPtr[i];
+        if (token->type == TCL_TOKEN_TEXT) {
+            Tcl_DStringAppend(ds_ptr, token->start, token->size);
+        } else if (token->type == TCL_TOKEN_BS) {
+            Tcl_DStringAppend(ds_ptr, token->start, token->size);
+        } else if (token->type == TCL_TOKEN_COMMAND) {
+            SetResult("error parsing quoted string: command substitution not supported");
+            return TCL_ERROR;
+        } else if (token->type == TCL_TOKEN_VARIABLE) {
+            if (TCL_OK != thtml_TclAppendExpr_Variable(interp, blocks_list_ptr, ds_ptr, parse_ptr, i)) {
+                return TCL_ERROR;
+            }
+            i++;
+        } else {
+            SetResult("error parsing quoted string: unsupported token type");
+            return TCL_ERROR;
+        }
     }
     return TCL_OK;
 }

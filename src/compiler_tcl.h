@@ -4,11 +4,12 @@
  * SPDX-License-Identifier: MIT.
  */
 
-#ifndef THTML_EXPR_H
-#define THTML_EXPR_H
+#ifndef THTML_COMPILER_TCL_H
+#define THTML_COMPILER_TCL_H
 
 #include "common.h"
 
 int thtml_TclCompileExpr(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DString *ds_ptr, Tcl_Parse *parse_ptr);
+int thtml_TclCompileQuotedString(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DString *ds_ptr, Tcl_Parse *parse_ptr);
 
-#endif //THTML_EXPR_H
+#endif //THTML_COMPILER_TCL_H

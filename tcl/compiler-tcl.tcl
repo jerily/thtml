@@ -32,7 +32,7 @@ proc ::thtml::compiler::tcl_compile_statement_if {codearrVar node} {
     upvar $codearrVar codearr
 
     set conditional [$node @if]
-    puts conditional=$conditional
+    #puts conditional=$conditional
     set compiled_conditional [tcl_compile_expr codearr $conditional]
 
     set compiled_statement ""
@@ -47,7 +47,7 @@ proc ::thtml::compiler::tcl_compile_statement_foreach {codearrVar node} {
 
     set foreach_varnames [$node @foreach]
     set foreach_list [$node @in]
-    set compiled_foreach_list [compile_subst codearr $foreach_list 1]
+    set compiled_foreach_list [tcl_compile_quoted_string codearr \"$foreach_list\"]
 
     set compiled_statement ""
     append compiled_statement "\x03" "\n" "foreach \{${foreach_varnames}\} \"${compiled_foreach_list}\" \{ " "\x02"
