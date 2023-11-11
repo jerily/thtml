@@ -101,7 +101,7 @@ static int thtml_TclTransformCmd(ClientData  clientData, Tcl_Interp *interp, int
     return TCL_OK;
 }
 
-static int thtml_TclCompileStatementIfExprCmd(ClientData  clientData, Tcl_Interp *interp, int objc, Tcl_Obj * const objv[]) {
+static int thtml_TclCompileExprCmd(ClientData  clientData, Tcl_Interp *interp, int objc, Tcl_Obj * const objv[]) {
     DBG(fprintf(stderr, "TclCompileStatementIfExprCmd\n"));
 
     CheckArgs(3, 3, 1, "codearrVar text");
@@ -116,10 +116,21 @@ static int thtml_TclCompileStatementIfExprCmd(ClientData  clientData, Tcl_Interp
         return TCL_ERROR;
     }
 
+    Tcl_Obj *blocks_key_ptr = Tcl_NewStringObj("blocks", 6);
+    Tcl_IncrRefCount(blocks_key_ptr);
+    Tcl_Obj *blocks_list_ptr = Tcl_ObjGetVar2(interp, objv[1], blocks_key_ptr, TCL_LEAVE_ERR_MSG);
+    Tcl_DecrRefCount(blocks_key_ptr);
+
+    if (blocks_list_ptr == NULL) {
+        Tcl_FreeParse(&parse);
+        SetResult("error getting blocks from codearr");
+        return TCL_ERROR;
+    }
+
     Tcl_DString ds;
     Tcl_DStringInit(&ds);
 
-    if (TCL_OK != thtml_TclCompileExpr(interp, &ds, &parse)) {
+    if (TCL_OK != thtml_TclCompileExpr(interp, blocks_list_ptr, &ds, &parse)) {
         Tcl_FreeParse(&parse);
         Tcl_DStringFree(&ds);
 //        SetResult("error compiling expression");
@@ -173,7 +184,7 @@ int Thtml_Init(Tcl_Interp *interp) {
 
     Tcl_CreateNamespace(interp, "::thmtl::compiler", NULL, NULL);
     Tcl_CreateObjCommand(interp, "::thtml::compiler::tcl_transform", thtml_TclTransformCmd, NULL, NULL);
-    Tcl_CreateObjCommand(interp, "::thtml::compiler::tcl_compile_statement_if_expr", thtml_TclCompileStatementIfExprCmd, NULL, NULL);
+    Tcl_CreateObjCommand(interp, "::thtml::compiler::tcl_compile_expr", thtml_TclCompileExprCmd, NULL, NULL);
 
     Tcl_CreateNamespace(interp, "::thmtl::util", NULL, NULL);
     Tcl_CreateObjCommand(interp, "::thtml::util::md5", thtml_Md5Cmd, NULL, NULL);

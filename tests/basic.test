@@ -24,7 +24,7 @@ test if-1 {} -body {
             </head>
             <body>
                 <h1>@{title}</h1>
-                <tpl if="$age > 21">
+                <tpl if="$age > 21 ? true : false">
                     <p>You are an adult.</p>
                 </tpl>
             </body>

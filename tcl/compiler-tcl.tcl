@@ -32,24 +32,13 @@ proc ::thtml::compiler::tcl_compile_statement_if {codearrVar node} {
     upvar $codearrVar codearr
 
     set conditional [$node @if]
-    set compiled_conditional [tcl_compile_statement_if_expr codearr $conditional]
+    set compiled_conditional [tcl_compile_expr codearr $conditional]
 
     set compiled_statement ""
     append compiled_statement "\x03" "\n" "if \{ $compiled_conditional \} \{ " "\x02"
     append compiled_statement [compile_children codearr $node]
     append compiled_statement "\x03" "\n" "\} " "\x02"
     return $compiled_statement
-}
-
-proc ::thtml::compiler::temp_tcl_compile_statement_if_expr {codearrVar text} {
-    upvar $codearrVar codearr
-
-    set len [string length $text]
-    set escaped 0
-    set compiled_if_expr ""
-    # todo: compile_subst is a temporary hack here, we need to implement a proper compiler for the template language
-    append compiled_if_expr [compile_subst codearr $text 1]
-    return $compiled_if_expr
 }
 
 proc ::thtml::compiler::tcl_compile_statement_foreach {codearrVar node} {

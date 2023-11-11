@@ -9,6 +9,6 @@
 
 #include "common.h"
 
-int thtml_TclCompileExpr(Tcl_Interp *interp, Tcl_DString *dsPtr, Tcl_Parse *parsePtr);
+int thtml_TclCompileExpr(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DString *ds_ptr, Tcl_Parse *parse_ptr);
 
 #endif //THTML_EXPR_H
