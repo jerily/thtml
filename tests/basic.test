@@ -24,13 +24,38 @@ test if-1 {} -body {
             </head>
             <body>
                 <h1>@{title}</h1>
-                <tpl if="$age > 21 ? true : false">
+                <tpl if="$age > 21">
                     <p>You are an adult.</p>
                 </tpl>
             </body>
         </html>
     }
     set html [::thtml::render $template $data]
+    escape $html
+} -result {<html><head><title>Hello, World!</title></head><body><h1>Hello, World!</h1><p>You are an adult.</p></body></html>}
+
+
+test if-2 {} -body {
+    set data {
+        title "Hello, World!"
+        name "John Smith"
+        age 47
+    }
+    set template {
+        <html>
+            <head>
+                <title>@{title}</title>
+            </head>
+            <body>
+                <h1>@{title}</h1>
+                <tpl if="$age > 21 && $name eq &quot;John\\ Smith&quot;">
+                    <p>You are an adult.</p>
+                </tpl>
+            </body>
+        </html>
+    }
+    set html [::thtml::render $template $data]
+    escape $html
 } -result {<html><head><title>Hello, World!</title></head><body><h1>Hello, World!</h1><p>You are an adult.</p></body></html>}
 
 exit

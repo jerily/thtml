@@ -208,7 +208,9 @@ thtml_TclAppendExpr_Operator(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_D
             // one operand
 
             Tcl_DStringAppend(ds_ptr, operator_token->start, operator_token->size);
-            thtml_TclAppendExpr_Token(interp, blocks_list_ptr, ds_ptr, parse_ptr, operands_offset);
+            if (TCL_OK != thtml_TclAppendExpr_Token(interp, blocks_list_ptr, ds_ptr, parse_ptr, operands_offset)) {
+                return TCL_ERROR;
+            }
 
         } else if (num_operands == 2 &&
                    (ch == '+' || ch == '-' || ch == '*' || ch == '/' || ch == '%' || ch == '^' || ch == '&' ||
@@ -217,12 +219,16 @@ thtml_TclAppendExpr_Operator(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_D
             // two operands
             Tcl_Token *first_operand = &parse_ptr->tokenPtr[operands_offset];
             // fprintf(stderr, "first_operand of op: %c has numComponents: %d\n", ch, first_operand->numComponents);
-            thtml_TclAppendExpr_Token(interp, blocks_list_ptr, ds_ptr, parse_ptr, operands_offset);
+            if (TCL_OK != thtml_TclAppendExpr_Token(interp, blocks_list_ptr, ds_ptr, parse_ptr, operands_offset)) {
+                return TCL_ERROR;
+            }
             Tcl_DStringAppend(ds_ptr, " ", 1);
             Tcl_DStringAppend(ds_ptr, operator_token->start, operator_token->size);
             Tcl_DStringAppend(ds_ptr, " ", 1);
-            thtml_TclAppendExpr_Token(interp, blocks_list_ptr, ds_ptr, parse_ptr,
-                                      operands_offset + first_operand->numComponents + 1);
+            if (TCL_OK != thtml_TclAppendExpr_Token(interp, blocks_list_ptr, ds_ptr, parse_ptr,
+                                      operands_offset + first_operand->numComponents + 1)) {
+                return TCL_ERROR;
+            }
 
         } else if (ch == '?') {
             // three operands
@@ -233,13 +239,19 @@ thtml_TclAppendExpr_Operator(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_D
             int third_operand_index = second_operand_index + second_operand->numComponents + 1;
 
             // fprintf(stderr, "first_operand of op: %c has numComponents: %d\n", ch, first_operand->numComponents);
-            thtml_TclAppendExpr_Token(interp, blocks_list_ptr, ds_ptr, parse_ptr, operands_offset);
+            if (TCL_OK != thtml_TclAppendExpr_Token(interp, blocks_list_ptr, ds_ptr, parse_ptr, operands_offset)) {
+                return TCL_ERROR;
+            }
             Tcl_DStringAppend(ds_ptr, " ", 1);
             Tcl_DStringAppend(ds_ptr, operator_token->start, operator_token->size);
             Tcl_DStringAppend(ds_ptr, " ", 1);
-            thtml_TclAppendExpr_Token(interp, blocks_list_ptr, ds_ptr, parse_ptr,second_operand_index);
+            if (TCL_OK != thtml_TclAppendExpr_Token(interp, blocks_list_ptr, ds_ptr, parse_ptr,second_operand_index)) {
+                return TCL_ERROR;
+            }
             Tcl_DStringAppend(ds_ptr, " : ", 3);
-            thtml_TclAppendExpr_Token(interp, blocks_list_ptr, ds_ptr, parse_ptr, third_operand_index);
+            if (TCL_OK != thtml_TclAppendExpr_Token(interp, blocks_list_ptr, ds_ptr, parse_ptr, third_operand_index)) {
+                return TCL_ERROR;
+            }
         } else {
             SetResult("error parsing expression: unsupported operator");
             return TCL_ERROR;
@@ -248,15 +260,21 @@ thtml_TclAppendExpr_Operator(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_D
         char ch1 = operator_token->start[0];
         char ch2 = operator_token->start[1];
         if ((ch1 == '&' && ch2 == '&') || (ch1 == '|' && ch2 == '|') || (ch1 == '<' && ch2 == '<') ||
-            (ch1 == '>' && ch2 == '>') || (ch1 == '=' && ch2 == '=') || (ch1 == '!' && ch2 == '=')) {
+            (ch1 == '>' && ch2 == '>') || (ch1 == '=' && ch2 == '=') || (ch1 == '!' && ch2 == '=') ||
+                (ch1 == 'e' && ch2 == 'q') || (ch1 == 'n' && ch2 == 'e') ||
+                (ch1 == 'i' && ch2 == 'n') || (ch1 == 'n' && ch2 == 'i')) {
             // two operands
 
-            Tcl_Token *first_operand = &parse_ptr->tokenPtr[i + 2];
-            thtml_TclAppendExpr_Token(interp, blocks_list_ptr, ds_ptr, parse_ptr, i + 2);
+            Tcl_Token *first_operand = &parse_ptr->tokenPtr[operands_offset];
+            if (TCL_OK != thtml_TclAppendExpr_Token(interp, blocks_list_ptr, ds_ptr, parse_ptr, operands_offset)) {
+                return TCL_ERROR;
+            }
             Tcl_DStringAppend(ds_ptr, " ", 1);
             Tcl_DStringAppend(ds_ptr, operator_token->start, operator_token->size);
             Tcl_DStringAppend(ds_ptr, " ", 1);
-            thtml_TclAppendExpr_Token(interp, blocks_list_ptr, ds_ptr, parse_ptr, i + 2 + first_operand->numComponents);
+            if (TCL_OK != thtml_TclAppendExpr_Token(interp, blocks_list_ptr, ds_ptr, parse_ptr, operands_offset + first_operand->numComponents + 1)) {
+                return TCL_ERROR;
+            }
 
         } else {
             SetResult("error parsing expression: unsupported operator");
@@ -289,15 +307,21 @@ thtml_TclAppendExpr_Token(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DStr
         return thtml_TclAppendExpr_Variable(interp, blocks_list_ptr, ds_ptr, parse_ptr, i);
     } else if (token->type == TCL_TOKEN_TEXT) {
         Tcl_DStringAppend(ds_ptr, token->start, token->size);
-        return TCL_OK;
     } else if (token->type == TCL_TOKEN_COMMAND) {
-        // todo
+        SetResult("error parsing expression: command substitution not supported");
+        return TCL_ERROR;
     } else if (token->type == TCL_TOKEN_EXPAND_WORD) {
         // todo
     } else if (token->type == TCL_TOKEN_WORD) {
-        // todo
+        Tcl_DStringAppend(ds_ptr, "\"", 1);
+        for (int j = 0; j < token->numComponents; j++) {
+            if (TCL_OK != thtml_TclAppendExpr_Token(interp, blocks_list_ptr, ds_ptr, parse_ptr, i + 1 + j)) {
+                return TCL_ERROR;
+            }
+        }
+        Tcl_DStringAppend(ds_ptr, "\"", 1);
     } else if (token->type == TCL_TOKEN_BS) {
-        // todo
+        Tcl_DStringAppend(ds_ptr, token->start, token->size);
     }
     return TCL_OK;
 }

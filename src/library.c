@@ -112,7 +112,7 @@ static int thtml_TclCompileExprCmd(ClientData  clientData, Tcl_Interp *interp, i
     Tcl_Parse parse;
     if (TCL_OK != Tcl_ParseExpr(interp, text, text_length, &parse)) {
         Tcl_FreeParse(&parse);
-        SetResult("error parsing expression");
+//        SetResult("error parsing expression");
         return TCL_ERROR;
     }
 

@@ -36,12 +36,12 @@ proc ::thtml::render {template __data__} {
         return [$proc_name $__data__]
     }
     set compiled_template [compile $template tcl]
-    puts compiled_template=$compiled_template
+    #puts compiled_template=$compiled_template
     return "<!doctype html>[eval $compiled_template]"
 }
 
 proc ::thtml::compile {template target_lang} {
-    dom parse $template doc
+    dom parse -html -paramentityparsing never -- $template doc
     set root [$doc documentElement]
     array set codearr [list blocks {} target_lang $target_lang]
     return [::thtml::compiler::${target_lang}_compile_root codearr $root]
