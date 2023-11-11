@@ -81,8 +81,6 @@ test if-3 {} -body {
     escape $html
 } -result {<html><head><title>Hello, World!</title></head><body><h1>Hello, World!</h1><p>You are an adult.</p></body></html>}
 
-exit
-
 test transform-1 {} -body {
     set compiled_template [::thtml::compiler::tcl_transform "\x02hello world\x03puts hey\x02this is a test\x03"]
     escape $compiled_template
