@@ -20,8 +20,7 @@ proc ::thtml::compiler::tcl_compile_statement_val {codearrVar node} {
     set script [$node asText]
 
     # substitute template variables in script
-    # todo: compile_subst is a temporary hack here, we need to implement a proper compiler for the template language
-    set compiled_script [compile_subst codearr $script 1]
+    set compiled_script [tcl_compile_script codearr $script]
 
     set compiled_statement ""
     append compiled_statement "\x03" "\n" "dict set __data__ {*}${chain_of_keys} \[::thtml::runtime::tcl::evaluate_script \"${compiled_script}\"\]" "\x02"
@@ -125,30 +124,4 @@ proc ::thtml::compiler::tcl_compile_statement_include {codearrVar node} {
     pop_block codearr
 
     return $compiled_include
-}
-
-proc ::thtml::compiler::tcl_compile_subst_var_from_simple {codearrVar varname inside_code_block} {
-    upvar $codearrVar codearr
-    if { $inside_code_block } {
-        return "\$\{${varname}\}"
-    } else {
-        set compiled_subst_var ""
-        append compiled_subst_var "\x03"
-        append compiled_subst_var "\n" "append ds \$\{${varname}\}" "\n"
-        append compiled_subst_var "\x02"
-        return $compiled_subst_var
-    }
-}
-
-proc ::thtml::compiler::tcl_compile_subst_var_from_dict {codearrVar varname parts inside_code_block} {
-    upvar $codearrVar codearr
-    if { $inside_code_block } {
-        return "\[dict get \$\{${varname}\} {*}${parts}\]"
-    } else {
-        set compiled_subst_var ""
-        append compiled_subst_var "\x03"
-        append compiled_subst_var "\n" "append ds \[dict get \$\{${varname}\} {*}${parts}\]" "\n"
-        append compiled_subst_var "\x02"
-        return $compiled_subst_var
-    }
 }

@@ -221,6 +221,53 @@ static int thtml_TclCompileTemplateTextCmd(ClientData  clientData, Tcl_Interp *i
     return TCL_OK;
 }
 
+static int thtml_TclCompileScriptCmd(ClientData  clientData, Tcl_Interp *interp, int objc, Tcl_Obj * const objv[]) {
+    DBG(fprintf(stderr, "TclCompileScriptCmd\n"));
+
+    CheckArgs(3, 3, 1, "codearrVar text");
+
+    int text_length;
+    char *text = Tcl_GetStringFromObj(objv[2], &text_length);
+
+    Tcl_Obj *blocks_key_ptr = Tcl_NewStringObj("blocks", 6);
+    Tcl_IncrRefCount(blocks_key_ptr);
+    Tcl_Obj *blocks_list_ptr = Tcl_ObjGetVar2(interp, objv[1], blocks_key_ptr, TCL_LEAVE_ERR_MSG);
+    Tcl_DecrRefCount(blocks_key_ptr);
+
+    if (blocks_list_ptr == NULL) {
+        SetResult("error getting blocks from codearr");
+        return TCL_ERROR;
+    }
+
+    Tcl_DString ds;
+    Tcl_DStringInit(&ds);
+
+    const char *end = text + text_length;
+    const char *start = text;
+    int numBytes = text_length;
+    while (start < end) {
+        fprintf(stderr, "start=%.*s\n", end-start, start);
+        Tcl_Parse parse;
+        if (TCL_OK != Tcl_ParseCommand(interp, start, numBytes, 0, &parse)) {
+            Tcl_FreeParse(&parse);
+            return TCL_ERROR;
+        }
+
+        if (TCL_OK != thtml_TclCompileCommand(interp, blocks_list_ptr, &ds, &parse)) {
+            Tcl_FreeParse(&parse);
+            Tcl_DStringFree(&ds);
+            return TCL_ERROR;
+        }
+        start = 1 + parse.tokenPtr[parse.numTokens - 1].start + parse.tokenPtr[parse.numTokens - 1].size;
+        Tcl_FreeParse(&parse);
+        numBytes = end - start;
+    }
+
+    Tcl_DStringResult(interp, &ds);
+    Tcl_DStringFree(&ds);
+    return TCL_OK;
+}
+
 static int thtml_Md5Cmd(ClientData  clientData, Tcl_Interp *interp, int objc, Tcl_Obj * const objv[]) {
     DBG(fprintf(stderr,"Md5Cmd\n"));
 
@@ -265,6 +312,7 @@ int Thtml_Init(Tcl_Interp *interp) {
     Tcl_CreateObjCommand(interp, "::thtml::compiler::tcl_compile_expr", thtml_TclCompileExprCmd, NULL, NULL);
     Tcl_CreateObjCommand(interp, "::thtml::compiler::tcl_compile_quoted_string", thtml_TclCompileQuotedStringCmd, NULL, NULL);
     Tcl_CreateObjCommand(interp, "::thtml::compiler::tcl_compile_template_text", thtml_TclCompileTemplateTextCmd, NULL, NULL);
+    Tcl_CreateObjCommand(interp, "::thtml::compiler::tcl_compile_script", thtml_TclCompileScriptCmd, NULL, NULL);
 
     Tcl_CreateNamespace(interp, "::thmtl::util", NULL, NULL);
     Tcl_CreateObjCommand(interp, "::thtml::util::md5", thtml_Md5Cmd, NULL, NULL);

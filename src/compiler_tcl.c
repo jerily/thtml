@@ -338,7 +338,7 @@ thtml_TclAppendExpr_Token(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DStr
     } else if (token->type == TCL_TOKEN_BS) {
         Tcl_DStringAppend(ds_ptr, token->start, token->size);
     } else {
-        fprintf(stderr, "other type of token\n");
+        fprintf(stderr, "other type of token: %d\n", token->type);
     }
     return TCL_OK;
 }
@@ -398,6 +398,76 @@ int thtml_TclCompileTemplateText(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, T
             SetResult("error parsing quoted string: unsupported token type");
             return TCL_ERROR;
         }
+    }
+    return TCL_OK;
+}
+
+int thtml_TclAppendCommand_Token(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DString *ds_ptr, Tcl_Parse *parse_ptr, int i, int *out_i) {
+    fprintf(stderr, "thtml_TclAppendCommand_Token: %d - %.*s\n", parse_ptr->tokenPtr[i].type, parse_ptr->tokenPtr[i].size, parse_ptr->tokenPtr[i].start);
+    Tcl_Token *token = &parse_ptr->tokenPtr[i];
+    if (token->type == TCL_TOKEN_VARIABLE) {
+        if (TCL_OK != thtml_TclAppendExpr_Variable(interp, blocks_list_ptr, ds_ptr, parse_ptr, i)) {
+            return TCL_ERROR;
+        }
+        *out_i = i + 2;
+        return TCL_OK;
+    } else if (token->type == TCL_TOKEN_SIMPLE_WORD) {
+        if (TCL_OK != thtml_TclAppendCommand_Token(interp, blocks_list_ptr, ds_ptr, parse_ptr, i + 1, &i)) {
+            return TCL_ERROR;
+        }
+        *out_i = i + 1;
+        return TCL_OK;
+    } else if (token->type == TCL_TOKEN_TEXT) {
+        Tcl_DStringAppend(ds_ptr, token->start, token->size);
+    } else if (token->type == TCL_TOKEN_COMMAND) {
+        Tcl_DStringAppend(ds_ptr, "[", 1);
+        Tcl_Parse subcmd_parse;
+        if (TCL_OK != Tcl_ParseCommand(interp, token->start + 1, token->size - 2, 0, &subcmd_parse)) {
+            Tcl_FreeParse(&subcmd_parse);
+            return TCL_ERROR;
+        }
+        if (TCL_OK != thtml_TclCompileCommand(interp, blocks_list_ptr, ds_ptr, &subcmd_parse)) {
+            Tcl_FreeParse(&subcmd_parse);
+            return TCL_ERROR;
+        }
+        Tcl_FreeParse(&subcmd_parse);
+        Tcl_DStringAppend(ds_ptr, "]", 1);
+    } else if (token->type == TCL_TOKEN_EXPAND_WORD) {
+        SetResult("error parsing expression: expand word not supported");
+        return TCL_ERROR;
+    } else if (token->type == TCL_TOKEN_WORD) {
+        Tcl_DStringAppend(ds_ptr, "{", 1);
+        int start_i = i;
+        while (i - start_i < token->numComponents) {
+            if (TCL_OK != thtml_TclAppendCommand_Token(interp, blocks_list_ptr, ds_ptr, parse_ptr, i + 1, &i)) {
+                return TCL_ERROR;
+            }
+        }
+        Tcl_DStringAppend(ds_ptr, "}", 1);
+    } else if (token->type == TCL_TOKEN_BS) {
+        Tcl_DStringAppend(ds_ptr, token->start, token->size);
+    } else {
+        fprintf(stderr, "TclAppendCommand_Token: other type of token: %d\n", token->type);
+    }
+    *out_i = i + 1;
+    return TCL_OK;
+}
+
+int thtml_TclCompileCommand(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DString *ds_ptr, Tcl_Parse *parse_ptr) {
+    fprintf(stderr, "thtml_TclCompileCommand\n");
+    int first = 1;
+    int i = 0;
+    while (i < parse_ptr->numTokens) {
+        if (first) {
+            first = 0;
+        } else {
+            Tcl_DStringAppend(ds_ptr, " ", 1);
+        }
+        if (TCL_OK != thtml_TclAppendCommand_Token(interp, blocks_list_ptr, ds_ptr, parse_ptr, i, &i)) {
+            fprintf(stderr, "thtml_TclAppendCommand_Token failed\n");
+            return TCL_ERROR;
+        }
+        fprintf(stderr, "i: %d / %d\n", i, parse_ptr->numTokens);
     }
     return TCL_OK;
 }
