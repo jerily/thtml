@@ -20,10 +20,10 @@ test if-1 {} -body {
     set template {
         <html>
             <head>
-                <title>@{title}</title>
+                <title>${title}</title>
             </head>
             <body>
-                <h1>@{title}</h1>
+                <h1>${title}</h1>
                 <tpl if="$age > 21">
                     <p>You are an adult.</p>
                 </tpl>
@@ -44,10 +44,10 @@ test if-2 {} -body {
     set template {
         <html>
             <head>
-                <title>@{title}</title>
+                <title>${title}</title>
             </head>
             <body>
-                <h1>@{title}</h1>
+                <h1>${title}</h1>
                 <tpl if="$age > 21 && $name eq {John Smith}">
                     <p>You are an adult.</p>
                 </tpl>
@@ -67,10 +67,10 @@ test if-3 {} -body {
     set template {
         <html>
             <head>
-                <title>@{title}</title>
+                <title>${title}</title>
             </head>
             <body>
-                <h1>@{title}</h1>
+                <h1>${title}</h1>
                 <tpl if='$age > 21 && $name eq "John Smith"'>
                     <p>You are an adult.</p>
                 </tpl>
@@ -93,10 +93,10 @@ test var-substitution-1 {} -body {
     set template {
         <html>
             <head>
-                <title>@{title}</title>
+                <title>${title}</title>
             </head>
             <body>
-                <h1>@{title}</h1>
+                <h1>${title}</h1>
             </body>
         </html>
     }
@@ -112,14 +112,14 @@ test foreach-within-if-1 {} -body {
     set template {
         <html>
             <head>
-                <title>@{title}</title>
+                <title>${title}</title>
             </head>
             <body>
-                <h1>@{title}</h1>
+                <h1>${title}</h1>
                 <tpl if="${age} > 21">
                     <p>You are an adult.</p>
                     <tpl foreach="item" in="${items}">
-                        <p>@{item}: @{age}</p>
+                        <p>${item}: ${age}</p>
                     </tpl>
                 </tpl>
             </body>
@@ -137,13 +137,13 @@ test nested-if-in-foreach-1 {} -body {
     set template {
         <html>
             <head>
-                <title>@{title}</title>
+                <title>${title}</title>
             </head>
             <body>
-                <h1>@{title}</h1>
+                <h1>${title}</h1>
                 <tpl foreach="item" in="${items}">
-                    <tpl if="${item} % 2 == 0"><p>@{item} is even</p></tpl>
-                    <tpl if="${item} % 2 == 1"><p>@{item} is odd</p></tpl>
+                    <tpl if="${item} % 2 == 0"><p>${item} is even</p></tpl>
+                    <tpl if="${item} % 2 == 1"><p>${item} is odd</p></tpl>
                 </tpl>
             </body>
         </html>
@@ -159,13 +159,13 @@ test nested-foreach-1 {} -body {
     set template {
         <html>
             <head>
-                <title>@{title}</title>
+                <title>${title}</title>
             </head>
             <body>
-                <h1>@{title}</h1>
+                <h1>${title}</h1>
                 <tpl foreach="item" in="${items}">
                     <tpl foreach="subitem" in="${item}">
-                        <p>@{subitem} is <tpl if="${subitem} % 2 == 0">even</tpl><tpl if="${subitem} % 2 == 1">odd</tpl></p>
+                        <p>${subitem} is <tpl if="${subitem} % 2 == 0">even</tpl><tpl if="${subitem} % 2 == 1">odd</tpl></p>
                     </tpl>
                 </tpl>
             </body>
@@ -183,10 +183,10 @@ test include-1 {} -body {
     set template {
         <html>
             <head>
-                <title>@{title}</title>
+                <title>${title}</title>
             </head>
             <body>
-                <h1>@{title}</h1>
+                <h1>${title}</h1>
                 <tpl include="./templates/name_and_age.thtml" name="${name}" age="${age} ye\[a\]rs">
                     <tpl if="${age} > 21">
                         You are an adult.
@@ -208,10 +208,10 @@ test include-2-circular-dependency {} -body {
     set template {
         <html>
             <head>
-                <title>@{title}</title>
+                <title>${title}</title>
             </head>
             <body>
-                <h1>@{title}</h1>
+                <h1>${title}</h1>
                 <tpl include="./templates/name_and_age.thtml" name="${name}" age="${age} ye\[a\]rs">
                     <tpl if="${age} > 21">
                         You are an adult.
@@ -232,11 +232,11 @@ test eval-1 {} -body {
             <tpl val="y">return 2</tpl>
             <tpl val="z">return [expr { @{x} + @{y} }]</tpl>
             <head>
-                <title>@{title}</title>
+                <title>${title}</title>
             </head>
             <body>
-                <h1>@{title}</h1>
-                <p>@{z}</p>
+                <h1>${title}</h1>
+                <p>${z}</p>
             </body>
         </html>
     }

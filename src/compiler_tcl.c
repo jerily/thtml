@@ -376,3 +376,28 @@ int thtml_TclCompileQuotedString(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, T
     }
     return TCL_OK;
 }
+
+int thtml_TclCompileTemplateText(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DString *ds_ptr, Tcl_Parse *parse_ptr) {
+    for (int i = 0; i < parse_ptr->numTokens; i++) {
+        Tcl_Token *token = &parse_ptr->tokenPtr[i];
+        if (token->type == TCL_TOKEN_TEXT) {
+            Tcl_DStringAppend(ds_ptr, token->start, token->size);
+        } else if (token->type == TCL_TOKEN_BS) {
+            Tcl_DStringAppend(ds_ptr, token->start, token->size);
+        } else if (token->type == TCL_TOKEN_COMMAND) {
+            SetResult("error parsing quoted string: command substitution not supported");
+            return TCL_ERROR;
+        } else if (token->type == TCL_TOKEN_VARIABLE) {
+            Tcl_DStringAppend(ds_ptr, "\x03\nappend ds ", 12);
+            if (TCL_OK != thtml_TclAppendExpr_Variable(interp, blocks_list_ptr, ds_ptr, parse_ptr, i)) {
+                return TCL_ERROR;
+            }
+            Tcl_DStringAppend(ds_ptr, "\n\x02", 2);
+            i++;
+        } else {
+            SetResult("error parsing quoted string: unsupported token type");
+            return TCL_ERROR;
+        }
+    }
+    return TCL_OK;
+}

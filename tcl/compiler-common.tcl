@@ -10,7 +10,7 @@ proc ::thtml::compiler::compile_helper {codearrVar node} {
 
     set node_type [$node nodeType]
     if { $node_type eq {TEXT_NODE} } {
-        return [compile_subst codearr [$node nodeValue] 0]
+        return [tcl_compile_template_text codearr \"[$node nodeValue]\"]
     } elseif { $node_type eq {ELEMENT_NODE} } {
         set tag [$node tagName]
         if { $tag eq {tpl} } {
@@ -29,7 +29,7 @@ proc ::thtml::compiler::compile_element {codearrVar node} {
     set compiled_element "<${tag}"
     foreach attname [$node attributes] {
         set attvalue [$node @$attname]
-        set compiled_attvalue [compile_subst codearr $attvalue 0]
+        set compiled_attvalue [tcl_compile_template_text codearr \"$attvalue\"]
         append compiled_element " ${attname}=\"${compiled_attvalue}\""
     }
 
