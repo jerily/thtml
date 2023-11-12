@@ -27,7 +27,7 @@ proc ::thtml::compiler::tcl_compile_statement_val {codearrVar node} {
     set compiled_script [tcl_compile_script codearr $script]
 
     set compiled_statement ""
-    append compiled_statement "\x03" "\n" "dict set __data__ {*}${chain_of_keys} \[::thtml::runtime::tcl::evaluate_script \"${compiled_script}\"\]" "\x02"
+    append compiled_statement "\x03" "\n" "dict set __data__ {*}${chain_of_keys} \[::thtml::runtime::tcl::evaluate_script \{${compiled_script}\}\]" "\x02"
     return $compiled_statement
 }
 
