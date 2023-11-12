@@ -323,8 +323,19 @@ thtml_TclAppendExpr_Token(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DStr
     } else if (token->type == TCL_TOKEN_TEXT) {
         Tcl_DStringAppend(ds_ptr, token->start, token->size);
     } else if (token->type == TCL_TOKEN_COMMAND) {
-        SetResult("error parsing expression: command substitution not supported");
-        return TCL_ERROR;
+        Tcl_Parse subcmd_parse;
+        if (TCL_OK != Tcl_ParseCommand(interp, token->start + 1, token->size - 2, 0, &subcmd_parse)) {
+            Tcl_FreeParse(&subcmd_parse);
+            return TCL_ERROR;
+        }
+
+        Tcl_DStringAppend(ds_ptr, "[", 1);
+        if (TCL_OK != thtml_TclCompileCommand(interp, blocks_list_ptr, ds_ptr, &subcmd_parse)) {
+            Tcl_FreeParse(&subcmd_parse);
+            return TCL_ERROR;
+        }
+        Tcl_DStringAppend(ds_ptr, "]", 1);
+        Tcl_FreeParse(&subcmd_parse);
     } else if (token->type == TCL_TOKEN_EXPAND_WORD) {
         SetResult("error parsing expression: expand word not supported");
         return TCL_ERROR;
