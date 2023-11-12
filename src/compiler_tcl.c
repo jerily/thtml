@@ -398,10 +398,24 @@ thtml_TclCompileTemplateText(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_D
         if (token->type == TCL_TOKEN_TEXT) {
             Tcl_DStringAppend(ds_ptr, token->start, token->size);
         } else if (token->type == TCL_TOKEN_BS) {
+//            fprintf(stderr, "TCL_TOKEN_BS: %.*s\n", token->size, token->start);
             Tcl_DStringAppend(ds_ptr, token->start, token->size);
         } else if (token->type == TCL_TOKEN_COMMAND) {
-            SetResult("error parsing quoted string: command substitution not supported");
-            return TCL_ERROR;
+            Tcl_Parse subcmd_parse;
+            if (TCL_OK != Tcl_ParseCommand(interp, token->start + 1, token->size - 2, 0, &subcmd_parse)) {
+                Tcl_FreeParse(&subcmd_parse);
+                return TCL_ERROR;
+            }
+
+            Tcl_DStringAppend(ds_ptr, "\x03\nappend ds ", 12);
+            Tcl_DStringAppend(ds_ptr, "[", 1);
+            if (TCL_OK != thtml_TclCompileCommand(interp, blocks_list_ptr, ds_ptr, &subcmd_parse)) {
+                Tcl_FreeParse(&subcmd_parse);
+                return TCL_ERROR;
+            }
+            Tcl_DStringAppend(ds_ptr, "]", 1);
+            Tcl_DStringAppend(ds_ptr, "\n\x02", 2);
+            Tcl_FreeParse(&subcmd_parse);
         } else if (token->type == TCL_TOKEN_VARIABLE) {
             Tcl_DStringAppend(ds_ptr, "\x03\nappend ds ", 12);
             if (TCL_OK != thtml_TclAppendVariable(interp, blocks_list_ptr, ds_ptr, parse_ptr, i)) {

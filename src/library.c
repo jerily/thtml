@@ -20,10 +20,10 @@ static void thtml_AppendEscaped(const char *p, const char *end, Tcl_DString *dsP
             Tcl_DStringAppend(dsPtr, "\\n", 2);
         } else if (*p == '\r') {
             Tcl_DStringAppend(dsPtr, "\\r", 2);
-        } else if (*p == '"') {
-            Tcl_DStringAppend(dsPtr, "\\\"", 2);
-        } else if (*p == '\\') {
-            Tcl_DStringAppend(dsPtr, "\\\\", 2);
+//        } else if (*p == '"') {
+//            Tcl_DStringAppend(dsPtr, "\\\"", 2);
+//        } else if (*p == '\\') {
+//            Tcl_DStringAppend(dsPtr, "\\\\", 2);
         } else {
             Tcl_DStringAppend(dsPtr, p, 1);
         }
@@ -189,8 +189,29 @@ static int thtml_TclCompileTemplateTextCmd(ClientData  clientData, Tcl_Interp *i
     int text_length;
     char *text = Tcl_GetStringFromObj(objv[2], &text_length);
 
+    const char *p = text;
+    const char *end = text + text_length;
+
+    Tcl_DString text_ds;
+    Tcl_DStringInit(&text_ds);
+    int count = 0;
+    while (p < end) {
+        if (*p == '[') {
+            count++;
+            Tcl_DStringAppend(&text_ds, "[", 1);
+        } else if (*p == ']') {
+            count--;
+            Tcl_DStringAppend(&text_ds, "]", 1);
+        } else if (p > text && p < end - 1 && *p == '\"' && count == 0) {
+            Tcl_DStringAppend(&text_ds, "\\\"", 2);
+        } else {
+            Tcl_DStringAppend(&text_ds, p, 1);
+        }
+        p++;
+    }
+
     Tcl_Parse parse;
-    if (TCL_OK != Tcl_ParseQuotedString(interp, text, text_length, &parse, 0, NULL)) {
+    if (TCL_OK != Tcl_ParseQuotedString(interp, Tcl_DStringValue(&text_ds), Tcl_DStringLength(&text_ds), &parse, 0, NULL)) {
         Tcl_FreeParse(&parse);
         return TCL_ERROR;
     }
