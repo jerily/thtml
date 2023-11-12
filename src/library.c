@@ -246,7 +246,7 @@ static int thtml_TclCompileScriptCmd(ClientData  clientData, Tcl_Interp *interp,
     const char *start = text;
     int numBytes = text_length;
     while (start < end) {
-        fprintf(stderr, "start=%.*s\n", end-start, start);
+        // fprintf(stderr, "start=%.*s\n", end-start, start);
         Tcl_Parse parse;
         if (TCL_OK != Tcl_ParseCommand(interp, start, numBytes, 0, &parse)) {
             Tcl_FreeParse(&parse);

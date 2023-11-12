@@ -409,8 +409,8 @@ thtml_TclCompileTemplateText(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_D
 int thtml_TclAppendCommand_Token(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DString *ds_ptr, Tcl_Parse *parse_ptr,
                                 int is_subst_word, int i, int *out_i) {
     Tcl_Token *token = &parse_ptr->tokenPtr[i];
-    fprintf(stderr, "thtml_TclAppendCommand_Token: type: %d - token: %.*s - numComponents: %d\n", token->type,
-            token->size, token->start, token->numComponents);
+    // fprintf(stderr, "thtml_TclAppendCommand_Token: type: %d - token: %.*s - numComponents: %d\n", token->type,
+    //        token->size, token->start, token->numComponents);
     if (token->type == TCL_TOKEN_VARIABLE) {
         if (TCL_OK != thtml_TclAppendVariable(interp, blocks_list_ptr, ds_ptr, parse_ptr, i)) {
             return TCL_ERROR;
@@ -485,7 +485,7 @@ int thtml_TclAppendCommand_Token(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, T
 }
 
 int thtml_TclCompileCommand(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DString *ds_ptr, Tcl_Parse *parse_ptr) {
-    fprintf(stderr, "thtml_TclCompileCommand\n");
+    DBG(fprintf(stderr, "thtml_TclCompileCommand\n"));
 
     Tcl_DString word_ds;
     Tcl_DStringInit(&word_ds);
@@ -507,8 +507,16 @@ int thtml_TclCompileCommand(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DS
         const char *bytes = Tcl_DStringValue(&word_ds);
 
         if (first) {
-            if (0 == strncmp(bytes, "expr", 4)) {
+            if (length == 4 && 0 == strncmp(bytes, "expr", 4)) {
                 is_subst_word = 1;
+            } else if (length == 4 && 0 == strncmp(bytes, "eval", 4)) {
+                Tcl_DStringFree(&word_ds);
+                SetResult("error parsing expression: eval not supported");
+                return TCL_ERROR;
+            } else if (length == 5 && 0 == strncmp(bytes, "subst", 5)) {
+                Tcl_DStringFree(&word_ds);
+                SetResult("error parsing expression: eval not supported");
+                return TCL_ERROR;
             }
             first = 0;
         }
@@ -516,7 +524,7 @@ int thtml_TclCompileCommand(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DS
         Tcl_DStringAppend(ds_ptr, bytes, length);
         Tcl_DStringTrunc(&word_ds, 0);
 
-        fprintf(stderr, "i: %d / %d\n", i, parse_ptr->numTokens);
+        // fprintf(stderr, "i: %d / %d\n", i, parse_ptr->numTokens);
     }
 
     Tcl_DStringFree(&word_ds);
