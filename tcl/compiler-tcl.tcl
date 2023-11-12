@@ -106,7 +106,7 @@ proc ::thtml::compiler::tcl_compile_statement_include {codearrVar node} {
     set argvalues [list]
     foreach attname [$node attributes] {
         if { $attname eq {include} } { continue }
-        lappend argvalues [compile_subst codearr [$node @$attname] 1]
+        lappend argvalues [tcl_compile_quoted_string codearr \"[$node @$attname]\"]
     }
 
     push_block codearr [list varnames $argnames stop 1 include [list filepath $filepath_from_rootdir filepath_md5 $filepath_md5]]
