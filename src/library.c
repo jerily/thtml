@@ -202,8 +202,22 @@ static int thtml_TclCompileTemplateTextCmd(ClientData  clientData, Tcl_Interp *i
         } else if (*p == ']') {
             count--;
             Tcl_DStringAppend(&text_ds, "]", 1);
-        } else if (p > text && p < end - 1 && *p == '\"' && count == 0) {
+        } else if (p > text && p < end - 1 && *p == '"' && count == 0) {
             Tcl_DStringAppend(&text_ds, "\\\"", 2);
+        } else if (p > text && p < end - 1 && *p == '\\' && count == 0) {
+            if (p + 1 < end - 1 && *(p + 1) == '[') {
+                Tcl_DStringAppend(&text_ds, "\\[", 2);
+                p+=2;
+                continue;
+            } else if (p + 1 < end - 1 && *(p + 1) == ']') {
+                Tcl_DStringAppend(&text_ds, "\\]", 2);
+                p+=2;
+                continue;
+            } else if (p + 1 < end - 1 && *(p + 1) == '"') {
+                // do nothing, we escape double quotes when we see them
+            } else {
+                Tcl_DStringAppend(&text_ds, "\\", 1);
+            }
         } else {
             Tcl_DStringAppend(&text_ds, p, 1);
         }

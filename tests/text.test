@@ -12,7 +12,8 @@ proc escape {str} {
     return [string map {\r {\r} \n {\n}} $str]
 }
 
-test if-1 {} -body {
+
+test text-1-subst-vars-and-command {} -body {
     set data {
         title "Hello, World!"
         age 47
@@ -24,90 +25,15 @@ test if-1 {} -body {
             </head>
             <body>
                 <h1>${title}</h1>
-                <tpl if="$age > 21">
-                    <p>You are an adult.</p>
-                </tpl>
+                <p>You are [string length $age] digits years old.</p>
             </body>
         </html>
     }
     set html [::thtml::render $template $data]
     escape $html
-} -result {<html><head><title>Hello, World!</title></head><body><h1>Hello, World!</h1><p>You are an adult.</p></body></html>}
+} -result {<html><head><title>Hello, World!</title></head><body><h1>Hello, World!</h1><p>You are 2 digits years old.</p></body></html>}
 
-
-test if-2 {} -body {
-    set data {
-        title "Hello, World!"
-        name "John Smith"
-        age 47
-    }
-    set template {
-        <html>
-            <head>
-                <title>${title}</title>
-            </head>
-            <body>
-                <h1>${title}</h1>
-                <tpl if="$age > 21 && $name eq {John Smith}">
-                    <p>You are an adult.</p>
-                </tpl>
-            </body>
-        </html>
-    }
-    set html [::thtml::render $template $data]
-    escape $html
-} -result {<html><head><title>Hello, World!</title></head><body><h1>Hello, World!</h1><p>You are an adult.</p></body></html>}
-
-test if-3 {} -body {
-    set data {
-        title "Hello, World!"
-        name "John Smith"
-        age 47
-    }
-    set template {
-        <html>
-            <head>
-                <title>${title}</title>
-            </head>
-            <body>
-                <h1>${title}</h1>
-                <tpl if='$age > 21 && $name eq "John Smith"'>
-                    <p>You are an adult.</p>
-                </tpl>
-            </body>
-        </html>
-    }
-    set html [::thtml::render $template $data]
-    escape $html
-} -result {<html><head><title>Hello, World!</title></head><body><h1>Hello, World!</h1><p>You are an adult.</p></body></html>}
-
-test if-4-command-in-expr {} -body {
-    set data {
-        title "Hello, World!"
-        name "John Smith"
-        age 47
-    }
-    set template {
-        <html>
-            <head>
-                <title>${title}</title>
-            </head>
-            <body>
-                <h1>${title}</h1>
-                <tpl if='$age > 21 && [lindex $name 0] eq "John"'>
-                    <p>You are an adult.</p>
-                </tpl>
-                <tpl if='$age > 21 && [lindex $name 1] ne "Smith"'>
-                    <p>You are NOT Mr. Smith.</p>
-                </tpl>
-            </body>
-        </html>
-    }
-    set html [::thtml::render $template $data]
-    escape $html
-} -result {<html><head><title>Hello, World!</title></head><body><h1>Hello, World!</h1><p>You are an adult.</p></body></html>}
-
-test if-5-command-in-template-text {} -body {
+test text-2-doublequotes {} -body {
     set data {
         title "Hello, World!"
         age 47
@@ -119,12 +45,71 @@ test if-5-command-in-template-text {} -body {
             </head>
             <body>
                 <h1>${title}</h1>
-                <tpl if="$age > 21">
-                    <p>You are an adult. You are [string length $age] digits \[years\] old.</p>
-                </tpl>
+                <p>You are "[string length $age]" digits years old.</p>
             </body>
         </html>
     }
     set html [::thtml::render $template $data]
     escape $html
-} -result {<html><head><title>Hello, World!</title></head><body><h1>Hello, World!</h1><p>You are an adult. You are 2 digits [years] old.</p></body></html>}
+} -result {<html><head><title>Hello, World!</title></head><body><h1>Hello, World!</h1><p>You are "2" digits years old.</p></body></html>}
+
+test text-3-escaped-doublequotes {} -body {
+    set data {
+        title "Hello, World!"
+        age 47
+    }
+    set template {
+        <html>
+            <head>
+                <title>${title}</title>
+            </head>
+            <body>
+                <h1>${title}</h1>
+                <p>You are \"[string length $age]\" digits years old.</p>
+            </body>
+        </html>
+    }
+    set html [::thtml::render $template $data]
+    escape $html
+} -result {<html><head><title>Hello, World!</title></head><body><h1>Hello, World!</h1><p>You are "2" digits years old.</p></body></html>}
+
+
+test text-4-escaped-brackets {} -body {
+    set data {
+        title "Hello, World!"
+        age 47
+    }
+    set template {
+        <html>
+            <head>
+                <title>${title}</title>
+            </head>
+            <body>
+                <h1>${title}</h1>
+                <p>You are [string length $age] digits \[years\] old.</p>
+            </body>
+        </html>
+    }
+    set html [::thtml::render $template $data]
+    escape $html
+} -result {<html><head><title>Hello, World!</title></head><body><h1>Hello, World!</h1><p>You are 2 digits [years] old.</p></body></html>}
+
+test text-5-escaped-backslash {} -body {
+    set data {
+        title "Hello, World!"
+        age 47
+    }
+    set template {
+        <html>
+            <head>
+                <title>${title}</title>
+            </head>
+            <body>
+                <h1>${title}</h1>
+                <p>You are \\[string length $age]\\ digits \[years\] old.</p>
+            </body>
+        </html>
+    }
+    set html [::thtml::render $template $data]
+    escape $html
+} -result {<html><head><title>Hello, World!</title></head><body><h1>Hello, World!</h1><p>You are \2\ digits [years] old.</p></body></html>}
