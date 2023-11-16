@@ -11,10 +11,10 @@
 Template:
 ```html
 set template {
-    <tpl foreach="item" in="@{items}">
+    <tpl foreach="item" in="${items}">
         <div class="item">
-            <span class="name">@{item.name}</span>
-            <span class="value">@{item.value}</span>
+            <span class="name">${item.name}</span>
+            <span class="value">${item.value}</span>
         </div>
     </tpl>
 }
@@ -51,13 +51,13 @@ Expected output:
 Template:
 ```html
 set template {
-    <tpl if="@{value} eq 1">
+    <tpl if="${value} eq 1">
         <div class="value1">Value is 1</div>
     </tpl>
-    <tpl if="@{value} eq 2">
+    <tpl if="${value} eq 2">
         <div class="value2">Value is 2</div>
     </tpl>
-    <tpl if="@{value} eq 3">
+    <tpl if="${value} eq 3">
         <div class="value3">Value is 3</div>
     </tpl>
 }
@@ -114,13 +114,13 @@ set template {
     <html>
         <tpl val="x">return 1</tpl>
         <tpl val="y">return 2</tpl>
-        <tpl val="z">return [expr { @{x} + @{y} }]</tpl>
+        <tpl val="z">return [expr { $x + $y }]</tpl>
         <head>
-            <title>@{title}</title>
+            <title>${title}</title>
         </head>
         <body>
-            <h1>@{title}</h1>
-            <p>@{z}</p>
+            <h1>${title}</h1>
+            <p>${z}</p>
         </body>
     </html>
 }
