@@ -303,10 +303,13 @@ thtml_TclAppendExpr_Token(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DStr
     Tcl_Token *token = &parse_ptr->tokenPtr[i];
     if (token->type == TCL_TOKEN_SUB_EXPR) {
         Tcl_Token *next_token = &parse_ptr->tokenPtr[i + 1];
+        Tcl_DStringAppend(ds_ptr, "(", 1);
         if (next_token->type == TCL_TOKEN_OPERATOR) {
             // If the first sub-token after the TCL_TOKEN_SUB_EXPR token is a TCL_TOKEN_OPERATOR token,
             // the subexpression consists of an operator and its token operands.
-            return thtml_TclAppendExpr_Operator(interp, blocks_list_ptr, ds_ptr, parse_ptr, i);
+            if (TCL_OK != thtml_TclAppendExpr_Operator(interp, blocks_list_ptr, ds_ptr, parse_ptr, i)) {
+                return TCL_ERROR;
+            }
         } else if (next_token->type == TCL_TOKEN_TEXT) {
             Tcl_DStringAppend(ds_ptr, "{", 1);
             if (TCL_OK != thtml_TclAppendExpr_Token(interp, blocks_list_ptr, ds_ptr, parse_ptr, i + 1)) {
@@ -316,8 +319,11 @@ thtml_TclAppendExpr_Token(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DStr
         } else {
             // Otherwise, the subexpression is a value described by one of the token types TCL_TOKEN_WORD,
             // TCL_TOKEN_BS, TCL_TOKEN_COMMAND, TCL_TOKEN_VARIABLE, and TCL_TOKEN_SUB_EXPR.
-            return thtml_TclAppendExpr_Token(interp, blocks_list_ptr, ds_ptr, parse_ptr, i + 1);
+            if (TCL_OK != thtml_TclAppendExpr_Token(interp, blocks_list_ptr, ds_ptr, parse_ptr, i + 1)) {
+                return TCL_ERROR;
+            }
         }
+        Tcl_DStringAppend(ds_ptr, ")", 1);
     } else if (token->type == TCL_TOKEN_VARIABLE) {
         return thtml_TclAppendVariable(interp, blocks_list_ptr, ds_ptr, parse_ptr, i);
     } else if (token->type == TCL_TOKEN_TEXT) {
