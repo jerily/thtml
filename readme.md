@@ -51,13 +51,13 @@ Expected output:
 Template:
 ```html
 set template {
-    <tpl if="${value} eq 1">
+    <tpl if="${value} eq {one}">
         <div class="value1">Value is 1</div>
     </tpl>
-    <tpl if="${value} eq 2">
+    <tpl if="${value} eq {two}">
         <div class="value2">Value is 2</div>
     </tpl>
-    <tpl if="${value} eq 3">
+    <tpl if="${value} eq {three}">
         <div class="value3">Value is 3</div>
     </tpl>
 }
@@ -65,7 +65,7 @@ set template {
 
 TCL:
 ```tcl
-::thtml::render $template {value 1}
+::thtml::render $template {value one}
 ```
 
 Expected output:
