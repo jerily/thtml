@@ -34,7 +34,7 @@ proc ::thtml::compiler::compile_element {codearrVar node} {
     foreach attname [$node attributes] {
         set attvalue [$node @$attname]
         set compiled_attvalue [tcl_compile_template_text codearr \"$attvalue\"]
-        append compiled_element " ${attname}=\"${compiled_attvalue}\""
+        append compiled_element " ${attname}=\\\"${compiled_attvalue}\\\""
     }
 
     if { $tag in $EMPTY_ELEMENTS_IN_HTML } {

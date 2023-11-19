@@ -128,3 +128,24 @@ test if-5-command-in-template-text {} -body {
     set html [::thtml::render $template $data]
     escape $html
 } -result {<html><head><title>Hello, World!</title></head><body><h1>Hello, World!</h1><p>You are an adult. You are 2 digits [years] old.</p></body></html>}
+
+test if-6 {} -body {
+    set data {value one}
+    set template {
+        <html>
+            <body>
+                <tpl if='${value} eq "one"'>
+                    <div class="value1">Value is 1</div>
+                </tpl>
+                <tpl if='${value} eq "two"'>
+                    <div class="value2">Value is 2</div>
+                </tpl>
+                <tpl if='${value} eq "three"'>
+                    <div class="value3">Value is 3</div>
+                </tpl>
+            </body>
+        </html>
+    }
+    set html [::thtml::render $template $data]
+    escape $html
+} -result {<html><body><div class="value1">Value is 1</div></body></html>}

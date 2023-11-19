@@ -51,13 +51,13 @@ Expected output:
 Template:
 ```html
 set template {
-    <tpl if="${value} eq {one}">
+    <tpl if='${value} eq "one"'>
         <div class="value1">Value is 1</div>
     </tpl>
-    <tpl if="${value} eq {two}">
+    <tpl if='${value} eq "two"'>
         <div class="value2">Value is 2</div>
     </tpl>
-    <tpl if="${value} eq {three}">
+    <tpl if='${value} eq "three"'>
         <div class="value3">Value is 3</div>
     </tpl>
 }
