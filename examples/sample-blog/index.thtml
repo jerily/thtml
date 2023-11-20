@@ -1,0 +1,14 @@
+<html>
+<import name="Tabs" src="tabs.thtml" />
+<head>
+    <title>$title</title>
+</head>
+<body>
+    <Tabs />
+    <div>
+        <h1>$title</h1>
+        <p>$content</p>
+    </div>
+    <Tabs />
+</body>
+</html>
