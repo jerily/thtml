@@ -1,1 +1,4 @@
-<div>Tab1 | Tab2 | Tab3 | Tab4</div>
+<div>
+    <h2>$heading</h2>
+    Tab1 | Tab2 | Tab3 | Tab4
+</div>
