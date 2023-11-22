@@ -81,8 +81,10 @@ proc ::thtml::compiler::tcl_compile_statement_include {codearrVar node} {
     set template [read $fp]
     close $fp
 
-    dom parse $template doc
+    set escaped_template [string map {{&&} {&amp;&amp;}} $template]
+    dom parse -paramentityparsing never -- $escaped_template doc
     set root [$doc documentElement]
+    ::thtml::rewrite $root
 
     # replace the slave node with the children of the include node
     set slave [lindex [$root getElementsByTagName "slave"] 0]
