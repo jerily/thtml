@@ -24,7 +24,11 @@ make
 make install
 ```
 
-## Examples
+## Example
+
+See [sample-blog](examples/sample-blog/) for a complete example.
+
+## Supported Features
 
 ### foreach
 
