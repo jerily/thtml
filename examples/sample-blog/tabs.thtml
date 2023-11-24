@@ -1,4 +1,14 @@
+<tpl val="tabs">
+    return {{url / title Home} {url /blog title Blog}}
+</tpl>
 <div>
     <h2>$heading</h2>
-    Tab1 | Tab2 | Tab3 | Tab4
+    <tpl foreach="tab" in="$tabs" indexvar="i">
+        <tpl if="$path eq ${tab.url}">
+            <strong>${i}. ${tab.title}</strong>
+        </tpl>
+        <tpl if="$path ne ${tab.url}">
+            ${i}. <a href="${tab.url}">${tab.title}</a>
+        </tpl>
+    </tpl>
 </div>

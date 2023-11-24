@@ -67,7 +67,7 @@ proc ::thtml::renderfile {filename __data__} {
 
 proc ::thtml::compile {template target_lang} {
     set escaped_template [string map {{&&} {&amp;&amp;}} $template]
-    dom parse -paramentityparsing never -- $escaped_template doc
+    dom parse -paramentityparsing never -- <root>$escaped_template</root> doc
     set root [$doc documentElement]
 
     rewrite $root

@@ -1,0 +1,15 @@
+<html>
+    <head>
+        <title>$pagetitle</title>
+    </head>
+    <body>
+        <div>
+            <div style="display: flex">
+                <img src="/logo" />
+                <h1>$pagetitle</h1>
+            </div>
+            <slave />
+            <p>Your footer here</p>
+        </div>
+    </body>
+</html>

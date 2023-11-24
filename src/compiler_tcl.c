@@ -142,7 +142,7 @@ thtml_TclAppendVariable(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DStrin
                     } else {
                         if (TCL_OK !=
                                 thtml_TclAppendVariable_Dict(interp, ds_ptr, varname_first_part,
-                                                             varname_first_part_length, parts, num_parts)) {
+                                                             varname_first_part_length, &parts[1], num_parts - 1)) {
                             Tcl_DecrRefCount(parts_ptr);
                             return TCL_ERROR;
                         }
@@ -552,7 +552,9 @@ int thtml_TclCompileCommand(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DS
             first = 0;
         }
 
+        Tcl_DStringAppend(ds_ptr, "\"", 1);
         Tcl_DStringAppend(ds_ptr, bytes, length);
+        Tcl_DStringAppend(ds_ptr, "\"", 1);
         Tcl_DStringTrunc(&word_ds, 0);
 
         // fprintf(stderr, "i: %d / %d\n", i, parse_ptr->numTokens);

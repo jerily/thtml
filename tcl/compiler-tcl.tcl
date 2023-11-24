@@ -12,7 +12,9 @@ proc ::thtml::compiler::tcl_compile_root {codearrVar root} {
 
     set compiled_template ""
     append compiled_template "\n" "set ds \"\"" "\n"
-    append compiled_template [tcl_transform \x02[compile_helper codearr $root]\x03]
+    foreach child [$root childNodes] {
+        append compiled_template [tcl_transform \x02[compile_helper codearr $child]\x03]
+    }
     append compiled_template "\n" "return \$ds" "\n"
     return $compiled_template
 }
@@ -28,6 +30,7 @@ proc ::thtml::compiler::tcl_compile_statement_val {codearrVar node} {
 
     set compiled_statement ""
     append compiled_statement "\x03" "\n" "dict set __data__ {*}${chain_of_keys} \[::thtml::runtime::tcl::evaluate_script \{${compiled_script}\}\]" "\x02"
+    #append compiled_statement "\x03" "\n" "puts \"$chain_of_keys=\[dict get \$__data__ {*}${chain_of_keys}\]\"" "\x02"
     return $compiled_statement
 }
 
@@ -98,7 +101,7 @@ proc ::thtml::compiler::tcl_compile_statement_include {codearrVar node} {
     close $fp
 
     set escaped_template [string map {{&&} {&amp;&amp;}} $template]
-    dom parse -paramentityparsing never -- $escaped_template doc
+    dom parse -paramentityparsing never -- <root>$escaped_template</root> doc
     set root [$doc documentElement]
     ::thtml::rewrite $root
 
@@ -130,13 +133,19 @@ proc ::thtml::compiler::tcl_compile_statement_include {codearrVar node} {
         lappend argvalues [tcl_compile_quoted_string codearr \"[$node @$attname]\"]
     }
 
+    lappend argvalues "\$__data__"
+
     push_block codearr [list varnames $argnames stop 1 include [list filepath $filepath_from_rootdir filepath_md5 $filepath_md5]]
+
+    lappend argnames __data__
 
     append compiled_include "\n" "\# " $filepath_from_rootdir
     append compiled_include "\n" "proc ${proc_name} {${argnames}} \{"
-    append compiled_include "\n" "set __data__ \{\}" "\n"
+    #append compiled_include "\n" "set __data__ \{\}" "\n"
     append compiled_include "\n" "set ds \"\"" "\n"
-    append compiled_include [tcl_transform \x02[compile_helper codearr $root]\x03]
+    foreach child [$root childNodes] {
+        append compiled_include [tcl_transform \x02[compile_helper codearr $child]\x03]
+    }
     append compiled_include "\n" "return \$ds"
     append compiled_include "\n" "\}"
     #puts argvalues=$argvalues
