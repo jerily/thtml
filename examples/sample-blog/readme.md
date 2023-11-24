@@ -2,7 +2,7 @@
 
 [thtml](https://github.com/jerily/thtml) is web server agnostic.
 However, this example is based on [twebserver](https://github.com/jerily/twebserver)
-and you have to have installed in order to run this example.
+and you have to have it installed in order to run this example.
 
 To run the example:
 ```bash
