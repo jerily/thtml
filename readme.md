@@ -47,14 +47,14 @@ set template {
 TCL:
 ```tcl
 ::thtml::render $template {
-    item {
+    items {{
         name "item1"
         value "value1"
     }
-    item {
+    {
         name "item2"
         value "value2"
-    }
+    }}
 }
 ```
 
