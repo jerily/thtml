@@ -118,7 +118,7 @@ Expected output:
 
 Where ```header.thtml``` is:
 ```html
-<h1>@{title}</h1>
+<h1>$title</h1>
 ```
 
 And ```footer.thtml``` is:
