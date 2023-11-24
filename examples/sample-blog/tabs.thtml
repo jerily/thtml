@@ -3,12 +3,12 @@
 </tpl>
 <div>
     <h2>$heading</h2>
-    <tpl foreach="tab" in="$tabs" indexvar="i">
+    <tpl foreach="tab" in="$tabs">
         <tpl if="$path eq ${tab.url}">
-            <strong>${i}. ${tab.title}</strong>
+            <strong>${tab.title}</strong>
         </tpl>
         <tpl if="$path ne ${tab.url}">
-            ${i}. <a href="${tab.url}">${tab.title}</a>
+            <a href="${tab.url}">${tab.title}</a>
         </tpl>
     </tpl>
 </div>
