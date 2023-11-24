@@ -49,17 +49,33 @@ proc ::thtml::compiler::tcl_compile_statement_foreach {codearrVar node} {
     upvar $codearrVar codearr
 
     set foreach_varnames [$node @foreach]
+    set foreach_indexvar [$node @indexvar ""]
     set foreach_list [$node @in]
     set compiled_foreach_list [tcl_compile_quoted_string codearr \"$foreach_list\"]
 
     set compiled_statement ""
-    append compiled_statement "\x03" "\n" "foreach \{${foreach_varnames}\} \"${compiled_foreach_list}\" \{ " "\x02"
+    append compiled_statement "\x03"
 
-    push_block codearr [list varnames $foreach_varnames]
+    set varnames $foreach_varnames
+    if { $foreach_indexvar ne "" } {
+        append compiled_statement "\n" "set ${foreach_indexvar} 0" "\n"
+        lappend varnames $foreach_indexvar
+    }
+
+    append compiled_statement "\n" "foreach \{${foreach_varnames}\} \"${compiled_foreach_list}\" \{ "
+
+
+    append compiled_statement "\x02"
+
+    push_block codearr [list varnames $varnames]
     append compiled_statement [compile_children codearr $node]
     pop_block codearr
 
-    append compiled_statement "\x03" "\n" "\} " "\x02"
+    append compiled_statement "\x03"
+    if { $foreach_indexvar ne "" } {
+        append compiled_statement "\n" "incr ${foreach_indexvar}" "\n"
+    }
+    append compiled_statement "\n" "\} " "\x02"
     return $compiled_statement
 }
 

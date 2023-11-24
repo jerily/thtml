@@ -81,3 +81,27 @@ test nested-foreach-1 {} -body {
     }
     set html [::thtml::render $template $data]
 } -result {<html><head><title>Hello, World!</title></head><body><h1>Hello, World!</h1><p>1 is odd</p><p>2 is even</p><p>3 is odd</p><p>4 is even</p><p>5 is odd</p><p>6 is even</p></body></html>}
+
+
+test nested-foreach-2-indexvar {} -body {
+    set data {
+        title "Hello, World!"
+        items {{1 2} {3 4} {5 6}}
+    }
+    set template {
+        <html>
+            <head>
+                <title>${title}</title>
+            </head>
+            <body>
+                <h1>${title}</h1>
+                <tpl foreach="item" in="${items}" indexvar="i">
+                    <tpl foreach="subitem" in="${item}" indexvar="j">
+                        <p>element ${i},${j} = [lindex [lindex $items $i] $j] --> ${subitem} is <tpl if="${subitem} % 2 == 0">even</tpl><tpl if="${subitem} % 2 == 1">odd</tpl></p>
+                    </tpl>
+                </tpl>
+            </body>
+        </html>
+    }
+    set html [::thtml::render $template $data]
+} -result {<html><head><title>Hello, World!</title></head><body><h1>Hello, World!</h1><p>element 0,0 = 1 --> 1 is odd</p><p>element 0,1 = 2 --> 2 is even</p><p>element 1,0 = 3 --> 3 is odd</p><p>element 1,1 = 4 --> 4 is even</p><p>element 2,0 = 5 --> 5 is odd</p><p>element 2,1 = 6 --> 6 is even</p></body></html>}
