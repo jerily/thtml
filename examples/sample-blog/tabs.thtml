@@ -3,7 +3,8 @@
 </tpl>
 <div>
     <h2>$heading</h2>
-    <tpl foreach="tab" in="$tabs">
+    <tpl foreach="tab" in="$tabs" indexvar="i">
+        <tpl if="$i > 0"> | </tpl>
         <tpl if="$path eq ${tab.url}">
             <strong>${tab.title}</strong>
         </tpl>

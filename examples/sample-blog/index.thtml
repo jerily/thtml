@@ -1,11 +1,8 @@
 <import name="Master" src="master.thtml" />
-<import name="Tabs" src="tabs.thtml" />
 
 <Master pagetitle="thtml - HTML Templating Engine for twebserver">
-    <Tabs heading="top bar tabs"/>
     <div>
         <h1>$title</h1>
         <p>$content</p>
     </div>
-    <Tabs heading="bottom bar tabs"/>
 </Master>

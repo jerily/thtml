@@ -1,3 +1,4 @@
+<import name="Tabs" src="tabs.thtml" />
 <html>
     <head>
         <title>$pagetitle</title>
@@ -8,7 +9,9 @@
                 <img src="/logo" />
                 <h1>$pagetitle</h1>
             </div>
+            <Tabs heading="top bar tabs"/>
             <slave />
+            <Tabs heading="bottom bar tabs"/>
             <p>Your footer here</p>
         </div>
     </body>

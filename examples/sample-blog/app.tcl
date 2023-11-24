@@ -18,15 +18,8 @@ set init_script {
     # add a route that will be called if the request method is GET and the path is "/"
     ::twebserver::add_route -strict $router GET / get_index_page_handler
 
-    # add a route that has a path parameter called "user_id"
-    # when the route path expression matches, it will call "get_blog_entry_handler" proc
-    ::twebserver::add_route -strict $router GET /blog/:user_id/sayhi get_blog_entry_handler
-
-    # add a route that will be called if the request method is GET and the path is "/addr"
-    ::twebserver::add_route -strict $router GET /addr get_addr_handler
-
-    # add a route that will be called if the request method is POST and the path is "/example"
-    ::twebserver::add_route -strict $router POST /example post_example_handler
+    # add a route that will be called if the request method is GET and the path is "/blog"
+    ::twebserver::add_route -strict $router GET /blog get_blog_handler
 
     # add a route that will be called if the request method is GET and the path is "/logo"
     ::twebserver::add_route -strict $router GET /logo get_logo_handler
@@ -52,42 +45,20 @@ set init_script {
         return $res
     }
 
+    proc get_blog_handler {ctx req} {
+        set posts {
+            {title "My First Post" content "This is my first post"}
+            {title "My Second Post" content "This is my second post"}
+            {title "My Third Post" content "This is my third post"}
+        }
+        set data [dict merge $req [list posts $posts]]
+        set html [::thtml::renderfile blog.thtml $data]
+        set res [::twebserver::build_response 200 text/html $html]
+        return $res
+    }
+
     proc get_catchall_handler {ctx req} {
         set res [::twebserver::build_response 404 text/plain "not found"]
-        return $res
-    }
-
-    proc post_example_handler {ctx req} {
-        set form [::twebserver::get_form $req]
-        #puts form=$form
-
-        # build the response dictionary
-        set res [::twebserver::build_response 200 text/plain \
-            "test message POST addr=[dict get $ctx addr] headers=[dict get $req headers] fields=[dict get $form fields]"]
-
-        return $res
-    }
-
-    proc get_blog_entry_handler {ctx req} {
-
-        # get IP address of client from the context dictionary
-        set addr [dict get $ctx addr]
-
-        # get a boolean value from the context dictionary that indicates if the connection is secure
-        # it should be true when you make HTTPS requests to the server, false for HTTP requests
-        set isSecureProto [dict get $ctx isSecureProto]
-
-        # get a path parameter from the request dictionary
-        set user_id [::twebserver::get_path_param $req user_id]
-
-        # build the response dictionary
-        set res [::twebserver::build_response 200 text/plain \
-            "test message GET user_id=$user_id addr=$addr isSecureProto=$isSecureProto"]
-        return $res
-    }
-
-    proc get_addr_handler {ctx req} {
-        set res [::twebserver::build_response 200 text/plain "addr=[dict get $ctx addr]"]
         return $res
     }
 
