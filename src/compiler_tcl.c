@@ -469,13 +469,13 @@ int thtml_TclAppendCommand_Token(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, T
                 return TCL_ERROR;
             }
 
-            Tcl_DStringAppend(ds_ptr, "{", 1);
+//            Tcl_DStringAppend(ds_ptr, "{", 1);
             if (TCL_OK != thtml_TclCompileQuotedString(interp, blocks_list_ptr, ds_ptr, &subtext_parse)) {
                 Tcl_DStringFree(&subtext_ds);
                 Tcl_FreeParse(&subtext_parse);
                 return TCL_ERROR;
             }
-            Tcl_DStringAppend(ds_ptr, "}", 1);
+//            Tcl_DStringAppend(ds_ptr, "}", 1);
             Tcl_DStringFree(&subtext_ds);
             Tcl_FreeParse(&subtext_parse);
         } else {
