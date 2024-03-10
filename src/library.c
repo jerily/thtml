@@ -279,7 +279,7 @@ static int thtml_TclCompileScriptCmd(ClientData  clientData, Tcl_Interp *interp,
 
     const char *end = text + text_length;
     const char *start = text;
-    int numBytes = text_length;
+    Tcl_Size numBytes = text_length;
     while (start < end) {
         // fprintf(stderr, "start=%.*s\n", end-start, start);
         Tcl_Parse parse;
@@ -308,7 +308,7 @@ static int thtml_Md5Cmd(ClientData  clientData, Tcl_Interp *interp, int objc, Tc
 
     CheckArgs(2,2,1,"text");
 
-    int text_length;
+    Tcl_Size text_length;
     char *text = Tcl_GetStringFromObj(objv[1], &text_length);
 
     unsigned char result[16];
@@ -334,7 +334,12 @@ void thtml_InitModule() {
 }
 
 int Thtml_Init(Tcl_Interp *interp) {
-    if (Tcl_InitStubs(interp, "8.6", 0) == NULL) {
+
+    int major, minor, patchLevel, type;
+    Tcl_GetVersion(&major, &minor, &patchLevel, &type);
+
+    const char *version = major == 9 ? "9.0" : "8.6";
+    if (Tcl_InitStubs(interp, version, 0) == NULL) {
         return TCL_ERROR;
     }
 

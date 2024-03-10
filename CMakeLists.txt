@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.22.1)
-project(thtml LANGUAGES VERSION 1.0.0 CXX C)
+project(thtml LANGUAGES VERSION 1.0.1 CXX C)
 
 set(TARGET thtml)
 set(CMAKE_C_STANDARD   11)

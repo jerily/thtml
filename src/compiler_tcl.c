@@ -13,7 +13,7 @@ thtml_TclAppendExpr_Token(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DStr
                           int i);
 
 static int thtml_TclAppendVariable_Simple(Tcl_Interp *interp, Tcl_DString *ds_ptr, const char *varname_first_part,
-                                          int varname_first_part_length) {
+                                          Tcl_Size varname_first_part_length) {
     Tcl_DStringAppend(ds_ptr, "$", 1);
     Tcl_DStringAppend(ds_ptr, varname_first_part, varname_first_part_length);
     return TCL_OK;
@@ -34,7 +34,7 @@ thtml_TclAppendVariable_Dict(Tcl_Interp *interp, Tcl_DString *ds_ptr, const char
             Tcl_DStringAppend(ds_ptr, " ", 1);
         }
         Tcl_Obj *part_ptr = parts[i];
-        int part_length;
+        Tcl_Size part_length;
         const char *part = Tcl_GetStringFromObj(part_ptr, &part_length);
         Tcl_DStringAppend(ds_ptr, part, part_length);
     }
@@ -112,18 +112,18 @@ thtml_TclAppendVariable(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DStrin
             Tcl_Obj *varname_first_part_ptr = parts[0];
 
             // for each "block_varname_ptr" in "variables_ptr", compare it with "varname_first_part_ptr"
-            int num_variables;
+            Tcl_Size num_variables;
             Tcl_Obj **variables;
             if (TCL_OK != Tcl_ListObjGetElements(interp, variables_ptr, &num_variables, &variables)) {
                 Tcl_DecrRefCount(parts_ptr);
                 return TCL_ERROR;
             }
 
-            int varname_first_part_length;
+            Tcl_Size varname_first_part_length;
             const char *varname_first_part = Tcl_GetStringFromObj(varname_first_part_ptr, &varname_first_part_length);
             for (int k = 0; k < num_variables; k++) {
                 Tcl_Obj *block_varname_ptr = variables[k];
-                int block_varname_length;
+                Tcl_Size block_varname_length;
                 char *block_varname = Tcl_GetStringFromObj(block_varname_ptr, &block_varname_length);
 
 //                fprintf(stderr, "block_varname: %s\n", block_varname);
@@ -555,7 +555,7 @@ int thtml_TclCompileCommand(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DS
         Tcl_DStringAppend(ds_ptr, "\"", 1);
         Tcl_DStringAppend(ds_ptr, bytes, length);
         Tcl_DStringAppend(ds_ptr, "\"", 1);
-        Tcl_DStringTrunc(&word_ds, 0);
+        Tcl_DStringSetLength(&word_ds, 0);
 
         // fprintf(stderr, "i: %d / %d\n", i, parse_ptr->numTokens);
     }
