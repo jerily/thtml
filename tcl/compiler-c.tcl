@@ -45,7 +45,7 @@ proc ::thtml::compiler::c_compile_statement_if {codearrVar node} {
     set compiled_conditional [c_compile_expr codearr $conditional "flag${conditional_num}"]
 
     set compiled_statement ""
-    append compiled_statement $compiled_conditional
+    append compiled_statement "\x03" "\n" $compiled_conditional "\x02"
     append compiled_statement "\x03" "\n" "if ( __flag${conditional_num}__ ) \{ " "\x02"
     append compiled_statement [compile_children codearr $node]
     append compiled_statement "\x03" "\n" "\} " "\x02"
