@@ -11,10 +11,11 @@ namespace eval ::thtml::compiler {
 
 proc ::thtml::compiler::compile_helper {codearrVar node} {
     upvar $codearrVar codearr
+    set target_lang $codearr(target_lang)
 
     set node_type [$node nodeType]
     if { $node_type eq {TEXT_NODE} } {
-        return [tcl_compile_template_text codearr \"[$node nodeValue]\"]
+        return [${target_lang}_compile_template_text codearr \"[$node nodeValue]\"]
     } elseif { $node_type eq {ELEMENT_NODE} } {
         set tag [$node tagName]
         if { $tag eq {tpl} } {
@@ -27,13 +28,15 @@ proc ::thtml::compiler::compile_helper {codearrVar node} {
 
 proc ::thtml::compiler::compile_element {codearrVar node} {
     upvar $codearrVar codearr
+    set target_lang $codearr(target_lang)
+
     variable EMPTY_ELEMENTS_IN_HTML
 
     set tag [$node tagName]
     set compiled_element "<${tag}"
     foreach attname [$node attributes] {
         set attvalue [$node @$attname]
-        set compiled_attvalue [tcl_compile_template_text codearr \"$attvalue\"]
+        set compiled_attvalue [${target_lang}_compile_template_text codearr \"$attvalue\"]
         append compiled_element " ${attname}=\\\"${compiled_attvalue}\\\""
     }
 

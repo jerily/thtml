@@ -1,15 +1,15 @@
 /**
  * Copyright Jerily LTD. All Rights Reserved.
- * SPDX-FileCopyrightText: 2023 Neofytos Dimitriou (neo@jerily.cy)
+ * SPDX-FileCopyrightText: 2024 Neofytos Dimitriou (neo@jerily.cy)
  * SPDX-License-Identifier: MIT.
  */
 
-#include "compiler_tcl.h"
+#include "compiler_c.h"
+#include "md5.h"
 #include <ctype.h>
 #include <string.h>
 
-
-int thtml_TclTransformCmd(ClientData  clientData, Tcl_Interp *interp, int objc, Tcl_Obj * const objv[]) {
+int thtml_CTransformCmd(ClientData  clientData, Tcl_Interp *interp, int objc, Tcl_Obj * const objv[]) {
     DBG(fprintf(stderr, "TclTransformCmd\n"));
 
     CheckArgs(2,2,1,"intermediate_code");
@@ -43,9 +43,9 @@ int thtml_TclTransformCmd(ClientData  clientData, Tcl_Interp *interp, int objc, 
         const char *q = p;
         while (q < end) {
             if (*q == '\x03') {
-                Tcl_DStringAppend(&ds, "\nappend ds \"", 12);
+                Tcl_DStringAppend(&ds, "\nTcl_DStringAppend(__ds_ptr__, \"", -1);
                 thtml_AppendEscaped(p, q, &ds);
-                Tcl_DStringAppend(&ds, "\"\n", 2);
+                Tcl_DStringAppend(&ds, "\", -1);\n", -1);
                 break;
             }
             q++;
@@ -79,13 +79,16 @@ int thtml_TclTransformCmd(ClientData  clientData, Tcl_Interp *interp, int objc, 
     return TCL_OK;
 }
 
-int thtml_TclCompileExprCmd(ClientData  clientData, Tcl_Interp *interp, int objc, Tcl_Obj * const objv[]) {
-    DBG(fprintf(stderr, "TclCompileExprCmd\n"));
+int thtml_CCompileExprCmd(ClientData  clientData, Tcl_Interp *interp, int objc, Tcl_Obj * const objv[]) {
+    DBG(fprintf(stderr, "CCompileExprCmd\n"));
 
-    CheckArgs(3, 3, 1, "codearrVar text");
+    CheckArgs(4, 4, 1, "codearrVar text name");
 
     Tcl_Size text_length;
     char *text = Tcl_GetStringFromObj(objv[2], &text_length);
+
+    Tcl_Size name_length;
+    char *name = Tcl_GetStringFromObj(objv[3], &name_length);
 
     Tcl_Parse parse;
     if (TCL_OK != Tcl_ParseExpr(interp, text, text_length, &parse)) {
@@ -107,7 +110,7 @@ int thtml_TclCompileExprCmd(ClientData  clientData, Tcl_Interp *interp, int objc
     Tcl_DString ds;
     Tcl_DStringInit(&ds);
 
-    if (TCL_OK != thtml_TclCompileExpr(interp, blocks_list_ptr, &ds, &parse)) {
+    if (TCL_OK != thtml_CCompileExpr(interp, blocks_list_ptr, &ds, &parse, name)) {
         Tcl_FreeParse(&parse);
         Tcl_DStringFree(&ds);
         return TCL_ERROR;
@@ -119,8 +122,8 @@ int thtml_TclCompileExprCmd(ClientData  clientData, Tcl_Interp *interp, int objc
     return TCL_OK;
 }
 
-int thtml_TclCompileQuotedStringCmd(ClientData  clientData, Tcl_Interp *interp, int objc, Tcl_Obj * const objv[]) {
-    DBG(fprintf(stderr, "TclCompileQuotedStringCmd\n"));
+int thtml_CCompileQuotedStringCmd(ClientData  clientData, Tcl_Interp *interp, int objc, Tcl_Obj * const objv[]) {
+    DBG(fprintf(stderr, "CCompileQuotedStringCmd\n"));
 
     CheckArgs(3, 3, 1, "codearrVar text");
 
@@ -147,7 +150,7 @@ int thtml_TclCompileQuotedStringCmd(ClientData  clientData, Tcl_Interp *interp, 
     Tcl_DString ds;
     Tcl_DStringInit(&ds);
 
-    if (TCL_OK != thtml_TclCompileQuotedString(interp, blocks_list_ptr, &ds, &parse)) {
+    if (TCL_OK != thtml_CCompileQuotedString(interp, blocks_list_ptr, &ds, &parse)) {
         Tcl_FreeParse(&parse);
         Tcl_DStringFree(&ds);
         return TCL_ERROR;
@@ -159,8 +162,8 @@ int thtml_TclCompileQuotedStringCmd(ClientData  clientData, Tcl_Interp *interp, 
     return TCL_OK;
 }
 
-int thtml_TclCompileTemplateTextCmd(ClientData  clientData, Tcl_Interp *interp, int objc, Tcl_Obj * const objv[]) {
-    DBG(fprintf(stderr, "TclCompileTemplateTextCmd\n"));
+int thtml_CCompileTemplateTextCmd(ClientData  clientData, Tcl_Interp *interp, int objc, Tcl_Obj * const objv[]) {
+    DBG(fprintf(stderr, "CCompileTemplateTextCmd\n"));
 
     CheckArgs(3, 3, 1, "codearrVar text");
 
@@ -222,7 +225,7 @@ int thtml_TclCompileTemplateTextCmd(ClientData  clientData, Tcl_Interp *interp, 
     Tcl_DString ds;
     Tcl_DStringInit(&ds);
 
-    if (TCL_OK != thtml_TclCompileTemplateText(interp, blocks_list_ptr, &ds, &parse)) {
+    if (TCL_OK != thtml_CCompileTemplateText(interp, blocks_list_ptr, &ds, &parse)) {
         Tcl_FreeParse(&parse);
         Tcl_DStringFree(&ds);
         return TCL_ERROR;
@@ -234,8 +237,8 @@ int thtml_TclCompileTemplateTextCmd(ClientData  clientData, Tcl_Interp *interp, 
     return TCL_OK;
 }
 
-int thtml_TclCompileScriptCmd(ClientData  clientData, Tcl_Interp *interp, int objc, Tcl_Obj * const objv[]) {
-    DBG(fprintf(stderr, "TclCompileScriptCmd\n"));
+int thtml_CCompileScriptCmd(ClientData  clientData, Tcl_Interp *interp, int objc, Tcl_Obj * const objv[]) {
+    DBG(fprintf(stderr, "CCompileScriptCmd\n"));
 
     CheckArgs(3, 3, 1, "codearrVar text");
 
@@ -266,7 +269,7 @@ int thtml_TclCompileScriptCmd(ClientData  clientData, Tcl_Interp *interp, int ob
             return TCL_ERROR;
         }
 
-        if (TCL_OK != thtml_TclCompileCommand(interp, blocks_list_ptr, &ds, &parse)) {
+        if (TCL_OK != thtml_CCompileCommand(interp, blocks_list_ptr, &ds, &parse)) {
             Tcl_FreeParse(&parse);
             Tcl_DStringFree(&ds);
             return TCL_ERROR;
@@ -281,25 +284,28 @@ int thtml_TclCompileScriptCmd(ClientData  clientData, Tcl_Interp *interp, int ob
     return TCL_OK;
 }
 
-
 static int
-thtml_TclAppendExpr_Token(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DString *ds_ptr, Tcl_Parse *parse_ptr,
-                          int i);
+thtml_CAppendExpr_Token(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DString *ds_ptr, Tcl_Parse *parse_ptr,
+                          int i, const char *name);
 
-static int thtml_TclAppendVariable_Simple(Tcl_Interp *interp, Tcl_DString *ds_ptr, const char *varname_first_part,
+static int thtml_CAppendVariable_Simple(Tcl_Interp *interp, Tcl_DString *ds_ptr, const char *varname_first_part,
                                           Tcl_Size varname_first_part_length) {
-    Tcl_DStringAppend(ds_ptr, "$", 1);
+    Tcl_DStringAppend(ds_ptr, "Tcl_GetString(", -1);
     Tcl_DStringAppend(ds_ptr, varname_first_part, varname_first_part_length);
+    Tcl_DStringAppend(ds_ptr, ")", -1);
     return TCL_OK;
 }
 
 static int
-thtml_TclAppendVariable_Dict(Tcl_Interp *interp, Tcl_DString *ds_ptr, const char *varname_first_part,
-                             int varname_first_part_length, Tcl_Obj **parts,
-                             int num_parts) {
-    Tcl_DStringAppend(ds_ptr, "[dict get $", 11);
-    Tcl_DStringAppend(ds_ptr, varname_first_part, varname_first_part_length);
-    Tcl_DStringAppend(ds_ptr, " {", 2);
+thtml_CAppendVariable_Dict(Tcl_Interp *interp, Tcl_DString *ds_ptr, const char *varname_first_part,
+                             Tcl_Size varname_first_part_length, Tcl_Obj **parts,
+                             Tcl_Size num_parts, const char *ds_name) {
+
+    static int count_var_dict_subst = 0;
+    count_var_dict_subst++;
+    char count_var_dict_subst_str[12];
+    snprintf(count_var_dict_subst_str, 12, "%d", count_var_dict_subst);
+
     int first = 1;
     for (int i = 0; i < num_parts; i++) {
         if (first) {
@@ -310,17 +316,51 @@ thtml_TclAppendVariable_Dict(Tcl_Interp *interp, Tcl_DString *ds_ptr, const char
         Tcl_Obj *part_ptr = parts[i];
         Tcl_Size part_length;
         const char *part = Tcl_GetStringFromObj(part_ptr, &part_length);
+
+        Tcl_DStringAppend(ds_ptr, "\nTcl_Obj *", -1);
         Tcl_DStringAppend(ds_ptr, part, part_length);
+        Tcl_DStringAppend(ds_ptr, count_var_dict_subst_str, -1);
+
+        Tcl_DStringAppend(ds_ptr, ";", -1);
+        Tcl_DStringAppend(ds_ptr, "\nTcl_Obj *__", -1);
+        Tcl_DStringAppend(ds_ptr, part, part_length);
+        Tcl_DStringAppend(ds_ptr, count_var_dict_subst_str, -1);
+        Tcl_DStringAppend(ds_ptr, "_key_ptr__ = Tcl_NewStringObj(\"", -1);
+        Tcl_DStringAppend(ds_ptr, part, part_length);
+        Tcl_DStringAppend(ds_ptr, "\", -1);", -1);
+        Tcl_DStringAppend(ds_ptr, "\nTcl_IncrRefCount(__", -1);
+        Tcl_DStringAppend(ds_ptr, part, part_length);
+        Tcl_DStringAppend(ds_ptr, count_var_dict_subst_str, -1);
+        Tcl_DStringAppend(ds_ptr, "_key_ptr__);", -1);
+        Tcl_DStringAppend(ds_ptr, "\nif (TCL_OK != Tcl_DictObjGet(__interp__, ", -1);
+        // TODO: this is a chain of keys, we need to get the name of the previous part in the chain
+        Tcl_DStringAppend(ds_ptr, varname_first_part, varname_first_part_length);
+        Tcl_DStringAppend(ds_ptr, ", __", -1);
+        Tcl_DStringAppend(ds_ptr, part, part_length);
+        Tcl_DStringAppend(ds_ptr, count_var_dict_subst_str, -1);
+        Tcl_DStringAppend(ds_ptr, "_key_ptr__, &", -1);
+        Tcl_DStringAppend(ds_ptr, part, part_length);
+        Tcl_DStringAppend(ds_ptr, count_var_dict_subst_str, -1);
+        Tcl_DStringAppend(ds_ptr, ")) { return TCL_ERROR; }", -1);
+        Tcl_DStringAppend(ds_ptr, "\nTcl_DecrRefCount(__", -1);
+        Tcl_DStringAppend(ds_ptr, part, part_length);
+        Tcl_DStringAppend(ds_ptr, count_var_dict_subst_str, -1);
+        Tcl_DStringAppend(ds_ptr, "_key_ptr__);", -1);
+        Tcl_DStringAppend(ds_ptr, "\nTcl_DStringAppend(", -1);
+        Tcl_DStringAppend(ds_ptr, ds_name, -1);
+        Tcl_DStringAppend(ds_ptr, ", Tcl_GetString(", -1);
+        Tcl_DStringAppend(ds_ptr, part, part_length);
+        Tcl_DStringAppend(ds_ptr, count_var_dict_subst_str, -1);
+        Tcl_DStringAppend(ds_ptr, "), -1);\n", -1);
     }
-    Tcl_DStringAppend(ds_ptr, "}]", 2);
     return TCL_OK;
 }
 
 static int
-thtml_TclAppendVariable(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DString *ds_ptr, Tcl_Parse *parse_ptr,
-                        int i) {
+thtml_CAppendVariable(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DString *ds_ptr, Tcl_Parse *parse_ptr,
+                        int i, const char *ds_name) {
     Tcl_Token *token = &parse_ptr->tokenPtr[i];
-    int numComponents = token->numComponents;
+    Tcl_Size numComponents = token->numComponents;
     if (numComponents == 1) {
         Tcl_Token *text_token = &parse_ptr->tokenPtr[i + 1];
 
@@ -346,7 +386,7 @@ thtml_TclAppendVariable(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DStrin
         }
 
         // figure out whether it is a simple var or a dict reference
-        int num_parts;
+        Tcl_Size num_parts;
         Tcl_Obj **parts;
         if (TCL_OK != Tcl_ListObjGetElements(interp, parts_ptr, &num_parts, &parts)) {
             Tcl_DecrRefCount(parts_ptr);
@@ -354,7 +394,7 @@ thtml_TclAppendVariable(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DStrin
         }
 
         // iterate "blocks_list_ptr"
-        int num_blocks;
+        Tcl_Size num_blocks;
         Tcl_Obj **blocks;
         if (TCL_OK != Tcl_ListObjGetElements(interp, blocks_list_ptr, &num_blocks, &blocks)) {
             Tcl_DecrRefCount(parts_ptr);
@@ -408,15 +448,15 @@ thtml_TclAppendVariable(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DStrin
                     0 == strncmp(block_varname, varname_first_part, block_varname_length)) {
                     // found a match
                     if (num_parts == 1) {
-                        if (TCL_OK != thtml_TclAppendVariable_Simple(interp, ds_ptr, varname_first_part,
+                        if (TCL_OK != thtml_CAppendVariable_Simple(interp, ds_ptr, varname_first_part,
                                                                      varname_first_part_length)) {
                             Tcl_DecrRefCount(parts_ptr);
                             return TCL_ERROR;
                         }
                     } else {
                         if (TCL_OK !=
-                                thtml_TclAppendVariable_Dict(interp, ds_ptr, varname_first_part,
-                                                             varname_first_part_length, &parts[1], num_parts - 1)) {
+                                thtml_CAppendVariable_Dict(interp, ds_ptr, varname_first_part,
+                                                             varname_first_part_length, &parts[1], num_parts - 1, ds_name)) {
                             Tcl_DecrRefCount(parts_ptr);
                             return TCL_ERROR;
                         }
@@ -443,7 +483,7 @@ thtml_TclAppendVariable(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DStrin
         }
 
         if (TCL_OK !=
-                thtml_TclAppendVariable_Dict(interp, ds_ptr, "__data__", 8, parts, num_parts)) {
+                thtml_CAppendVariable_Dict(interp, ds_ptr, "__data__", 8, parts, num_parts, ds_name)) {
             Tcl_DecrRefCount(parts_ptr);
             return TCL_ERROR;
         }
@@ -457,15 +497,15 @@ thtml_TclAppendVariable(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DStrin
 }
 
 static int
-thtml_TclAppendExpr_Operator(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DString *ds_ptr, Tcl_Parse *parse_ptr,
-                             int i) {
+thtml_CAppendExpr_Operator(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DString *ds_ptr, Tcl_Parse *parse_ptr,
+                             int i, const char *name) {
     Tcl_Token *subexpr_token = &parse_ptr->tokenPtr[i];
     Tcl_Token *operator_token = &parse_ptr->tokenPtr[i + 1];
     int operands_offset = i + 2;
 
     // The numComponents field for a TCL_TOKEN_OPERATOR token is always 0
     // So, we get numComponents from the TCL_TOKEN_SUB_EXPR token that precedes it
-    int num_components = subexpr_token->numComponents;
+    Tcl_Size num_components = subexpr_token->numComponents;
 
     int num_operands = 0;
     int j = 0;
@@ -490,7 +530,7 @@ thtml_TclAppendExpr_Operator(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_D
             // one operand
 
             Tcl_DStringAppend(ds_ptr, operator_token->start, operator_token->size);
-            if (TCL_OK != thtml_TclAppendExpr_Token(interp, blocks_list_ptr, ds_ptr, parse_ptr, operands_offset)) {
+            if (TCL_OK != thtml_CAppendExpr_Token(interp, blocks_list_ptr, ds_ptr, parse_ptr, operands_offset, name)) {
                 return TCL_ERROR;
             }
 
@@ -501,14 +541,14 @@ thtml_TclAppendExpr_Operator(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_D
             // two operands
             Tcl_Token *first_operand = &parse_ptr->tokenPtr[operands_offset];
             // fprintf(stderr, "first_operand of op: %c has numComponents: %d\n", ch, first_operand->numComponents);
-            if (TCL_OK != thtml_TclAppendExpr_Token(interp, blocks_list_ptr, ds_ptr, parse_ptr, operands_offset)) {
+            if (TCL_OK != thtml_CAppendExpr_Token(interp, blocks_list_ptr, ds_ptr, parse_ptr, operands_offset, name)) {
                 return TCL_ERROR;
             }
             Tcl_DStringAppend(ds_ptr, " ", 1);
             Tcl_DStringAppend(ds_ptr, operator_token->start, operator_token->size);
             Tcl_DStringAppend(ds_ptr, " ", 1);
-            if (TCL_OK != thtml_TclAppendExpr_Token(interp, blocks_list_ptr, ds_ptr, parse_ptr,
-                                                    operands_offset + first_operand->numComponents + 1)) {
+            if (TCL_OK != thtml_CAppendExpr_Token(interp, blocks_list_ptr, ds_ptr, parse_ptr,
+                                                    operands_offset + first_operand->numComponents + 1, name)) {
                 return TCL_ERROR;
             }
 
@@ -521,17 +561,17 @@ thtml_TclAppendExpr_Operator(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_D
             int third_operand_index = second_operand_index + second_operand->numComponents + 1;
 
             // fprintf(stderr, "first_operand of op: %c has numComponents: %d\n", ch, first_operand->numComponents);
-            if (TCL_OK != thtml_TclAppendExpr_Token(interp, blocks_list_ptr, ds_ptr, parse_ptr, operands_offset)) {
+            if (TCL_OK != thtml_CAppendExpr_Token(interp, blocks_list_ptr, ds_ptr, parse_ptr, operands_offset, name)) {
                 return TCL_ERROR;
             }
             Tcl_DStringAppend(ds_ptr, " ", 1);
             Tcl_DStringAppend(ds_ptr, operator_token->start, operator_token->size);
             Tcl_DStringAppend(ds_ptr, " ", 1);
-            if (TCL_OK != thtml_TclAppendExpr_Token(interp, blocks_list_ptr, ds_ptr, parse_ptr, second_operand_index)) {
+            if (TCL_OK != thtml_CAppendExpr_Token(interp, blocks_list_ptr, ds_ptr, parse_ptr, second_operand_index, name)) {
                 return TCL_ERROR;
             }
             Tcl_DStringAppend(ds_ptr, " : ", 3);
-            if (TCL_OK != thtml_TclAppendExpr_Token(interp, blocks_list_ptr, ds_ptr, parse_ptr, third_operand_index)) {
+            if (TCL_OK != thtml_CAppendExpr_Token(interp, blocks_list_ptr, ds_ptr, parse_ptr, third_operand_index, name)) {
                 return TCL_ERROR;
             }
         } else {
@@ -548,14 +588,14 @@ thtml_TclAppendExpr_Operator(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_D
             // two operands
 
             Tcl_Token *first_operand = &parse_ptr->tokenPtr[operands_offset];
-            if (TCL_OK != thtml_TclAppendExpr_Token(interp, blocks_list_ptr, ds_ptr, parse_ptr, operands_offset)) {
+            if (TCL_OK != thtml_CAppendExpr_Token(interp, blocks_list_ptr, ds_ptr, parse_ptr, operands_offset, name)) {
                 return TCL_ERROR;
             }
             Tcl_DStringAppend(ds_ptr, " ", 1);
             Tcl_DStringAppend(ds_ptr, operator_token->start, operator_token->size);
             Tcl_DStringAppend(ds_ptr, " ", 1);
-            if (TCL_OK != thtml_TclAppendExpr_Token(interp, blocks_list_ptr, ds_ptr, parse_ptr,
-                                                    operands_offset + first_operand->numComponents + 1)) {
+            if (TCL_OK != thtml_CAppendExpr_Token(interp, blocks_list_ptr, ds_ptr, parse_ptr,
+                                                    operands_offset + first_operand->numComponents + 1, name)) {
                 return TCL_ERROR;
             }
 
@@ -572,8 +612,8 @@ thtml_TclAppendExpr_Operator(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_D
 }
 
 static int
-thtml_TclAppendExpr_Token(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DString *ds_ptr, Tcl_Parse *parse_ptr,
-                          int i) {
+thtml_CAppendExpr_Token(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DString *ds_ptr, Tcl_Parse *parse_ptr,
+                          int i, const char *name) {
     Tcl_Token *token = &parse_ptr->tokenPtr[i];
     if (token->type == TCL_TOKEN_SUB_EXPR) {
         Tcl_Token *next_token = &parse_ptr->tokenPtr[i + 1];
@@ -581,25 +621,25 @@ thtml_TclAppendExpr_Token(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DStr
         if (next_token->type == TCL_TOKEN_OPERATOR) {
             // If the first sub-token after the TCL_TOKEN_SUB_EXPR token is a TCL_TOKEN_OPERATOR token,
             // the subexpression consists of an operator and its token operands.
-            if (TCL_OK != thtml_TclAppendExpr_Operator(interp, blocks_list_ptr, ds_ptr, parse_ptr, i)) {
+            if (TCL_OK != thtml_CAppendExpr_Operator(interp, blocks_list_ptr, ds_ptr, parse_ptr, i, name)) {
                 return TCL_ERROR;
             }
         } else if (next_token->type == TCL_TOKEN_TEXT) {
             Tcl_DStringAppend(ds_ptr, "{", 1);
-            if (TCL_OK != thtml_TclAppendExpr_Token(interp, blocks_list_ptr, ds_ptr, parse_ptr, i + 1)) {
+            if (TCL_OK != thtml_CAppendExpr_Token(interp, blocks_list_ptr, ds_ptr, parse_ptr, i + 1, name)) {
                 return TCL_ERROR;
             }
             Tcl_DStringAppend(ds_ptr, "}", 1);
         } else {
             // Otherwise, the subexpression is a value described by one of the token types TCL_TOKEN_WORD,
             // TCL_TOKEN_BS, TCL_TOKEN_COMMAND, TCL_TOKEN_VARIABLE, and TCL_TOKEN_SUB_EXPR.
-            if (TCL_OK != thtml_TclAppendExpr_Token(interp, blocks_list_ptr, ds_ptr, parse_ptr, i + 1)) {
+            if (TCL_OK != thtml_CAppendExpr_Token(interp, blocks_list_ptr, ds_ptr, parse_ptr, i + 1, name)) {
                 return TCL_ERROR;
             }
         }
         Tcl_DStringAppend(ds_ptr, ")", 1);
     } else if (token->type == TCL_TOKEN_VARIABLE) {
-        return thtml_TclAppendVariable(interp, blocks_list_ptr, ds_ptr, parse_ptr, i);
+        return thtml_CAppendVariable(interp, blocks_list_ptr, ds_ptr, parse_ptr, i, "__ds_ptr__");
     } else if (token->type == TCL_TOKEN_TEXT) {
         Tcl_DStringAppend(ds_ptr, token->start, token->size);
     } else if (token->type == TCL_TOKEN_COMMAND) {
@@ -610,7 +650,7 @@ thtml_TclAppendExpr_Token(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DStr
         }
 
         Tcl_DStringAppend(ds_ptr, "[", 1);
-        if (TCL_OK != thtml_TclCompileCommand(interp, blocks_list_ptr, ds_ptr, &subcmd_parse)) {
+        if (TCL_OK != thtml_CCompileCommand(interp, blocks_list_ptr, ds_ptr, &subcmd_parse)) {
             Tcl_FreeParse(&subcmd_parse);
             return TCL_ERROR;
         }
@@ -622,7 +662,7 @@ thtml_TclAppendExpr_Token(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DStr
     } else if (token->type == TCL_TOKEN_WORD) {
         Tcl_DStringAppend(ds_ptr, "\"", 1);
         for (int j = 0; j < token->numComponents; j++) {
-            if (TCL_OK != thtml_TclAppendExpr_Token(interp, blocks_list_ptr, ds_ptr, parse_ptr, i + 1 + j)) {
+            if (TCL_OK != thtml_CAppendExpr_Token(interp, blocks_list_ptr, ds_ptr, parse_ptr, i + 1 + j, name)) {
                 return TCL_ERROR;
             }
         }
@@ -635,19 +675,19 @@ thtml_TclAppendExpr_Token(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DStr
     return TCL_OK;
 }
 
-int thtml_TclCompileExpr(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DString *ds_ptr, Tcl_Parse *parse_ptr) {
+int thtml_CCompileExpr(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DString *ds_ptr, Tcl_Parse *parse_ptr, const char *name) {
     // After Tcl_ParseExpr returns, the first token pointed to by the tokenPtr field of the Tcl_Parse structure
     // always has type TCL_TOKEN_SUB_EXPR. It is followed by the sub-tokens that must be evaluated to produce
     // the value of the expression. Only the token information in the Tcl_Parse structure is modified:
     // the commentStart, commentSize, commandStart, and commandSize fields are not modified by Tcl_ParseExpr.
-    if (TCL_OK != thtml_TclAppendExpr_Token(interp, blocks_list_ptr, ds_ptr, parse_ptr, 0)) {
+    if (TCL_OK != thtml_CAppendExpr_Token(interp, blocks_list_ptr, ds_ptr, parse_ptr, 0, name)) {
         return TCL_ERROR;
     }
     return TCL_OK;
 }
 
 int
-thtml_TclCompileQuotedString(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DString *ds_ptr, Tcl_Parse *parse_ptr) {
+thtml_CCompileQuotedString(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DString *ds_ptr, Tcl_Parse *parse_ptr) {
     for (int i = 0; i < parse_ptr->numTokens; i++) {
         Tcl_Token *token = &parse_ptr->tokenPtr[i];
         if (token->type == TCL_TOKEN_TEXT) {
@@ -658,7 +698,7 @@ thtml_TclCompileQuotedString(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_D
             SetResult("error parsing quoted string: command substitution not supported");
             return TCL_ERROR;
         } else if (token->type == TCL_TOKEN_VARIABLE) {
-            if (TCL_OK != thtml_TclAppendVariable(interp, blocks_list_ptr, ds_ptr, parse_ptr, i)) {
+            if (TCL_OK != thtml_CAppendVariable(interp, blocks_list_ptr, ds_ptr, parse_ptr, i, "__ds_ptr__")) {
                 return TCL_ERROR;
             }
             i++;
@@ -672,7 +712,7 @@ thtml_TclCompileQuotedString(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_D
 }
 
 int
-thtml_TclCompileTemplateText(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DString *ds_ptr, Tcl_Parse *parse_ptr) {
+thtml_CCompileTemplateText(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DString *ds_ptr, Tcl_Parse *parse_ptr) {
     for (int i = 0; i < parse_ptr->numTokens; i++) {
         Tcl_Token *token = &parse_ptr->tokenPtr[i];
         if (token->type == TCL_TOKEN_TEXT) {
@@ -689,7 +729,7 @@ thtml_TclCompileTemplateText(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_D
 
             Tcl_DStringAppend(ds_ptr, "\x03\nappend ds ", 12);
             Tcl_DStringAppend(ds_ptr, "[", 1);
-            if (TCL_OK != thtml_TclCompileCommand(interp, blocks_list_ptr, ds_ptr, &subcmd_parse)) {
+            if (TCL_OK != thtml_CCompileCommand(interp, blocks_list_ptr, ds_ptr, &subcmd_parse)) {
                 Tcl_FreeParse(&subcmd_parse);
                 return TCL_ERROR;
             }
@@ -697,11 +737,11 @@ thtml_TclCompileTemplateText(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_D
             Tcl_DStringAppend(ds_ptr, "\n\x02", 2);
             Tcl_FreeParse(&subcmd_parse);
         } else if (token->type == TCL_TOKEN_VARIABLE) {
-            Tcl_DStringAppend(ds_ptr, "\x03\nappend ds ", 12);
-            if (TCL_OK != thtml_TclAppendVariable(interp, blocks_list_ptr, ds_ptr, parse_ptr, i)) {
+            Tcl_DStringAppend(ds_ptr, "\x03", -1);
+            if (TCL_OK != thtml_CAppendVariable(interp, blocks_list_ptr, ds_ptr, parse_ptr, i, "__ds_ptr__")) {
                 return TCL_ERROR;
             }
-            Tcl_DStringAppend(ds_ptr, "\n\x02", 2);
+            Tcl_DStringAppend(ds_ptr, "\n\x02", -1);
             i++;
         } else {
             SetResult("error parsing quoted string: unsupported token type");
@@ -711,20 +751,20 @@ thtml_TclCompileTemplateText(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_D
     return TCL_OK;
 }
 
-int thtml_TclAppendCommand_Token(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DString *ds_ptr, Tcl_Parse *parse_ptr,
+int thtml_CAppendCommand_Token(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DString *ds_ptr, Tcl_Parse *parse_ptr,
                                 int is_subst_word, int i, int *out_i) {
     Tcl_Token *token = &parse_ptr->tokenPtr[i];
-    // fprintf(stderr, "thtml_TclAppendCommand_Token: type: %d - token: %.*s - numComponents: %d\n", token->type,
+    // fprintf(stderr, "thtml_CAppendCommand_Token: type: %d - token: %.*s - numComponents: %d\n", token->type,
     //        token->size, token->start, token->numComponents);
     if (token->type == TCL_TOKEN_VARIABLE) {
-        if (TCL_OK != thtml_TclAppendVariable(interp, blocks_list_ptr, ds_ptr, parse_ptr, i)) {
+        if (TCL_OK != thtml_CAppendVariable(interp, blocks_list_ptr, ds_ptr, parse_ptr, i, "__ds_ptr__")) {
             return TCL_ERROR;
         }
         *out_i = i + 2;
         return TCL_OK;
     } else if (token->type == TCL_TOKEN_SIMPLE_WORD) {
         // the word is guaranteed to consist of a single TCL_TOKEN_TEXT sub-token
-        if (TCL_OK != thtml_TclAppendCommand_Token(interp, blocks_list_ptr, ds_ptr, parse_ptr, is_subst_word, i + 1, &i)) {
+        if (TCL_OK != thtml_CAppendCommand_Token(interp, blocks_list_ptr, ds_ptr, parse_ptr, is_subst_word, i + 1, &i)) {
             return TCL_ERROR;
         }
         *out_i = i + 1;
@@ -744,7 +784,7 @@ int thtml_TclAppendCommand_Token(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, T
             }
 
 //            Tcl_DStringAppend(ds_ptr, "{", 1);
-            if (TCL_OK != thtml_TclCompileQuotedString(interp, blocks_list_ptr, ds_ptr, &subtext_parse)) {
+            if (TCL_OK != thtml_CCompileQuotedString(interp, blocks_list_ptr, ds_ptr, &subtext_parse)) {
                 Tcl_DStringFree(&subtext_ds);
                 Tcl_FreeParse(&subtext_parse);
                 return TCL_ERROR;
@@ -762,7 +802,7 @@ int thtml_TclAppendCommand_Token(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, T
             Tcl_FreeParse(&subcmd_parse);
             return TCL_ERROR;
         }
-        if (TCL_OK != thtml_TclCompileCommand(interp, blocks_list_ptr, ds_ptr, &subcmd_parse)) {
+        if (TCL_OK != thtml_CCompileCommand(interp, blocks_list_ptr, ds_ptr, &subcmd_parse)) {
             Tcl_FreeParse(&subcmd_parse);
             return TCL_ERROR;
         }
@@ -775,7 +815,7 @@ int thtml_TclAppendCommand_Token(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, T
 //        Tcl_DStringAppend(ds_ptr, "{", 1);
         int start_i = i;
         while (i - start_i < token->numComponents) {
-            if (TCL_OK != thtml_TclAppendCommand_Token(interp, blocks_list_ptr, ds_ptr, parse_ptr, is_subst_word, i + 1, &i)) {
+            if (TCL_OK != thtml_CAppendCommand_Token(interp, blocks_list_ptr, ds_ptr, parse_ptr, is_subst_word, i + 1, &i)) {
                 return TCL_ERROR;
             }
         }
@@ -789,8 +829,8 @@ int thtml_TclAppendCommand_Token(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, T
     return TCL_OK;
 }
 
-int thtml_TclCompileCommand(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DString *ds_ptr, Tcl_Parse *parse_ptr) {
-    DBG(fprintf(stderr, "thtml_TclCompileCommand\n"));
+int thtml_CCompileCommand(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DString *ds_ptr, Tcl_Parse *parse_ptr) {
+    DBG(fprintf(stderr, "thtml_CCompileCommand\n"));
 
     Tcl_DString word_ds;
     Tcl_DStringInit(&word_ds);
@@ -802,9 +842,9 @@ int thtml_TclCompileCommand(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DS
         if (!first) {
             Tcl_DStringAppend(ds_ptr, " ", 1);
         }
-        if (TCL_OK != thtml_TclAppendCommand_Token(interp, blocks_list_ptr, &word_ds, parse_ptr, is_subst_word, i, &i)) {
+        if (TCL_OK != thtml_CAppendCommand_Token(interp, blocks_list_ptr, &word_ds, parse_ptr, is_subst_word, i, &i)) {
             Tcl_DStringFree(&word_ds);
-            fprintf(stderr, "thtml_TclAppendCommand_Token failed\n");
+            fprintf(stderr, "thtml_CAppendCommand_Token failed\n");
             return TCL_ERROR;
         }
 
@@ -835,5 +875,93 @@ int thtml_TclCompileCommand(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DS
     }
 
     Tcl_DStringFree(&word_ds);
+    return TCL_OK;
+}
+
+int
+thtml_CCompileForeachList(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DString *ds_ptr, Tcl_Parse *parse_ptr, const char *name) {
+    Tcl_DStringAppend(ds_ptr, "Tcl_DString __ds_", -1);
+    Tcl_DStringAppend(ds_ptr, name, -1);
+    Tcl_DStringAppend(ds_ptr, "__;\nTcl_DStringInit(&__ds_", -1);
+    Tcl_DStringAppend(ds_ptr, name, -1);
+    Tcl_DStringAppend(ds_ptr, "__);\n", -1);
+
+    char ds_name[64];
+    snprintf(ds_name, 64, "__ds_%s__", name);
+
+    for (int i = 0; i < parse_ptr->numTokens; i++) {
+        Tcl_Token *token = &parse_ptr->tokenPtr[i];
+        if (token->type == TCL_TOKEN_TEXT) {
+            Tcl_DStringAppend(ds_ptr, token->start, token->size);
+        } else if (token->type == TCL_TOKEN_BS) {
+            Tcl_DStringAppend(ds_ptr, token->start, token->size);
+        } else if (token->type == TCL_TOKEN_COMMAND) {
+            SetResult("error parsing quoted string: command substitution not supported");
+            return TCL_ERROR;
+        } else if (token->type == TCL_TOKEN_VARIABLE) {
+            if (TCL_OK != thtml_CAppendVariable(interp, blocks_list_ptr, ds_ptr, parse_ptr, i, ds_name)) {
+                return TCL_ERROR;
+            }
+            i++;
+        } else {
+            fprintf(stderr, "type: %d\n", token->type);
+            SetResult("error parsing quoted string: unsupported token type");
+            return TCL_ERROR;
+        }
+    }
+    Tcl_DStringAppend(ds_ptr, "\nTcl_Obj *__", -1);
+    Tcl_DStringAppend(ds_ptr, name, -1);
+    Tcl_DStringAppend(ds_ptr, "__ = Tcl_NewStringObj(Tcl_DStringValue(__ds_", -1);
+    Tcl_DStringAppend(ds_ptr, name, -1);
+    Tcl_DStringAppend(ds_ptr, "__), Tcl_DStringLength(__ds_", -1);
+    Tcl_DStringAppend(ds_ptr, name, -1);
+    Tcl_DStringAppend(ds_ptr, "__));", -1);
+    Tcl_DStringAppend(ds_ptr, "\nTcl_DStringFree(&__ds_", -1);
+    Tcl_DStringAppend(ds_ptr, name, -1);
+    Tcl_DStringAppend(ds_ptr, "__);\n", -1);
+
+    return TCL_OK;
+}
+
+int thtml_CCompileForeachListCmd(ClientData  clientData, Tcl_Interp *interp, int objc, Tcl_Obj * const objv[]) {
+    DBG(fprintf(stderr, "CCompileForeachListCmd\n"));
+
+    CheckArgs(4, 4, 1, "codearrVar text name");
+
+    Tcl_Size text_length;
+    char *text = Tcl_GetStringFromObj(objv[2], &text_length);
+
+    Tcl_Parse parse;
+    if (TCL_OK != Tcl_ParseQuotedString(interp, text, text_length, &parse, 0, NULL)) {
+        Tcl_FreeParse(&parse);
+        return TCL_ERROR;
+    }
+
+    Tcl_Size name_length;
+    char *name = Tcl_GetStringFromObj(objv[3], &name_length);
+
+    Tcl_Obj *blocks_key_ptr = Tcl_NewStringObj("blocks", 6);
+    Tcl_IncrRefCount(blocks_key_ptr);
+    Tcl_Obj *blocks_list_ptr = Tcl_ObjGetVar2(interp, objv[1], blocks_key_ptr, TCL_LEAVE_ERR_MSG);
+    Tcl_DecrRefCount(blocks_key_ptr);
+
+    if (blocks_list_ptr == NULL) {
+        Tcl_FreeParse(&parse);
+        SetResult("error getting blocks from codearr");
+        return TCL_ERROR;
+    }
+
+    Tcl_DString ds;
+    Tcl_DStringInit(&ds);
+
+    if (TCL_OK != thtml_CCompileForeachList(interp, blocks_list_ptr, &ds, &parse, name)) {
+        Tcl_FreeParse(&parse);
+        Tcl_DStringFree(&ds);
+        return TCL_ERROR;
+    }
+
+    Tcl_DStringResult(interp, &ds);
+    Tcl_DStringFree(&ds);
+    Tcl_FreeParse(&parse);
     return TCL_OK;
 }

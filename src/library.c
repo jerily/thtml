@@ -7,301 +7,13 @@
 #include "common.h"
 #include "library.h"
 #include "compiler_tcl.h"
+#include "compiler_c.h"
 #include "md5.h"
 
 #include <stdio.h>
 #include <string.h>
 
 static int           thtml_ModuleInitialized;
-
-static void thtml_AppendEscaped(const char *p, const char *end, Tcl_DString *dsPtr) {
-    while (p < end) {
-        if (*p == '\n') {
-            Tcl_DStringAppend(dsPtr, "\\n", 2);
-        } else if (*p == '\r') {
-            Tcl_DStringAppend(dsPtr, "\\r", 2);
-//        } else if (*p == '"') {
-//            Tcl_DStringAppend(dsPtr, "\\\"", 2);
-//        } else if (*p == '\\') {
-//            Tcl_DStringAppend(dsPtr, "\\\\", 2);
-        } else {
-            Tcl_DStringAppend(dsPtr, p, 1);
-        }
-        p++;
-    }
-}
-
-static int thtml_TclTransformCmd(ClientData  clientData, Tcl_Interp *interp, int objc, Tcl_Obj * const objv[]) {
-    DBG(fprintf(stderr, "TclTransformCmd\n"));
-
-    CheckArgs(2,2,1,"intermediate_code");
-
-    int intermediate_code_length;
-    char *intermediate_code = Tcl_GetStringFromObj(objv[1], &intermediate_code_length);
-
-    // special characters that denote the start and end of html Vs code blocks:
-    // \x02 - start of text
-    // \x03 - end of text
-
-    const char *p = intermediate_code;
-    const char *end = intermediate_code + intermediate_code_length;
-
-    Tcl_DString ds;
-    Tcl_DStringInit(&ds);
-
-    while (p < end) {
-        // make sure "p" points to the start of the first text block, i.e. it is '\x02'
-        if (*p != '\x02') {
-            fprintf(stderr, "Text block does not start with start-of-text marker ch=%02x\n", *p);
-            Tcl_DStringFree(&ds);
-            SetResult("Text block does not start with start-of-text marker");
-            return TCL_ERROR;
-        }
-
-        // skip the first '\x02'
-        p++;
-
-        // loop until we reach the end of the text block denoted by '\x03', excluding the last '\x03'
-        const char *q = p;
-        while (q < end) {
-            if (*q == '\x03') {
-                Tcl_DStringAppend(&ds, "\nappend ds \"", 12);
-                thtml_AppendEscaped(p, q, &ds);
-                Tcl_DStringAppend(&ds, "\"\n", 2);
-                break;
-            }
-            q++;
-        }
-
-        if (q == end) {
-            Tcl_DStringFree(&ds);
-            SetResult("Text block does not end with end-of-text marker");
-            return TCL_ERROR;
-        }
-
-        // skip the last '\x03'
-        p = q + 1;
-
-        // loop until we reach the end of the code block denoted by '\x02', excluding the last '\x02'
-        q = p;
-        while (q < end) {
-            if (*q == '\x02') {
-                Tcl_DStringAppend(&ds, p, q - p);
-                break;
-            }
-            q++;
-        }
-
-        // skip the last '\x02'
-        p = q;
-    }
-
-    Tcl_DStringResult(interp, &ds);
-    Tcl_DStringFree(&ds);
-    return TCL_OK;
-}
-
-static int thtml_TclCompileExprCmd(ClientData  clientData, Tcl_Interp *interp, int objc, Tcl_Obj * const objv[]) {
-    DBG(fprintf(stderr, "TclCompileExprCmd\n"));
-
-    CheckArgs(3, 3, 1, "codearrVar text");
-
-    int text_length;
-    char *text = Tcl_GetStringFromObj(objv[2], &text_length);
-
-    Tcl_Parse parse;
-    if (TCL_OK != Tcl_ParseExpr(interp, text, text_length, &parse)) {
-        Tcl_FreeParse(&parse);
-        return TCL_ERROR;
-    }
-
-    Tcl_Obj *blocks_key_ptr = Tcl_NewStringObj("blocks", 6);
-    Tcl_IncrRefCount(blocks_key_ptr);
-    Tcl_Obj *blocks_list_ptr = Tcl_ObjGetVar2(interp, objv[1], blocks_key_ptr, TCL_LEAVE_ERR_MSG);
-    Tcl_DecrRefCount(blocks_key_ptr);
-
-    if (blocks_list_ptr == NULL) {
-        Tcl_FreeParse(&parse);
-        SetResult("error getting blocks from codearr");
-        return TCL_ERROR;
-    }
-
-    Tcl_DString ds;
-    Tcl_DStringInit(&ds);
-
-    if (TCL_OK != thtml_TclCompileExpr(interp, blocks_list_ptr, &ds, &parse)) {
-        Tcl_FreeParse(&parse);
-        Tcl_DStringFree(&ds);
-        return TCL_ERROR;
-    }
-
-    Tcl_DStringResult(interp, &ds);
-    Tcl_DStringFree(&ds);
-    Tcl_FreeParse(&parse);
-    return TCL_OK;
-}
-
-static int thtml_TclCompileQuotedStringCmd(ClientData  clientData, Tcl_Interp *interp, int objc, Tcl_Obj * const objv[]) {
-    DBG(fprintf(stderr, "TclCompileQuotedStringCmd\n"));
-
-    CheckArgs(3, 3, 1, "codearrVar text");
-
-    int text_length;
-    char *text = Tcl_GetStringFromObj(objv[2], &text_length);
-
-    Tcl_Parse parse;
-    if (TCL_OK != Tcl_ParseQuotedString(interp, text, text_length, &parse, 0, NULL)) {
-        Tcl_FreeParse(&parse);
-        return TCL_ERROR;
-    }
-
-    Tcl_Obj *blocks_key_ptr = Tcl_NewStringObj("blocks", 6);
-    Tcl_IncrRefCount(blocks_key_ptr);
-    Tcl_Obj *blocks_list_ptr = Tcl_ObjGetVar2(interp, objv[1], blocks_key_ptr, TCL_LEAVE_ERR_MSG);
-    Tcl_DecrRefCount(blocks_key_ptr);
-
-    if (blocks_list_ptr == NULL) {
-        Tcl_FreeParse(&parse);
-        SetResult("error getting blocks from codearr");
-        return TCL_ERROR;
-    }
-
-    Tcl_DString ds;
-    Tcl_DStringInit(&ds);
-
-    if (TCL_OK != thtml_TclCompileQuotedString(interp, blocks_list_ptr, &ds, &parse)) {
-        Tcl_FreeParse(&parse);
-        Tcl_DStringFree(&ds);
-        return TCL_ERROR;
-    }
-
-    Tcl_DStringResult(interp, &ds);
-    Tcl_DStringFree(&ds);
-    Tcl_FreeParse(&parse);
-    return TCL_OK;
-}
-
-static int thtml_TclCompileTemplateTextCmd(ClientData  clientData, Tcl_Interp *interp, int objc, Tcl_Obj * const objv[]) {
-    DBG(fprintf(stderr, "TclCompileTemplateTextCmd\n"));
-
-    CheckArgs(3, 3, 1, "codearrVar text");
-
-    int text_length;
-    char *text = Tcl_GetStringFromObj(objv[2], &text_length);
-
-    const char *p = text;
-    const char *end = text + text_length;
-
-    Tcl_DString text_ds;
-    Tcl_DStringInit(&text_ds);
-    int count = 0;
-    while (p < end) {
-        if (*p == '[') {
-            count++;
-            Tcl_DStringAppend(&text_ds, "[", 1);
-        } else if (*p == ']') {
-            count--;
-            Tcl_DStringAppend(&text_ds, "]", 1);
-        } else if (p > text && p < end - 1 && *p == '"' && count == 0) {
-            Tcl_DStringAppend(&text_ds, "\\\"", 2);
-        } else if (p > text && p < end - 1 && *p == '\\' && count == 0) {
-            if (p + 1 < end - 1 && *(p + 1) == '[') {
-                Tcl_DStringAppend(&text_ds, "\\[", 2);
-                p+=2;
-                continue;
-            } else if (p + 1 < end - 1 && *(p + 1) == ']') {
-                Tcl_DStringAppend(&text_ds, "\\]", 2);
-                p+=2;
-                continue;
-            } else if (p + 1 < end - 1 && *(p + 1) == '"') {
-                // do nothing, we escape double quotes when we see them
-            } else {
-                Tcl_DStringAppend(&text_ds, "\\", 1);
-            }
-        } else {
-            Tcl_DStringAppend(&text_ds, p, 1);
-        }
-        p++;
-    }
-
-    Tcl_Parse parse;
-    if (TCL_OK != Tcl_ParseQuotedString(interp, Tcl_DStringValue(&text_ds), Tcl_DStringLength(&text_ds), &parse, 0, NULL)) {
-        Tcl_FreeParse(&parse);
-        return TCL_ERROR;
-    }
-
-    Tcl_Obj *blocks_key_ptr = Tcl_NewStringObj("blocks", 6);
-    Tcl_IncrRefCount(blocks_key_ptr);
-    Tcl_Obj *blocks_list_ptr = Tcl_ObjGetVar2(interp, objv[1], blocks_key_ptr, TCL_LEAVE_ERR_MSG);
-    Tcl_DecrRefCount(blocks_key_ptr);
-
-    if (blocks_list_ptr == NULL) {
-        Tcl_FreeParse(&parse);
-        SetResult("error getting blocks from codearr");
-        return TCL_ERROR;
-    }
-
-    Tcl_DString ds;
-    Tcl_DStringInit(&ds);
-
-    if (TCL_OK != thtml_TclCompileTemplateText(interp, blocks_list_ptr, &ds, &parse)) {
-        Tcl_FreeParse(&parse);
-        Tcl_DStringFree(&ds);
-        return TCL_ERROR;
-    }
-
-    Tcl_DStringResult(interp, &ds);
-    Tcl_DStringFree(&ds);
-    Tcl_FreeParse(&parse);
-    return TCL_OK;
-}
-
-static int thtml_TclCompileScriptCmd(ClientData  clientData, Tcl_Interp *interp, int objc, Tcl_Obj * const objv[]) {
-    DBG(fprintf(stderr, "TclCompileScriptCmd\n"));
-
-    CheckArgs(3, 3, 1, "codearrVar text");
-
-    int text_length;
-    char *text = Tcl_GetStringFromObj(objv[2], &text_length);
-
-    Tcl_Obj *blocks_key_ptr = Tcl_NewStringObj("blocks", 6);
-    Tcl_IncrRefCount(blocks_key_ptr);
-    Tcl_Obj *blocks_list_ptr = Tcl_ObjGetVar2(interp, objv[1], blocks_key_ptr, TCL_LEAVE_ERR_MSG);
-    Tcl_DecrRefCount(blocks_key_ptr);
-
-    if (blocks_list_ptr == NULL) {
-        SetResult("error getting blocks from codearr");
-        return TCL_ERROR;
-    }
-
-    Tcl_DString ds;
-    Tcl_DStringInit(&ds);
-
-    const char *end = text + text_length;
-    const char *start = text;
-    Tcl_Size numBytes = text_length;
-    while (start < end) {
-        // fprintf(stderr, "start=%.*s\n", end-start, start);
-        Tcl_Parse parse;
-        if (TCL_OK != Tcl_ParseCommand(interp, start, numBytes, 0, &parse)) {
-            Tcl_FreeParse(&parse);
-            return TCL_ERROR;
-        }
-
-        if (TCL_OK != thtml_TclCompileCommand(interp, blocks_list_ptr, &ds, &parse)) {
-            Tcl_FreeParse(&parse);
-            Tcl_DStringFree(&ds);
-            return TCL_ERROR;
-        }
-        start = 1 + parse.tokenPtr[parse.numTokens - 1].start + parse.tokenPtr[parse.numTokens - 1].size;
-        Tcl_FreeParse(&parse);
-        numBytes = end - start;
-    }
-
-    Tcl_DStringResult(interp, &ds);
-    Tcl_DStringFree(&ds);
-    return TCL_OK;
-}
 
 static int thtml_Md5Cmd(ClientData  clientData, Tcl_Interp *interp, int objc, Tcl_Obj * const objv[]) {
     DBG(fprintf(stderr,"Md5Cmd\n"));
@@ -346,13 +58,20 @@ int Thtml_Init(Tcl_Interp *interp) {
     thtml_InitModule();
 
     Tcl_CreateNamespace(interp, "::thmtl", NULL, NULL);
-
     Tcl_CreateNamespace(interp, "::thmtl::compiler", NULL, NULL);
+
     Tcl_CreateObjCommand(interp, "::thtml::compiler::tcl_transform", thtml_TclTransformCmd, NULL, NULL);
     Tcl_CreateObjCommand(interp, "::thtml::compiler::tcl_compile_expr", thtml_TclCompileExprCmd, NULL, NULL);
     Tcl_CreateObjCommand(interp, "::thtml::compiler::tcl_compile_quoted_string", thtml_TclCompileQuotedStringCmd, NULL, NULL);
     Tcl_CreateObjCommand(interp, "::thtml::compiler::tcl_compile_template_text", thtml_TclCompileTemplateTextCmd, NULL, NULL);
     Tcl_CreateObjCommand(interp, "::thtml::compiler::tcl_compile_script", thtml_TclCompileScriptCmd, NULL, NULL);
+
+    Tcl_CreateObjCommand(interp, "::thtml::compiler::c_transform", thtml_CTransformCmd, NULL, NULL);
+    Tcl_CreateObjCommand(interp, "::thtml::compiler::c_compile_expr", thtml_CCompileExprCmd, NULL, NULL);
+    Tcl_CreateObjCommand(interp, "::thtml::compiler::c_compile_quoted_string", thtml_CCompileQuotedStringCmd, NULL, NULL);
+    Tcl_CreateObjCommand(interp, "::thtml::compiler::c_compile_template_text", thtml_CCompileTemplateTextCmd, NULL, NULL);
+    Tcl_CreateObjCommand(interp, "::thtml::compiler::c_compile_script", thtml_CCompileScriptCmd, NULL, NULL);
+    Tcl_CreateObjCommand(interp, "::thtml::compiler::c_compile_foreach_list", thtml_CCompileForeachListCmd, NULL, NULL);
 
     Tcl_CreateNamespace(interp, "::thmtl::util", NULL, NULL);
     Tcl_CreateObjCommand(interp, "::thtml::util::md5", thtml_Md5Cmd, NULL, NULL);
