@@ -61,17 +61,20 @@ proc ::thtml::compiler::c_compile_statement_foreach {codearrVar node} {
     set foreach_list [$node @in]
 
     set compiled_statement ""
-    append compiled_statement "\x03"
+    append compiled_statement "\x03" "\{"
 
     set varnames $foreach_varnames
     if { $foreach_indexvar ne "" } {
-        append compiled_statement "\n" "Tcl_Size ${foreach_indexvar} = 0;"
+        append compiled_statement "\n" "Tcl_Size __indexvar_${foreach_indexvar}__ = 0;"
+        append compiled_statement "\n" "Tcl_Obj *${foreach_indexvar} = Tcl_NewIntObj(__indexvar_${foreach_indexvar}__);"
+        append compiled_statement "\n" "Tcl_IncrRefCount(${foreach_indexvar});" "\n"
         lappend varnames $foreach_indexvar
     }
 
     set compiled_foreach_list [c_compile_foreach_list codearr \"$foreach_list\" "list${foreach_num}"]
 
     append compiled_statement "\n" ${compiled_foreach_list}
+    append compiled_statement "\n" "Tcl_IncrRefCount(__list${foreach_num}__);"
     append compiled_statement "\n" "Tcl_Obj *__list${foreach_num}_len__;"
     append compiled_statement "\n" "if (TCL_OK != Tcl_ListObjLength(interp, __list${foreach_num}__, &__list${foreach_num}_len__)) {return TCL_ERROR;}"
     append compiled_statement "\n" "for (int __i${foreach_num}__ = 0; __i${foreach_num}__ < __list${foreach_num}_len__; __i${foreach_num}__++)  \{"
@@ -93,9 +96,13 @@ proc ::thtml::compiler::c_compile_statement_foreach {codearrVar node} {
 
     append compiled_statement "\x03"
     if { $foreach_indexvar ne "" } {
-        append compiled_statement "\n" "${foreach_indexvar}++;" "\n"
+        append compiled_statement "\n" "__indexvar_${foreach_indexvar}__++;" "\n"
+        append compiled_statement "\n" "Tcl_SetIntObj(${foreach_indexvar}, __indexvar_${foreach_indexvar}__);"
     }
-    append compiled_statement "\n" "\} " "\x02"
+    append compiled_statement "\n" "\} "
+    append compiled_statement "\n" "Tcl_DecrRefCount(__list${foreach_num}__);" "\n"
+    append compiled_statement "\n" "Tcl_DecrRefCount(${foreach_indexvar});" "\n"
+    append compiled_statement "\n" "\}" "\x02"
     return $compiled_statement
 }
 

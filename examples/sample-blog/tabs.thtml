@@ -12,4 +12,7 @@
             <a href="${tab.url}">${tab.title}</a>
         </tpl>
     </tpl>
+    <tpl if="$path eq {hello world} || $path eq {blah blah}">
+        <p>Hello World!</p>
+    </tpl>
 </div>
