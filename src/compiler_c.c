@@ -541,6 +541,37 @@ const char *thtml_GetOperandType(Tcl_Token *token) {
     }
 }
 
+static const char *INSTR[] = {
+        ['+'] = "add",
+        ['-'] = "sub",
+        ['*'] = "mult",
+        ['/'] = "div",
+        ['%'] = "mod",
+        ['<'] = "lt",
+        ['>'] = "gt",
+        ['&'] = "bitand",
+        ['^'] = "bitxor",
+        ['|'] = "bitor",
+        ['~'] = "not",
+        ['?'] = "ternary",
+
+
+        [('<' << 8) + '<'] = "lshift",
+        [('>' << 8) + '>'] = "rshift",
+        [('=' << 8) + '='] = "eq",
+        [('!' << 8) + '='] = "ne",
+        [('e' << 8) + 'q'] = "streq",
+        [('n' << 8) + 'e'] = "strneq",
+        [('i' << 8) + 'n'] = "in",
+        [('n' << 8) + 'i'] = "ni",
+        [('<' << 8) + '='] = "le",
+        [('>' << 8) + '='] = "ge",
+};
+
+
+
+
+
 static int
 thtml_CAppendExpr_Operator(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DString *ds_ptr, Tcl_Parse *parse_ptr,
                              int i, const char *name, Tcl_DString *expr_ds_ptr) {
@@ -571,23 +602,35 @@ thtml_CAppendExpr_Operator(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DSt
 
     if (operator_token->size == 1) {
         char ch = operator_token->start[0];
-        if (num_operands == 1 && (ch == '!' || ch == '-' || ch == '+')) {
-            // one operand
+        if (num_operands == 1) {
+            if (ch == '!') {
+                // logical not, one operand
 
-            Tcl_DStringAppend(ds_ptr, operator_token->start, operator_token->size);
-            if (TCL_OK != thtml_CAppendExpr_Token(interp, blocks_list_ptr, ds_ptr, parse_ptr, operands_offset, name, expr_ds_ptr)) {
-                return TCL_ERROR;
+                Tcl_DStringAppend(ds_ptr, operator_token->start, operator_token->size);
+                Tcl_DStringAppend(expr_ds_ptr, "(", -1);
+                if (TCL_OK != thtml_CAppendExpr_Token(interp, blocks_list_ptr, ds_ptr, parse_ptr, operands_offset, name, expr_ds_ptr)) {
+                    return TCL_ERROR;
+                }
+                Tcl_DStringAppend(expr_ds_ptr, ")", -1);
+
+            } else if (ch == '-' || ch == '+') {
+                // uminus, uplus, one operand
+
+                Tcl_DStringAppend(ds_ptr, operator_token->start, operator_token->size);
+                if (TCL_OK != thtml_CAppendExpr_Token(interp, blocks_list_ptr, ds_ptr, parse_ptr, operands_offset, name,
+                                                      expr_ds_ptr)) {
+                    return TCL_ERROR;
+                }
             }
-
         } else if (num_operands == 2 &&
                    (ch == '+' || ch == '-' || ch == '*' || ch == '/' || ch == '%' || ch == '^' || ch == '&' ||
                     ch == '|' ||
-                    ch == '~' || ch == '<' || ch == '>' || ch == '=')) {
+                    ch == '~' || ch == '<' || ch == '>')) {
 
             // two operands
 
             Tcl_DStringAppend(expr_ds_ptr, " __thtml_", -11);
-            Tcl_DStringAppend(expr_ds_ptr, operator_token->start, operator_token->size);
+            Tcl_DStringAppend(expr_ds_ptr, INSTR[operator_token->start[0]], -1);
             Tcl_DStringAppend(expr_ds_ptr, "__(", -1);
 
             Tcl_Token *first_operand = &parse_ptr->tokenPtr[operands_offset];
@@ -664,7 +707,7 @@ thtml_CAppendExpr_Operator(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DSt
             Tcl_Token *second_operand = &parse_ptr->tokenPtr[operands_offset + first_operand->numComponents + 1];
 
             Tcl_DStringAppend(expr_ds_ptr, " __thtml_", -1);
-            Tcl_DStringAppend(expr_ds_ptr, operator_token->start, operator_token->size);
+            Tcl_DStringAppend(expr_ds_ptr, INSTR[(operator_token->start[0] << 8) + operator_token->start[1]], -1);
             Tcl_DStringAppend(expr_ds_ptr, "_", -1);
             // append operands types to the function name
             Tcl_DStringAppend(expr_ds_ptr, thtml_GetOperandType(first_operand), -1);
