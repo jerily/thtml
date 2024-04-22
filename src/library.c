@@ -72,6 +72,7 @@ int Thtml_Init(Tcl_Interp *interp) {
     Tcl_CreateObjCommand(interp, "::thtml::compiler::c_compile_template_text", thtml_CCompileTemplateTextCmd, NULL, NULL);
     Tcl_CreateObjCommand(interp, "::thtml::compiler::c_compile_script", thtml_CCompileScriptCmd, NULL, NULL);
     Tcl_CreateObjCommand(interp, "::thtml::compiler::c_compile_foreach_list", thtml_CCompileForeachListCmd, NULL, NULL);
+    Tcl_CreateObjCommand(interp, "::thtml::compiler::c_compile_quoted_arg", thtml_CCompileQuotedArgCmd, NULL, NULL);
 
     Tcl_CreateNamespace(interp, "::thmtl::util", NULL, NULL);
     Tcl_CreateObjCommand(interp, "::thtml::util::md5", thtml_Md5Cmd, NULL, NULL);

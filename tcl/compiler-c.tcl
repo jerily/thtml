@@ -109,6 +109,8 @@ proc ::thtml::compiler::c_compile_statement_foreach {codearrVar node} {
 proc ::thtml::compiler::c_compile_statement_include {codearrVar node} {
     upvar $codearrVar codearr
 
+    set include_num [incr codearr(include_count)]
+
     set filepath [::thtml::util::resolve_filepath [$node @include]]
     set filepath_from_rootdir [string range $filepath [string length [::thtml::get_rootdir]] end]
     set filepath_md5 [::thtml::util::md5 $filepath_from_rootdir]
@@ -154,11 +156,14 @@ proc ::thtml::compiler::c_compile_statement_include {codearrVar node} {
         lappend argnames "Tcl_Obj *$attname"
     }
 
+    set argnum 1
     set argvalues [list]
     lappend argvalues "__data__"
     foreach attname [$node attributes] {
         if { $attname eq {include} } { continue }
-        lappend argvalues [c_compile_quoted_string codearr \"[$node @$attname]\"]
+        append compiled_include "\n" [c_compile_quoted_arg codearr \"[$node @$attname]\" "include${include_num}_arg${argnum}_${attname}"]
+        lappend argvalues "__include${include_num}_arg${argnum}_${attname}__"
+        incr argnum
     }
 
 
@@ -172,7 +177,7 @@ proc ::thtml::compiler::c_compile_statement_include {codearrVar node} {
     append compiled_include "\n" "return TCL_OK;"
     append compiled_include "\n" "\}"
     #puts argvalues=$argvalues
-    append compiled_include "\n" "if (TCL_OK != ${proc_name}(__interp__, __ds__ptr__, \"${argvalues}\")) {return TCL_ERROR;}" "\n"
+    append compiled_include "\n" "if (TCL_OK != ${proc_name}(__interp__, __ds__ptr__, [join ${argvalues} {, }])) {return TCL_ERROR;}" "\n"
     append compiled_include "\x02"
 
     pop_block codearr
