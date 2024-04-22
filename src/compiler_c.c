@@ -789,13 +789,13 @@ thtml_CAppendExpr_Token(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DStrin
         SetResult("error parsing expression: expand word not supported");
         return TCL_ERROR;
     } else if (token->type == TCL_TOKEN_WORD) {
-        Tcl_DStringAppend(expr_ds_ptr, "\"", 1);
+//        Tcl_DStringAppend(expr_ds_ptr, "\"", 1);
         for (int j = 0; j < token->numComponents; j++) {
             if (TCL_OK != thtml_CAppendExpr_Token(interp, blocks_list_ptr, ds_ptr, parse_ptr, i + 1 + j, name, expr_ds_ptr)) {
                 return TCL_ERROR;
             }
         }
-        Tcl_DStringAppend(expr_ds_ptr, "\"", 1);
+//        Tcl_DStringAppend(expr_ds_ptr, "\"", 1);
     } else if (token->type == TCL_TOKEN_BS) {
         Tcl_DStringAppend(expr_ds_ptr, token->start, token->size);
     } else {
