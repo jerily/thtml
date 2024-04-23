@@ -35,7 +35,10 @@ proc ::thtml::compiler::c_compile_statement_val {codearrVar node} {
 
     set compiled_statement ""
     append compiled_statement "\x03"
-    append compiled_statement "\n" "if (TCL_OK != Tcl_Eval(__interp__, \"\{${compiled_script}\}\")) {return TCL_ERROR;}"
+    append compiled_statement "\n" "Tcl_Obj *__script${val_num}__ = Tcl_NewStringObj(\"${compiled_script}\", -1);"
+    append compiled_statement "\n" "Tcl_IncrRefCount(__script${val_num}__);"
+    append compiled_statement "\n" "if (TCL_OK != Tcl_EvalObj(__interp__, __script${val_num}__)) {return TCL_ERROR;}"
+    append compiled_statement "\n" "Tcl_DecrRefCount(__script${val_num}__);"
     set first_key [lindex $chain_of_keys 0]
     set last_key [lindex $chain_of_keys end]
     set prev_key $last_key
@@ -186,6 +189,7 @@ proc ::thtml::compiler::c_compile_statement_include {codearrVar node} {
     foreach attname [$node attributes] {
         if { $attname eq {include} } { continue }
         append compiled_include "\n" [c_compile_quoted_arg codearr \"[$node @$attname]\" "include${include_num}_arg${argnum}_${attname}"]
+        append compiled_include "\n" "Tcl_IncrRefCount(include${include_num}_arg${argnum}_${attname});"
         lappend argvalues "__include${include_num}_arg${argnum}_${attname}__"
         incr argnum
     }
@@ -202,6 +206,12 @@ proc ::thtml::compiler::c_compile_statement_include {codearrVar node} {
     append compiled_include "\n" "\}"
     #puts argvalues=$argvalues
     append compiled_include "\n" "if (TCL_OK != ${proc_name}(__interp__, __ds__ptr__, [join ${argvalues} {, }])) {return TCL_ERROR;}" "\n"
+    set argnum 1
+    foreach attname [$node attributes] {
+        if { $attname eq {include} } { continue }
+        append compiled_include "\n" "Tcl_DecrRefCount(include${include_num}_arg${argnum}_${attname});"
+        incr argnum
+    }
     append compiled_include "\x02"
 
     pop_block codearr
