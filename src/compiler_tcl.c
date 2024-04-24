@@ -316,7 +316,7 @@ thtml_TclAppendVariable_Dict(Tcl_Interp *interp, Tcl_DString *ds_ptr, const char
     return TCL_OK;
 }
 
-static int
+int
 thtml_TclAppendVariable(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DString *ds_ptr, Tcl_Parse *parse_ptr,
                         int i) {
     Tcl_Token *token = &parse_ptr->tokenPtr[i];

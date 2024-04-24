@@ -12,12 +12,12 @@ proc ::thtml::compiler::c_compile_root {codearrVar root} {
 
     set compiled_template ""
     append compiled_template "\n" "Tcl_DString __ds__;" "\n"
-    append compiled_template "\n" "Tcl_DString *__ds_ptr__ = &__ds__;" "\n"
-    append compiled_template "\n" "Tcl_DStringInit(__ds_ptr__);" "\n"
+    append compiled_template "\n" "Tcl_DString *__ds_default__ = &__ds__;" "\n"
+    append compiled_template "\n" "Tcl_DStringInit(__ds_default__);" "\n"
     foreach child [$root childNodes] {
         append compiled_template [c_transform \x02[compile_helper codearr $child]\x03]
     }
-    append compiled_template "\n" "Tcl_SetObjResult(interp, Tcl_NewStringObj(Tcl_DStringValue(__ds_ptr__), Tcl_DStringLength(__ds_ptr__)));" "\n"
+    append compiled_template "\n" "Tcl_SetObjResult(interp, Tcl_NewStringObj(Tcl_DStringValue(__ds_default__), Tcl_DStringLength(__ds_default__)));" "\n"
     append compiled_template "\n" "return TCL_OK;" "\n"
     return $compiled_template
 }
@@ -31,11 +31,12 @@ proc ::thtml::compiler::c_compile_statement_val {codearrVar node} {
     set script [$node asText]
 
     # substitute template variables in script
-    set compiled_script [c_compile_script codearr $script]
+    set compiled_script [c_compile_script codearr $script "script${val_num}"]
 
     set compiled_statement ""
     append compiled_statement "\x03"
-    append compiled_statement "\n" "Tcl_Obj *__script${val_num}__ = Tcl_NewStringObj(\"${compiled_script}\", -1);"
+    append compiled_statement "\n" ${compiled_script}
+#    append compiled_statement "\n" "Tcl_Obj *__script${val_num}__ = Tcl_NewStringObj(\"${compiled_script}\", -1);"
     append compiled_statement "\n" "Tcl_IncrRefCount(__script${val_num}__);"
     append compiled_statement "\n" "if (TCL_OK != Tcl_EvalObj(__interp__, __script${val_num}__)) {return TCL_ERROR;}"
     append compiled_statement "\n" "Tcl_DecrRefCount(__script${val_num}__);"
@@ -198,14 +199,14 @@ proc ::thtml::compiler::c_compile_statement_include {codearrVar node} {
     push_block codearr [list varnames $varnames stop 1 include [list filepath $filepath_from_rootdir filepath_md5 $filepath_md5]]
 
     append compiled_include "\n" "// " $filepath_from_rootdir
-    append compiled_include "\n" "int ${proc_name} (Tcl_Interp *__interp__, Tcl_DString *__ds_ptr__, [join ${argnames} {, }]) \{"
+    append compiled_include "\n" "int ${proc_name} (Tcl_Interp *__interp__, Tcl_DString *__ds_default__, [join ${argnames} {, }]) \{"
     foreach child [$root childNodes] {
         append compiled_include [c_transform \x02[compile_helper codearr $child]\x03]
     }
     append compiled_include "\n" "return TCL_OK;"
     append compiled_include "\n" "\}"
     #puts argvalues=$argvalues
-    append compiled_include "\n" "if (TCL_OK != ${proc_name}(__interp__, __ds__ptr__, [join ${argvalues} {, }])) {return TCL_ERROR;}" "\n"
+    append compiled_include "\n" "if (TCL_OK != ${proc_name}(__interp__, __ds_default__, [join ${argvalues} {, }])) {return TCL_ERROR;}" "\n"
     set argnum 1
     foreach attname [$node attributes] {
         if { $attname eq {include} } { continue }
