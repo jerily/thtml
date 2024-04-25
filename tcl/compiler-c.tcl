@@ -36,7 +36,6 @@ proc ::thtml::compiler::c_compile_statement_val {codearrVar node} {
     set compiled_statement ""
     append compiled_statement "\x03"
     append compiled_statement "\n" ${compiled_script}
-#    append compiled_statement "\n" "Tcl_Obj *__script${val_num}__ = Tcl_NewStringObj(\"${compiled_script}\", -1);"
     append compiled_statement "\n" "Tcl_IncrRefCount(__script${val_num}__);"
     append compiled_statement "\n" "if (TCL_OK != Tcl_EvalObj(__interp__, __script${val_num}__)) {return TCL_ERROR;}"
     append compiled_statement "\n" "Tcl_DecrRefCount(__script${val_num}__);"

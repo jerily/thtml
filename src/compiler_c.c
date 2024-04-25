@@ -340,12 +340,14 @@ static int thtml_CAppendVariable_Simple(Tcl_Interp *interp, Tcl_DString *ds_ptr,
             Tcl_DStringAppend(ds_ptr, varname_first_part, varname_first_part_length);
             Tcl_DStringAppend(ds_ptr, "__);", -1);
 
+            // Tcl_DStringAppend(__ds_default__, "\"$x\"", -1);
             Tcl_DStringAppend(ds_ptr, "\nTcl_DStringAppend(__ds_", -1);
             Tcl_DStringAppend(ds_ptr, name, -1);
             Tcl_DStringAppend(ds_ptr, "__, \"$", -1);
             Tcl_DStringAppend(ds_ptr, varname_first_part, varname_first_part_length);
             Tcl_DStringAppend(ds_ptr, "\"), -1);", -1);
         } else {
+            // Tcl_DStringAppend(__ds_default__, Tcl_GetString(x), -1);
             Tcl_DStringAppend(ds_ptr, "\nTcl_DStringAppend(__ds_", -1);
             Tcl_DStringAppend(ds_ptr, name, -1);
             Tcl_DStringAppend(ds_ptr, "__, ", -1);
@@ -1090,9 +1092,7 @@ int thtml_CCompileCommand(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DStr
         int length = Tcl_DStringLength(&word_ds);
         const char *bytes = Tcl_DStringValue(&word_ds);
 
-//        Tcl_DStringAppend(ds_ptr, "{", 1);
         Tcl_DStringAppend(ds_ptr, bytes, length);
-//        Tcl_DStringAppend(ds_ptr, "}", 1);
         Tcl_DStringSetLength(&word_ds, 0);
 
         if (first) {
