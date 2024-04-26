@@ -11,8 +11,8 @@ proc ::thtml::compiler::c_compile_root {codearrVar root} {
     upvar $codearrVar codearr
 
     set compiled_template ""
-    append compiled_template "\n" "Tcl_DString __ds__;" "\n"
-    append compiled_template "\n" "Tcl_DString *__ds_default__ = &__ds__;" "\n"
+    append compiled_template "\n" "Tcl_DString __ds_default_base__;" "\n"
+    append compiled_template "\n" "Tcl_DString *__ds_default__ = &__ds_default_base__;" "\n"
     append compiled_template "\n" "Tcl_DStringInit(__ds_default__);" "\n"
     foreach child [$root childNodes] {
         append compiled_template [c_transform \x02[compile_helper codearr $child]\x03]
@@ -31,14 +31,14 @@ proc ::thtml::compiler::c_compile_statement_val {codearrVar node} {
     set script [$node asText]
 
     # substitute template variables in script
-    set compiled_script [c_compile_script codearr $script "script${val_num}"]
+    set compiled_script [c_compile_script codearr $script "val${val_num}"]
 
     set compiled_statement ""
     append compiled_statement "\x03"
     append compiled_statement "\n" ${compiled_script}
-    append compiled_statement "\n" "Tcl_IncrRefCount(__script${val_num}__);"
-    append compiled_statement "\n" "if (TCL_OK != Tcl_EvalObj(__interp__, __script${val_num}__)) {return TCL_ERROR;}"
-    append compiled_statement "\n" "Tcl_DecrRefCount(__script${val_num}__);"
+    append compiled_statement "\n" "Tcl_IncrRefCount(__val${val_num}__);"
+    append compiled_statement "\n" "if (TCL_OK != Tcl_EvalObjEx(__interp__, __val${val_num}__, TCL_EVAL_DIRECT)) {return TCL_ERROR;}"
+    append compiled_statement "\n" "Tcl_DecrRefCount(__val${val_num}__);"
     set first_key [lindex $chain_of_keys 0]
     set last_key [lindex $chain_of_keys end]
     set prev_key $last_key
