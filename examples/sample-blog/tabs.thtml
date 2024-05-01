@@ -7,6 +7,9 @@
 <tpl val="a b c d f">
     return "heading: $heading - this is a test [expr {$heading eq {hello}}]"
 </tpl>
+<tpl val="first_tab">
+    lindex $tabs 0
+</tpl>
 <div>
     <h2>$heading</h2>
     <tpl foreach="tab" in="$tabs" indexvar="i">
