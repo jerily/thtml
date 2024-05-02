@@ -64,6 +64,7 @@ proc ::thtml::compiler::c_compile_statement_if {codearrVar node} {
     upvar $codearrVar codearr
 
     set conditional_num [incr codearr(if_count)]
+
     set conditional [$node @if]
     #puts conditional=$conditional
     set compiled_conditional [c_compile_expr codearr $conditional "flag${conditional_num}"]

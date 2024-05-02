@@ -11,38 +11,45 @@ proc ::thtml::compiler::tcl_compile_root {codearrVar root} {
     upvar $codearrVar codearr
 
     set compiled_template ""
-    append compiled_template "\n" "set ds \"\"" "\n"
+    append compiled_template "\n" "set __ds_default__ \"\"" "\n"
     foreach child [$root childNodes] {
         append compiled_template [tcl_transform \x02[compile_helper codearr $child]\x03]
     }
-    append compiled_template "\n" "return \$ds" "\n"
+    append compiled_template "\n" "return \$__ds_default__" "\n"
     return $compiled_template
 }
 
 proc ::thtml::compiler::tcl_compile_statement_val {codearrVar node} {
     upvar $codearrVar codearr
 
+    set val_num [incr codearr(val_count)]
+
     set chain_of_keys [$node @val]
     set script [$node asText]
 
     # substitute template variables in script
-    set compiled_script [tcl_compile_script codearr $script]
+    set compiled_script [tcl_compile_script codearr $script "val${val_num}"]
 
     set compiled_statement ""
-    append compiled_statement "\x03" "\n" "dict set __data__ {*}${chain_of_keys} \[::thtml::runtime::tcl::evaluate_script \{${compiled_script}\}\]" "\x02"
-    #append compiled_statement "\x03" "\n" "puts \"$chain_of_keys=\[dict get \$__data__ {*}${chain_of_keys}\]\"" "\x02"
+    append compiled_statement "\x03"
+    append compiled_statement $compiled_script
+    #append compiled_statement "\n" "puts \$__val${val_num}__" "\n"
+    append compiled_statement "\n" "dict set __data__ {*}${chain_of_keys} \[::thtml::runtime::tcl::evaluate_script \$__val${val_num}__\]" "\x02"
     return $compiled_statement
 }
 
 proc ::thtml::compiler::tcl_compile_statement_if {codearrVar node} {
     upvar $codearrVar codearr
 
+    set conditional_num [incr codearr(if_count)]
+
     set conditional [$node @if]
     #puts conditional=$conditional
-    set compiled_conditional [tcl_compile_expr codearr $conditional]
+    set compiled_conditional [tcl_compile_expr codearr $conditional "flag${conditional_num}"]
 
     set compiled_statement ""
-    append compiled_statement "\x03" "\n" "if \{ $compiled_conditional \} \{ " "\x02"
+    append compiled_statement "\x03" "\n" $compiled_conditional "\x02"
+    append compiled_statement "\x03" "\n" "if \{ \$__flag${conditional_num}__ \} \{ " "\x02"
     append compiled_statement [compile_children codearr $node]
     append compiled_statement "\x03" "\n" "\} " "\x02"
     return $compiled_statement
@@ -51,21 +58,35 @@ proc ::thtml::compiler::tcl_compile_statement_if {codearrVar node} {
 proc ::thtml::compiler::tcl_compile_statement_foreach {codearrVar node} {
     upvar $codearrVar codearr
 
+
+    set foreach_num [incr codearr(foreach_count)]
     set foreach_varnames [$node @foreach]
     set foreach_indexvar [$node @indexvar ""]
     set foreach_list [$node @in]
-    set compiled_foreach_list [tcl_compile_quoted_string codearr \"$foreach_list\"]
 
     set compiled_statement ""
     append compiled_statement "\x03"
 
     set varnames $foreach_varnames
     if { $foreach_indexvar ne "" } {
-        append compiled_statement "\n" "set ${foreach_indexvar} 0" "\n"
+        append compiled_statement "\n" "set __indexvar_${foreach_indexvar}__ 0"
+        append compiled_statement "\n" "set ${foreach_indexvar} \$__indexvar_${foreach_indexvar}__"
         lappend varnames $foreach_indexvar
     }
 
-    append compiled_statement "\n" "foreach \{${foreach_varnames}\} \"${compiled_foreach_list}\" \{ "
+    set compiled_foreach_list [tcl_compile_foreach_list codearr \"$foreach_list\" "list${foreach_num}"]
+
+    append compiled_statement "\n" ${compiled_foreach_list}
+    append compiled_statement "\n" "puts list${foreach_num}=\$__list${foreach_num}__"
+    append compiled_statement "\n" "set __list${foreach_num}_len__ \[llength \$__list${foreach_num}__\]"
+    append compiled_statement "\n" "for \{ set __i${foreach_num}__ 0 \} \{ \$__i${foreach_num}__ < \$__list${foreach_num}_len__ \} \{ incr __i${foreach_num}__ [llength $foreach_varnames] \}  \{"
+#    append compiled_statement "\n" "set __elem${foreach_num}__ \[lindex \$__list${foreach_num}__ \$__i${foreach_num}__\]"
+    set foreach_varname_i 0
+    foreach foreach_varname $foreach_varnames {
+        append compiled_statement "\n" "set ${foreach_varname} \[lindex \$__list${foreach_num}__ \[expr \{ ${foreach_varname_i} + \$__i${foreach_num}__ \}\]\]"
+        append compiled_statement "\n" "puts ${foreach_varname}=\$${foreach_varname}"
+        incr foreach_varname_i
+    }
 
 
     append compiled_statement "\x02"
@@ -76,9 +97,11 @@ proc ::thtml::compiler::tcl_compile_statement_foreach {codearrVar node} {
 
     append compiled_statement "\x03"
     if { $foreach_indexvar ne "" } {
-        append compiled_statement "\n" "incr ${foreach_indexvar}" "\n"
+        append compiled_statement "\n" "incr __indexvar_${foreach_indexvar}__" "\n"
+        append compiled_statement "\n" "set ${foreach_indexvar} \$__indexvar_${foreach_indexvar}__"
     }
-    append compiled_statement "\n" "\} " "\x02"
+    append compiled_statement "\n" "\} "
+    append compiled_statement "\n" "\x02"
     return $compiled_statement
 }
 
@@ -121,35 +144,34 @@ proc ::thtml::compiler::tcl_compile_statement_include {codearrVar node} {
 
     set compiled_include "\x03"
 
+    set varnames [list]
     set argnames [list]
+    lappend argnames __data__
     foreach attname [$node attributes] {
         if { $attname eq {include} } { continue }
         lappend argnames $attname
+        lappend varnames $attname
     }
 
     set argvalues [list]
+    lappend argvalues "\$__data__"
     foreach attname [$node attributes] {
         if { $attname eq {include} } { continue }
         lappend argvalues [tcl_compile_quoted_string codearr \"[$node @$attname]\"]
     }
 
-    lappend argvalues "\$__data__"
-
-    push_block codearr [list varnames $argnames stop 1 include [list filepath $filepath_from_rootdir filepath_md5 $filepath_md5]]
-
-    lappend argnames __data__
+    push_block codearr [list varnames $varnames stop 1 include [list filepath $filepath_from_rootdir filepath_md5 $filepath_md5]]
 
     append compiled_include "\n" "\# " $filepath_from_rootdir
     append compiled_include "\n" "proc ${proc_name} {${argnames}} \{"
-    #append compiled_include "\n" "set __data__ \{\}" "\n"
-    append compiled_include "\n" "set ds \"\"" "\n"
+    append compiled_include "\n" "set __ds_default__ \"\"" "\n"
     foreach child [$root childNodes] {
         append compiled_include [tcl_transform \x02[compile_helper codearr $child]\x03]
     }
-    append compiled_include "\n" "return \$ds"
+    append compiled_include "\n" "return \$__ds_default__"
     append compiled_include "\n" "\}"
     #puts argvalues=$argvalues
-    append compiled_include "\n" "append ds \[eval ${proc_name} \"${argvalues}\"\]" "\n"
+    append compiled_include "\n" "append __ds_default__ \[eval ${proc_name} \"${argvalues}\"\]" "\n"
     append compiled_include "\x02"
 
     pop_block codearr

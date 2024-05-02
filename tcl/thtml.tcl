@@ -61,7 +61,7 @@ proc ::thtml::renderfile {filename __data__} {
     }
 
     set compiled_template [compile $template tcl]
-    #puts compiled_template=$compiled_template
+#    puts compiled_template=$compiled_template
     return "<!doctype html>[eval $compiled_template]"
 }
 
