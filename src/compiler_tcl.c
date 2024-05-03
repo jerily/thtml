@@ -765,7 +765,6 @@ thtml_TclCompileTemplateText(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_D
 
 
             fprintf(stderr, "CompileTemplateText\n");
-            // todo: do the same as in thtml_TclAppendCommand_Token
             Tcl_Parse cmd_parse;
             if (TCL_OK != Tcl_ParseCommand(interp, token->start + 1, token->size - 2, 0, &cmd_parse)) {
                 Tcl_FreeParse(&cmd_parse);
@@ -793,21 +792,6 @@ thtml_TclCompileTemplateText(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_D
             Tcl_DStringAppend(ds_ptr, "\x02", -1);
 
             Tcl_FreeParse(&cmd_parse);
-
-            // we need to eval the command and append the result to the ds
-
-            // set __subcmd1__ [eval $__ds_subcmd1__]
-//            Tcl_DStringAppend(ds_ptr, "\nset __", -1);
-//            Tcl_DStringAppend(ds_ptr, subcmd_name, -1);
-//            Tcl_DStringAppend(ds_ptr, "__ [eval $__ds_", -1);
-//            Tcl_DStringAppend(ds_ptr, subcmd_name, -1);
-//            Tcl_DStringAppend(ds_ptr, "__]", -1);
-//
-//            // append __ds_default__ \{$__subcmd1__\}
-//            Tcl_DStringAppend(ds_ptr, "\nappend __ds_default__ \\{$__", -1);
-//            Tcl_DStringAppend(ds_ptr, subcmd_name, -1);
-//            Tcl_DStringAppend(ds_ptr, "__\\}", -1);
-
 
         } else if (token->type == TCL_TOKEN_VARIABLE) {
             Tcl_DStringAppend(ds_ptr, "\x03", -1);
