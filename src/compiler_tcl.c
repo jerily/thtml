@@ -7,6 +7,7 @@
 #include "compiler_tcl.h"
 #include <ctype.h>
 #include <string.h>
+#include <assert.h>
 
 static int subcmd_count = 0;
 static int template_cmd_count = 0;
@@ -764,7 +765,7 @@ thtml_TclCompileTemplateText(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_D
             snprintf(cmd_name, 64, "cmd%d", template_cmd_count);
 
 
-            fprintf(stderr, "CompileTemplateText\n");
+            DBG(fprintf(stderr, "CompileTemplateText\n"));
             Tcl_Parse cmd_parse;
             if (TCL_OK != Tcl_ParseCommand(interp, token->start + 1, token->size - 2, 0, &cmd_parse)) {
                 Tcl_FreeParse(&cmd_parse);
@@ -772,15 +773,17 @@ thtml_TclCompileTemplateText(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_D
             }
 
             Tcl_DStringAppend(ds_ptr, "\x03", -1);
+            Tcl_DStringAppend(ds_ptr, "\nset __ds_", -1);
+            Tcl_DStringAppend(ds_ptr, cmd_name, -1);
+            Tcl_DStringAppend(ds_ptr, "__ {}", -1);
+
             if (TCL_OK != thtml_TclCompileCommand(interp, blocks_list_ptr, ds_ptr, &cmd_parse, cmd_name, 0)) {
                 Tcl_FreeParse(&cmd_parse);
                 return TCL_ERROR;
             }
 
-            // set __cmd1__ $__ds_cmd1__
-            Tcl_DStringAppend(ds_ptr, "\nset __", -1);
-            Tcl_DStringAppend(ds_ptr, cmd_name, -1);
-            Tcl_DStringAppend(ds_ptr, "__ $__ds_", -1);
+            // puts $__cmd1__
+            Tcl_DStringAppend(ds_ptr, "\nputs $__", -1);
             Tcl_DStringAppend(ds_ptr, cmd_name, -1);
             Tcl_DStringAppend(ds_ptr, "__", -1);
 
@@ -814,8 +817,8 @@ int thtml_TclAppendCommand_Token(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, T
         return TCL_OK;
     }
     Tcl_Token *token = &parse_ptr->tokenPtr[i];
-     fprintf(stderr, "thtml_TclAppendCommand_Token: i: %d type: %d - token: %.*s - numComponents: %d\n", i, token->type,
-            token->size, token->start, token->numComponents);
+//     fprintf(stderr, "thtml_TclAppendCommand_Token: i: %d type: %d - token: %.*s - numComponents: %d\n", i, token->type,
+//            token->size, token->start, token->numComponents);
 
     Tcl_DStringAppend(ds_ptr, "\n#AppendCommand_Token: ", -1);
     Tcl_DStringAppend(ds_ptr, token->start, token->size);
@@ -827,24 +830,21 @@ int thtml_TclAppendCommand_Token(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, T
         *out_i = i + 2;
         return TCL_OK;
     } else if (token->type == TCL_TOKEN_SIMPLE_WORD) {
-        // the word is guaranteed to consist of a single TCL_TOKEN_TEXT sub-token
-        if (TCL_OK != thtml_TclAppendCommand_Token(interp, blocks_list_ptr, ds_ptr, parse_ptr, i + 1, &i, name, cmd_ds_ptr, in_eval_p)) {
-            return TCL_ERROR;
-        }
-        *out_i = i + 1;
+        Tcl_Token *text_token = &parse_ptr->tokenPtr[i + 1];
+        assert(text_token->type == TCL_TOKEN_TEXT);
+        Tcl_DStringAppend(ds_ptr, "\nappend __ds_", -1);
+        Tcl_DStringAppend(ds_ptr, name, -1);
+        Tcl_DStringAppend(ds_ptr, "__ {{", -1);
+        Tcl_DStringAppend(ds_ptr, text_token->start, text_token->size);
+        Tcl_DStringAppend(ds_ptr, "}}", -1);
+        *out_i = i + 2;
         return TCL_OK;
     } else if (token->type == TCL_TOKEN_TEXT) {
-        if (cmd_ds_ptr == NULL) {
-            Tcl_DStringAppend(ds_ptr, "\nappend __ds_", -1);
-            Tcl_DStringAppend(ds_ptr, name, -1);
-            Tcl_DStringAppend(ds_ptr, "__ {{", -1);
-            Tcl_DStringAppend(ds_ptr, token->start, token->size);
-            Tcl_DStringAppend(ds_ptr, "}}", -1);
-        } else {
-            Tcl_DStringAppend(cmd_ds_ptr, "\"", 1);
-            Tcl_DStringAppend(cmd_ds_ptr, token->start, token->size);
-            Tcl_DStringAppend(cmd_ds_ptr, "\"", 1);
-        }
+        Tcl_DStringAppend(ds_ptr, "\nappend __ds_", -1);
+        Tcl_DStringAppend(ds_ptr, name, -1);
+        Tcl_DStringAppend(ds_ptr, "__ {", -1);
+        Tcl_DStringAppend(ds_ptr, token->start, token->size);
+        Tcl_DStringAppend(ds_ptr, "}", -1);
         *out_i = i + 1;
         return TCL_OK;
     } else if (token->type == TCL_TOKEN_COMMAND) {
@@ -856,6 +856,10 @@ int thtml_TclAppendCommand_Token(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, T
 
         Tcl_DStringAppend(ds_ptr, "\n#SubCommand: ", -1);
         Tcl_DStringAppend(ds_ptr, token->start, token->size);
+
+        Tcl_DStringAppend(ds_ptr, "\nset __ds_", -1);
+        Tcl_DStringAppend(ds_ptr, subcmd_name, -1);
+        Tcl_DStringAppend(ds_ptr, "__ {}", -1);
 
         Tcl_Parse subcmd_parse;
         if (TCL_OK != Tcl_ParseCommand(interp, token->start + 1, token->size - 2, 0, &subcmd_parse)) {
@@ -979,15 +983,15 @@ int thtml_TclCompileCommand(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DS
     Tcl_DStringAppend(ds_ptr, "__", -1);
 
     // puts $__val3_subcmd1__
-    Tcl_DStringAppend(ds_ptr, "\nputs $__", -1);
-    Tcl_DStringAppend(ds_ptr, name, -1);
-    Tcl_DStringAppend(ds_ptr, "__", -1);
+//    Tcl_DStringAppend(ds_ptr, "\nputs $__", -1);
+//    Tcl_DStringAppend(ds_ptr, name, -1);
+//    Tcl_DStringAppend(ds_ptr, "__", -1);
 
     return TCL_OK;
 }
 int
 thtml_TclCompileForeachList(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DString *ds_ptr, Tcl_Parse *parse_ptr, const char *name) {
-    Tcl_DStringAppend(ds_ptr, "set __ds_", -1);
+    Tcl_DStringAppend(ds_ptr, "\nset __ds_", -1);
     Tcl_DStringAppend(ds_ptr, name, -1);
     Tcl_DStringAppend(ds_ptr, "__ {}", -1);
 
@@ -997,11 +1001,15 @@ thtml_TclCompileForeachList(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DS
     for (int i = 0; i < parse_ptr->numTokens; i++) {
         Tcl_Token *token = &parse_ptr->tokenPtr[i];
         if (token->type == TCL_TOKEN_TEXT) {
+            Tcl_DStringAppend(ds_ptr, "\nappend __ds_", -1);
+            Tcl_DStringAppend(ds_ptr, name, -1);
+            Tcl_DStringAppend(ds_ptr, "__ {", -1);
             Tcl_DStringAppend(ds_ptr, token->start, token->size);
+            Tcl_DStringAppend(ds_ptr, "}", -1);
         } else if (token->type == TCL_TOKEN_BS) {
             Tcl_DStringAppend(ds_ptr, token->start, token->size);
         } else if (token->type == TCL_TOKEN_COMMAND) {
-            SetResult("error parsing quoted string: command substitution not supported");
+            SetResult("error compiling foreach list: command substitution not supported");
             return TCL_ERROR;
         } else if (token->type == TCL_TOKEN_VARIABLE) {
             if (TCL_OK != thtml_TclAppendVariable(interp, blocks_list_ptr, ds_ptr, parse_ptr, i, name, NULL, 0)) {

@@ -84,7 +84,7 @@ test if-3 {} -body {
 test transform-1 {} -body {
     set compiled_template [::thtml::compiler::tcl_transform "\x02hello world\x03puts hey\x02this is a test\x03"]
     escape $compiled_template
-} -result {\nappend ds "hello world"\nputs hey\nappend ds "this is a test"\n}
+} -result {\nappend __ds_default__ "hello world"\nputs hey\nappend __ds_default__ "this is a test"\n}
 
 test var-substitution-1 {} -body {
     set data {
