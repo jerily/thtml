@@ -33,7 +33,8 @@ proc ::thtml::compiler::tcl_compile_statement_val {codearrVar node} {
     set compiled_statement ""
     append compiled_statement "\x03"
     append compiled_statement $compiled_script
-    #append compiled_statement "\n" "puts \$__val${val_num}__" "\n"
+    # using evaluate_script so that a return statement in a val command
+    # will return from the procedure, not from the whole script
     append compiled_statement "\n" "dict set __data__ {*}${chain_of_keys} \[::thtml::runtime::tcl::evaluate_script \$__val${val_num}__\]" "\x02"
     return $compiled_statement
 }

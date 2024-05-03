@@ -5,13 +5,13 @@
     return 12345
 </tpl>
 <tpl val="a b c d f">
-    return "heading: $heading - this is a test"
+    return "heading: $heading - this is a test [expr {$heading eq {hello world}}] - [string index ${a.b.c.d.e} 2]"
 </tpl>
 <tpl val="first_tab">
     lindex $tabs 0
 </tpl>
 <div>
-    <h2>$heading</h2>
+    <h2>$heading [lindex $tabs 0]</h2>
 
     <tpl foreach="tab" in="$tabs" indexvar="i">
         <tpl if="$i > 0"> | </tpl>

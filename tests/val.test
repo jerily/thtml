@@ -65,3 +65,21 @@ test val-3 {} -body {
     }
     ::thtml::render $template {title "You rock!" loggedin 1}
 } -result {<html><head><title>You rock!</title></head><body><h1>You rock!</h1><p>3</p></body></html>}
+
+test val-4 {} -body {
+    set template {
+        <html>
+            <tpl val="x">return {a b c}</tpl>
+            <tpl val="y">return 2</tpl>
+            <tpl val="z">return [lindex $x $y]</tpl>
+            <head>
+                <title>${title}</title>
+            </head>
+            <body>
+                <h1>${title}</h1>
+                <p>${z} must be equal to [lindex $x $y]</p>
+            </body>
+        </html>
+    }
+    ::thtml::render $template {title "You rock!" loggedin 1}
+} -result {<html><head><title>You rock!</title></head><body><h1>You rock!</h1><p>c must be equal to c</p></body></html>}
