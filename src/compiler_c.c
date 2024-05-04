@@ -9,6 +9,7 @@
 #include "md5.h"
 #include <ctype.h>
 #include <string.h>
+#include <assert.h>
 
 static int count_text_subst = 0;
 static int count_var_dict_subst = 0;
@@ -1032,31 +1033,23 @@ int thtml_CAppendCommand_Token(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl
         *out_i = i + 2;
         return TCL_OK;
     } else if (token->type == TCL_TOKEN_SIMPLE_WORD) {
-        // the word is guaranteed to consist of a single TCL_TOKEN_TEXT sub-token
-        if (TCL_OK != thtml_CAppendCommand_Token(interp, blocks_list_ptr, ds_ptr, parse_ptr, i + 1, &i, name, cmd_ds_ptr, in_eval_p)) {
-            return TCL_ERROR;
-        }
-        *out_i = i + 1;
+        Tcl_Token *text_token = &parse_ptr->tokenPtr[i + 1];
+        assert(text_token->type == TCL_TOKEN_TEXT);
+        Tcl_DStringAppend(ds_ptr, "\nTcl_DStringAppend(__ds_", -1);
+        Tcl_DStringAppend(ds_ptr, name, -1);
+        Tcl_DStringAppend(ds_ptr, "__, \"{", -1);
+        Tcl_DStringAppend(ds_ptr, text_token->start, text_token->size);
+        Tcl_DStringAppend(ds_ptr, "}\", -1);", -1);
+        *out_i = i + 2;
         return TCL_OK;
     } else if (token->type == TCL_TOKEN_TEXT) {
-        if (in_eval_p) {
-            Tcl_DStringAppend(ds_ptr, "\nTcl_DStringAppend(__ds_", -1);
-            Tcl_DStringAppend(ds_ptr, name, -1);
-            Tcl_DStringAppend(ds_ptr, "__, \"", -1);
-            Tcl_DStringAppend(ds_ptr, token->start, token->size);
-            Tcl_DStringAppend(ds_ptr, "\", -1);", -1);
-        } else {
-            char tok_name[64];
-            snprintf(tok_name, 64, "%s_tok%d", name, i);
-            Tcl_DStringAppend(ds_ptr, "\nTcl_Obj *__", -1);
-            Tcl_DStringAppend(ds_ptr, tok_name, -1);
-            Tcl_DStringAppend(ds_ptr, "__ = Tcl_NewStringObj(\"", -1);
-            Tcl_DStringAppend(ds_ptr, token->start, token->size);
-            Tcl_DStringAppend(ds_ptr, "\", -1);", -1);
-            Tcl_DStringAppend(cmd_ds_ptr, "__", -1);
-            Tcl_DStringAppend(cmd_ds_ptr, tok_name, -1);
-            Tcl_DStringAppend(cmd_ds_ptr, "__", -1);
-        }
+        Tcl_DStringAppend(ds_ptr, "\nTcl_DStringAppend(__ds_", -1);
+        Tcl_DStringAppend(ds_ptr, name, -1);
+        Tcl_DStringAppend(ds_ptr, "__, \"", -1);
+        Tcl_DStringAppend(ds_ptr, token->start, token->size);
+        Tcl_DStringAppend(ds_ptr, "\", -1);", -1);
+        *out_i = i + 1;
+        return TCL_OK;
     } else if (token->type == TCL_TOKEN_COMMAND) {
         count_cmd++;
         char subcmd_name[64];
