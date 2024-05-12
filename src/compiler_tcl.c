@@ -131,10 +131,15 @@ int thtml_TclCompileExprCmd(ClientData  clientData, Tcl_Interp *interp, int objc
 int thtml_TclCompileQuotedStringCmd(ClientData  clientData, Tcl_Interp *interp, int objc, Tcl_Obj * const objv[]) {
     DBG(fprintf(stderr, "TclCompileQuotedStringCmd\n"));
 
-    CheckArgs(3, 3, 1, "codearrVar text");
+    CheckArgs(3, 4, 1, "codearrVar text ?name?");
 
     Tcl_Size text_length;
     char *text = Tcl_GetStringFromObj(objv[2], &text_length);
+
+    const char *name = "default";
+    if (objc == 4) {
+        name = Tcl_GetString(objv[3]);
+    }
 
     Tcl_Parse parse;
     if (TCL_OK != Tcl_ParseQuotedString(interp, text, text_length, &parse, 0, NULL)) {
@@ -156,7 +161,7 @@ int thtml_TclCompileQuotedStringCmd(ClientData  clientData, Tcl_Interp *interp, 
     Tcl_DString ds;
     Tcl_DStringInit(&ds);
 
-    if (TCL_OK != thtml_TclCompileQuotedString(interp, blocks_list_ptr, &ds, &parse, "default")) {
+    if (TCL_OK != thtml_TclCompileQuotedString(interp, blocks_list_ptr, &ds, &parse, name)) {
         Tcl_FreeParse(&parse);
         Tcl_DStringFree(&ds);
         return TCL_ERROR;
@@ -728,9 +733,19 @@ thtml_TclCompileQuotedString(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_D
     for (int i = 0; i < parse_ptr->numTokens; i++) {
         Tcl_Token *token = &parse_ptr->tokenPtr[i];
         if (token->type == TCL_TOKEN_TEXT) {
+            Tcl_DStringAppend(ds_ptr, "\nappend __ds_", -1);
+            Tcl_DStringAppend(ds_ptr, name, -1);
+            Tcl_DStringAppend(ds_ptr, "__ ", -1);
+            Tcl_DStringStartSublist(ds_ptr);
             Tcl_DStringAppend(ds_ptr, token->start, token->size);
+            Tcl_DStringEndSublist(ds_ptr);
         } else if (token->type == TCL_TOKEN_BS) {
-            Tcl_DStringAppend(ds_ptr, token->start, token->size);
+            Tcl_DStringAppend(ds_ptr, "\nappend __ds_", -1);
+            Tcl_DStringAppend(ds_ptr, name, -1);
+            Tcl_DStringAppend(ds_ptr, "__ ", -1);
+            Tcl_DStringStartSublist(ds_ptr);
+            Tcl_DStringAppend(ds_ptr, &token->start[1], token->size-1);
+            Tcl_DStringEndSublist(ds_ptr);
         } else if (token->type == TCL_TOKEN_COMMAND) {
             SetResult("error parsing quoted string: command substitution not supported");
             return TCL_ERROR;
@@ -783,9 +798,9 @@ thtml_TclCompileTemplateText(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_D
             }
 
             // puts $__cmd1__
-            Tcl_DStringAppend(ds_ptr, "\nputs $__", -1);
-            Tcl_DStringAppend(ds_ptr, cmd_name, -1);
-            Tcl_DStringAppend(ds_ptr, "__", -1);
+//            Tcl_DStringAppend(ds_ptr, "\nputs $__", -1);
+//            Tcl_DStringAppend(ds_ptr, cmd_name, -1);
+//            Tcl_DStringAppend(ds_ptr, "__", -1);
 
             // append __ds_default__ [::thtml::runtime::tcl::evaluate_script $__cmd1__]
             Tcl_DStringAppend(ds_ptr, "\nappend __ds_default__ [::thtml::runtime::tcl::evaluate_script $__", -1);

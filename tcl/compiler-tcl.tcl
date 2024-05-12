@@ -78,14 +78,14 @@ proc ::thtml::compiler::tcl_compile_statement_foreach {codearrVar node} {
     set compiled_foreach_list [tcl_compile_foreach_list codearr \"$foreach_list\" "list${foreach_num}"]
 
     append compiled_statement "\n" ${compiled_foreach_list}
-    append compiled_statement "\n" "puts list${foreach_num}=\$__list${foreach_num}__"
+#    append compiled_statement "\n" "puts list${foreach_num}=\$__list${foreach_num}__"
     append compiled_statement "\n" "set __list${foreach_num}_len__ \[llength \$__list${foreach_num}__\]"
     append compiled_statement "\n" "for \{ set __i${foreach_num}__ 0 \} \{ \$__i${foreach_num}__ < \$__list${foreach_num}_len__ \} \{ incr __i${foreach_num}__ [llength $foreach_varnames] \}  \{"
 #    append compiled_statement "\n" "set __elem${foreach_num}__ \[lindex \$__list${foreach_num}__ \$__i${foreach_num}__\]"
     set foreach_varname_i 0
     foreach foreach_varname $foreach_varnames {
         append compiled_statement "\n" "set ${foreach_varname} \[lindex \$__list${foreach_num}__ \[expr \{ ${foreach_varname_i} + \$__i${foreach_num}__ \}\]\]"
-        append compiled_statement "\n" "puts ${foreach_varname}=\$${foreach_varname}"
+#        append compiled_statement "\n" "puts ${foreach_varname}=\$${foreach_varname}"
         incr foreach_varname_i
     }
 
@@ -108,6 +108,8 @@ proc ::thtml::compiler::tcl_compile_statement_foreach {codearrVar node} {
 
 proc ::thtml::compiler::tcl_compile_statement_include {codearrVar node} {
     upvar $codearrVar codearr
+
+    set include_num [incr codearr(include_count)]
 
     set filepath [::thtml::util::resolve_filepath [$node @include]]
     set filepath_from_rootdir [string range $filepath [string length [::thtml::get_rootdir]] end]
@@ -154,16 +156,20 @@ proc ::thtml::compiler::tcl_compile_statement_include {codearrVar node} {
         lappend varnames $attname
     }
 
+    append compiled_include "\n" "\# " $filepath_from_rootdir
+
+    set arg_num 0
     set argvalues [list]
     lappend argvalues "\$__data__"
     foreach attname [$node attributes] {
         if { $attname eq {include} } { continue }
-        lappend argvalues [tcl_compile_quoted_string codearr \"[$node @$attname]\"]
+        append compiled_include "\n" [tcl_compile_quoted_string codearr \"[$node @$attname]\" include${include_num}_arg${arg_num}]
+        lappend argvalues "\$__ds_include${include_num}_arg${arg_num}__"
+        incr arg_num
     }
 
     push_block codearr [list varnames $varnames stop 1 include [list filepath $filepath_from_rootdir filepath_md5 $filepath_md5]]
 
-    append compiled_include "\n" "\# " $filepath_from_rootdir
     append compiled_include "\n" "proc ${proc_name} {${argnames}} \{"
     append compiled_include "\n" "set __ds_default__ \"\"" "\n"
     foreach child [$root childNodes] {
@@ -172,7 +178,7 @@ proc ::thtml::compiler::tcl_compile_statement_include {codearrVar node} {
     append compiled_include "\n" "return \$__ds_default__"
     append compiled_include "\n" "\}"
     #puts argvalues=$argvalues
-    append compiled_include "\n" "append __ds_default__ \[eval ${proc_name} \"${argvalues}\"\]" "\n"
+    append compiled_include "\n" "append __ds_default__ \[eval ${proc_name} ${argvalues}\]" "\n"
     append compiled_include "\x02"
 
     pop_block codearr
