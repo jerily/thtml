@@ -97,3 +97,13 @@ proc ::thtml::compiler::top_block {codearrVar} {
     upvar $codearrVar codearr
     return [lindex $codearr(blocks) 0]
 }
+
+proc ::thtml::compiler::get_seen {codearrVar what} {
+    upvar $codearrVar codearr
+    return [dict exists $codearr(seen) $what]
+}
+
+proc ::thtml::compiler::set_seen {codearrVar what} {
+    upvar $codearrVar codearr
+    set codearr(seen) [dict set $codearr(seen) $what 1]
+}

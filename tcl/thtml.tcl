@@ -26,17 +26,21 @@ proc ::thtml::init {option_dict} {
 proc ::thtml::render {template __data__} {
     variable cache
     variable rootdir
+
+    array set codearr [list blocks {} target_lang "tcl" defs {} seen {}]
+
     if { $cache } {
         set md5 [::thtml::util::md5 $template]
         set proc_name ::thtml::cache::__render__$md5
         if { [info proc $proc_name] eq {} } {
-            set compiled_template [compile $template tcl]
+            set compiled_template [compile codearr $template tcl]
             proc $proc_name {__data__} "return \"<!doctype html>\[eval \{${compiled_template}\}\]\""
         }
         return [$proc_name $__data__]
     }
-    set compiled_template [compile $template tcl]
+    set compiled_template [compile codearr $template tcl]
     #puts compiled_template=$compiled_template
+    eval $codearr(defs)
     return "<!doctype html>[eval $compiled_template]"
 }
 
@@ -44,10 +48,15 @@ proc ::thtml::compilefile {filepath} {
     set fp [open $filepath]
     set template [read $fp]
     close $fp
+
+    array set codearr [list blocks {} target_lang "c" defs {} seen {}]
+    set compiled_template [compile codearr $template "c"]
+
     set c_code {}
     append c_code "\n" "#include \"thtml.h\""
-    append c_code "\n" "int thtml_IndexPageCmd(ClientData  clientData, Tcl_Interp *interp, int objc, Tcl_Obj * const objv[]) {"
-    append c_code [::thtml::compile $template "c"]
+    append c_code $codearr(defs)
+    append c_code "\n" "int thtml_IndexPageCmd(ClientData  clientData, Tcl_Interp *__interp__, int objc, Tcl_Obj * const objv\[\]) {"
+    append c_code $compiled_template
     append c_code "\n" "}"
 
     set dir [::thtml::get_rootdir]
@@ -69,6 +78,8 @@ proc ::thtml::renderfile {filename __data__} {
     variable cache
     variable rootdir
 
+    array set codearr [list blocks {} target_lang "tcl" defs {} seen {}]
+
     set filepath [::thtml::util::resolve_filepath $filename]
 
     set fp [open $filepath]
@@ -79,25 +90,28 @@ proc ::thtml::renderfile {filename __data__} {
         set md5 [::thtml::util::md5 $filepath]
         set proc_name ::thtml::cache::__renderfile__$md5
         if { [info proc $proc_name] eq {} } {
-            set compiled_template [compile $template tcl]
+            set compiled_template [compile codearr $template tcl]
+            eval $codearr(defs)
             proc $proc_name {__data__} "return \"<!doctype html>\[eval \{${compiled_template}\}\]\""
         }
         return [$proc_name $__data__]
     }
 
-    set compiled_template [compile $template tcl]
+    set compiled_template [compile codearr $template tcl]
     #puts compiled_template=$compiled_template
+    eval $codearr(defs)
     return "<!doctype html>[eval $compiled_template]"
 }
 
-proc ::thtml::compile {template target_lang} {
+proc ::thtml::compile {codearrVar template target_lang} {
+    upvar $codearrVar codearr
+
     set escaped_template [string map {{&&} {&amp;&amp;}} $template]
     dom parse -paramentityparsing never -- <root>$escaped_template</root> doc
     set root [$doc documentElement]
 
     rewrite $root
 
-    array set codearr [list blocks {} target_lang $target_lang]
     return [::thtml::compiler::${target_lang}_compile_root codearr $root]
 }
 

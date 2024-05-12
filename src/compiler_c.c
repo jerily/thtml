@@ -299,9 +299,9 @@ int thtml_CCompileScriptCmd(ClientData  clientData, Tcl_Interp *interp, int objc
         // Tcl_Obj *__val${val_num}__ = Tcl_NewStringObj(Tcl_DStringValue(__ds_val${val_num}__), Tcl_DStringLength(__ds_val${val_num}__));
         Tcl_DStringAppend(&ds, "\nTcl_Obj *__", -1);
         Tcl_DStringAppend(&ds, name, name_length);
-        Tcl_DStringAppend(&ds, "__ = Tcl_NewStringObj(Tcl_DStringValue(&__ds_", -1);
+        Tcl_DStringAppend(&ds, "__ = Tcl_NewStringObj(Tcl_DStringValue(__ds_", -1);
         Tcl_DStringAppend(&ds, name, name_length);
-        Tcl_DStringAppend(&ds, "__), Tcl_DStringLength(&__ds_", -1);
+        Tcl_DStringAppend(&ds, "__), Tcl_DStringLength(__ds_", -1);
         Tcl_DStringAppend(&ds, name, name_length);
         Tcl_DStringAppend(&ds, "__));\n", -1);
 
@@ -876,7 +876,7 @@ thtml_CAppendExpr_Token(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DStrin
         Tcl_DStringAppend(cmd_ds_ptr, name, -1);
         Tcl_DStringAppend(cmd_ds_ptr, "_text", -1);
         Tcl_DStringAppend(cmd_ds_ptr, count_text_subst_str, -1);
-        Tcl_DStringAppend(cmd_ds_ptr, "__", 1);
+        Tcl_DStringAppend(cmd_ds_ptr, "__", -1);
     } else if (token->type == TCL_TOKEN_COMMAND) {
         Tcl_Parse subcmd_parse;
         if (TCL_OK != Tcl_ParseCommand(interp, token->start + 1, token->size - 2, 0, &subcmd_parse)) {
@@ -1058,7 +1058,7 @@ int thtml_CAppendCommand_Token(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl
         Tcl_DStringAppend(ds_ptr, "\nTcl_DString __ds_", -1);
         Tcl_DStringAppend(ds_ptr, subcmd_name, -1);
         Tcl_DStringAppend(ds_ptr, "_base__;", -1);
-        Tcl_DStringAppend(ds_ptr, "\nTcl_DString *__", -1);
+        Tcl_DStringAppend(ds_ptr, "\nTcl_DString *__ds_", -1);
         Tcl_DStringAppend(ds_ptr, subcmd_name, -1);
         Tcl_DStringAppend(ds_ptr, "__ = &__ds_", -1);
         Tcl_DStringAppend(ds_ptr, subcmd_name, -1);
@@ -1083,9 +1083,9 @@ int thtml_CAppendCommand_Token(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl
             // Tcl_Obj *__val3_cmd1__ = Tcl_NewStringObj(Tcl_DStringValue(&__ds_val3_cmd1__), Tcl_DStringLength(&__ds_val3_cmd1__));
             Tcl_DStringAppend(ds_ptr, "\nTcl_Obj *__", -1);
             Tcl_DStringAppend(ds_ptr, subcmd_name, -1);
-            Tcl_DStringAppend(ds_ptr, "__ = Tcl_NewStringObj(Tcl_DStringValue(&__ds_", -1);
+            Tcl_DStringAppend(ds_ptr, "__ = Tcl_NewStringObj(Tcl_DStringValue(__ds_", -1);
             Tcl_DStringAppend(ds_ptr, subcmd_name, -1);
-            Tcl_DStringAppend(ds_ptr, "__), Tcl_DStringLength(&__ds_", -1);
+            Tcl_DStringAppend(ds_ptr, "__), Tcl_DStringLength(__ds_", -1);
             Tcl_DStringAppend(ds_ptr, subcmd_name, -1);
             Tcl_DStringAppend(ds_ptr, "__));", -1);
 

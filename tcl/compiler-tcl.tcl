@@ -170,13 +170,18 @@ proc ::thtml::compiler::tcl_compile_statement_include {codearrVar node} {
 
     push_block codearr [list varnames $varnames stop 1 include [list filepath $filepath_from_rootdir filepath_md5 $filepath_md5]]
 
-    append compiled_include "\n" "proc ${proc_name} {${argnames}} \{"
-    append compiled_include "\n" "set __ds_default__ \"\"" "\n"
-    foreach child [$root childNodes] {
-        append compiled_include [tcl_transform \x02[compile_helper codearr $child]\x03]
+    set seen [get_seen codearr $proc_name]
+    if { !$seen } {
+        append compiled_include_proc "\n" "proc ${proc_name} {${argnames}} \{"
+        append compiled_include_proc "\n" "set __ds_default__ \"\"" "\n"
+        foreach child [$root childNodes] {
+            append compiled_include_proc [tcl_transform \x02[compile_helper codearr $child]\x03]
+        }
+        append compiled_include_proc "\n" "return \$__ds_default__"
+        append compiled_include_proc "\n" "\}"
+        append codearr(defs) $compiled_include_proc
     }
-    append compiled_include "\n" "return \$__ds_default__"
-    append compiled_include "\n" "\}"
+
     #puts argvalues=$argvalues
     append compiled_include "\n" "append __ds_default__ \[eval ${proc_name} ${argvalues}\]" "\n"
     append compiled_include "\x02"

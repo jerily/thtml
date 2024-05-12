@@ -4,7 +4,15 @@
 #include <tcl.h>
 #include <string.h>
 
-int thtml_streq(Tcl_Obj *a, Tcl_Obj *b) {
+#ifndef TCL_SIZE_MAX
+typedef int Tcl_Size;
+# define Tcl_GetSizeIntFromObj Tcl_GetIntFromObj
+# define Tcl_NewSizeIntObj Tcl_NewIntObj
+# define TCL_SIZE_MAX      INT_MAX
+# define TCL_SIZE_MODIFIER ""
+#endif
+
+int __thtml_streq__(Tcl_Obj *a, Tcl_Obj *b) {
     Tcl_Size a_len;
     const char *a_str = Tcl_GetStringFromObj(a, &a_len);
 
@@ -18,11 +26,11 @@ int thtml_streq(Tcl_Obj *a, Tcl_Obj *b) {
     return memcmp(a_str, b_str, a_len) == 0;
 }
 
-int thtml_strneq(Tcl_Obj *a, Tcl_Obj *b) {
-    return !thtml_streq(a, b);
+int __thtml_strneq__(Tcl_Obj *a, Tcl_Obj *b) {
+    return !__thtml_streq__(a, b);
 }
 
-int _thtml_gt(Tcl_Obj *a, Tcl_Obj *b) {
+int __thtml_gt__(Tcl_Obj *a, Tcl_Obj *b) {
 
     // todo: check if string is empty
 

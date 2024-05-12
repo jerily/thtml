@@ -10,14 +10,14 @@ namespace eval ::thtml::compiler {}
 proc ::thtml::compiler::c_compile_root {codearrVar root} {
     upvar $codearrVar codearr
 
-    set compiled_template ""
+    append compiled_template "\n" "Tcl_Obj *__data__ = Tcl_DuplicateObj(objv\[1\]);"
     append compiled_template "\n" "Tcl_DString __ds_default_base__;" "\n"
     append compiled_template "\n" "Tcl_DString *__ds_default__ = &__ds_default_base__;" "\n"
     append compiled_template "\n" "Tcl_DStringInit(__ds_default__);" "\n"
     foreach child [$root childNodes] {
         append compiled_template [c_transform \x02[compile_helper codearr $child]\x03]
     }
-    append compiled_template "\n" "Tcl_SetObjResult(interp, Tcl_NewStringObj(Tcl_DStringValue(__ds_default__), Tcl_DStringLength(__ds_default__)));" "\n"
+    append compiled_template "\n" "Tcl_SetObjResult(__interp__, Tcl_NewStringObj(Tcl_DStringValue(__ds_default__), Tcl_DStringLength(__ds_default__)));" "\n"
     append compiled_template "\n" "return TCL_OK;" "\n"
     return $compiled_template
 }
@@ -39,13 +39,13 @@ proc ::thtml::compiler::c_compile_statement_val {codearrVar node} {
     set first_key [lindex $chain_of_keys 0]
     set last_key [lindex $chain_of_keys end]
     set prev_key $last_key
-    append compiled_statement "\n" "Tcl_Obj *__val${val_num}_key_${last_key}__ = Tcl_GetInterpResult(__interp__);"
+    append compiled_statement "\n" "Tcl_Obj *__val${val_num}_key_${last_key}__ = Tcl_GetObjResult(__interp__);"
     if { $first_key ne $last_key } {
         for {set i [expr {[llength $chain_of_keys] - 2}]} {$i > 0} {incr i -1} {
             set key [lindex $chain_of_keys $i]
             append compiled_statement "\n" "Tcl_Obj *__val${val_num}_key_${key}__ = Tcl_NewDictObj();"
             append compiled_statement "\n" "Tcl_IncrRefCount(__val${val_num}_key_${key}__);"
-            append compiled_statement "\n" "if (TCL_OK != Tcl_DictObjPut(__interp__, __val${val_num}_key_${prev_key}__, Tcl_NewStringObj(\"${key}\", -1), &__val${val_num}_key_${prev_key}__)) {return TCL_ERROR;}"
+            append compiled_statement "\n" "if (TCL_OK != Tcl_DictObjPut(__interp__, __val${val_num}_key_${prev_key}__, Tcl_NewStringObj(\"${key}\", -1), __val${val_num}_key_${prev_key}__)) {return TCL_ERROR;}"
             set prev_key $key
         }
     }
@@ -100,15 +100,15 @@ proc ::thtml::compiler::c_compile_statement_foreach {codearrVar node} {
 
     append compiled_statement "\n" ${compiled_foreach_list}
     append compiled_statement "\n" "Tcl_IncrRefCount(__list${foreach_num}__);"
-    append compiled_statement "\n" "Tcl_Obj *__list${foreach_num}_len__;"
-    append compiled_statement "\n" "if (TCL_OK != Tcl_ListObjLength(interp, __list${foreach_num}__, &__list${foreach_num}_len__)) {return TCL_ERROR;}"
+    append compiled_statement "\n" "Tcl_Size __list${foreach_num}_len__;"
+    append compiled_statement "\n" "if (TCL_OK != Tcl_ListObjLength(__interp__, __list${foreach_num}__, &__list${foreach_num}_len__)) {return TCL_ERROR;}"
     append compiled_statement "\n" "for (int __i${foreach_num}__ = 0; __i${foreach_num}__ < __list${foreach_num}_len__; __i${foreach_num}__++)  \{"
     append compiled_statement "\n" "Tcl_Obj *__elem${foreach_num}__;"
-    append compiled_statement "\n" "if (TCL_OK != Tcl_ListObjIndex(interp, __list${foreach_num}__, __i${foreach_num}__, &__elem${foreach_num}__)) {return TCL_ERROR;}"
+    append compiled_statement "\n" "if (TCL_OK != Tcl_ListObjIndex(__interp__, __list${foreach_num}__, __i${foreach_num}__, &__elem${foreach_num}__)) {return TCL_ERROR;}"
     set foreach_varname_i 0
     foreach foreach_varname $foreach_varnames {
         append compiled_statement "\n" "Tcl_Obj *${foreach_varname};"
-        append compiled_statement "\n" "if (TCL_OK != Tcl_ListObjIndex(interp, __elem${foreach_num}__, ${foreach_varname_i}, &${foreach_varname})) {return TCL_ERROR;}"
+        append compiled_statement "\n" "if (TCL_OK != Tcl_ListObjIndex(__interp__, __elem${foreach_num}__, ${foreach_varname_i}, &${foreach_varname})) {return TCL_ERROR;}"
         incr foreach_varname_i
     }
 
@@ -195,19 +195,25 @@ proc ::thtml::compiler::c_compile_statement_include {codearrVar node} {
 
     push_block codearr [list varnames $varnames stop 1 include [list filepath $filepath_from_rootdir filepath_md5 $filepath_md5]]
 
-    append compiled_include "\n" "// " $filepath_from_rootdir
-    append compiled_include "\n" "int ${proc_name} (Tcl_Interp *__interp__, Tcl_DString *__ds_default__, [join ${argnames} {, }]) \{"
-    foreach child [$root childNodes] {
-        append compiled_include [c_transform \x02[compile_helper codearr $child]\x03]
+    set seen [get_seen codearr $proc_name]
+    if { !$seen } {
+        append compiled_include_func "\n" "// " $filepath_from_rootdir
+        append compiled_include_func "\n" "int ${proc_name} (Tcl_Interp *__interp__, Tcl_DString *__ds_default__, [join ${argnames} {, }]) \{"
+        foreach child [$root childNodes] {
+            append compiled_include_func [c_transform \x02[compile_helper codearr $child]\x03]
+        }
+        append compiled_include_func "\n" "return TCL_OK;"
+        append compiled_include_func "\n" "\}"
+        append codearr(defs) $compiled_include_func
     }
-    append compiled_include "\n" "return TCL_OK;"
-    append compiled_include "\n" "\}"
+    set_seen codearr $proc_name
+
     #puts argvalues=$argvalues
     append compiled_include "\n" "if (TCL_OK != ${proc_name}(__interp__, __ds_default__, [join ${argvalues} {, }])) {return TCL_ERROR;}" "\n"
     set argnum 1
     foreach attname [$node attributes] {
         if { $attname eq {include} } { continue }
-        append compiled_include "\n" "Tcl_DecrRefCount(include${include_num}_arg${argnum}_${attname});"
+        append compiled_include "\n" "Tcl_DecrRefCount(__include${include_num}_arg${argnum}_${attname}__);"
         incr argnum
     }
     append compiled_include "\x02"
