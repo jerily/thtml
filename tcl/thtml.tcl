@@ -1,5 +1,5 @@
 # Copyright Jerily LTD. All Rights Reserved.
-# SPDX-FileCopyrightText: 2023 Neofytos Dimitriou (neo@jerily.cy)
+# SPDX-FileCopyrightText: 2024 Neofytos Dimitriou (neo@jerily.cy)
 # SPDX-License-Identifier: MIT.
 
 package require tdom
@@ -38,6 +38,31 @@ proc ::thtml::render {template __data__} {
     set compiled_template [compile $template tcl]
     #puts compiled_template=$compiled_template
     return "<!doctype html>[eval $compiled_template]"
+}
+
+proc ::thtml::compilefile {filepath} {
+    set fp [open $filepath]
+    set template [read $fp]
+    close $fp
+    set c_code {}
+    append c_code "\n" "#include \"thtml.h\""
+    append c_code "\n" "int thtml_IndexPageCmd(ClientData  clientData, Tcl_Interp *interp, int objc, Tcl_Obj * const objv[]) {"
+    append c_code [::thtml::compile $template "c"]
+    append c_code "\n" "}"
+
+    set dir [::thtml::get_rootdir]
+    set cachedir [file normalize [file join $dir "../cache/"]]
+    set outfile [file join $cachedir "index.c"]
+    set fp [open $outfile w]
+    puts $fp $c_code
+    close $fp
+
+    set builddir [file join $cachedir "build"]
+    cd $builddir
+    set msgs [exec -ignorestderr -- cmake $cachedir -DTHTML_PROJECT_NAME=index -DTHTML_PROJECT_CODE=index.c]
+    puts $msgs
+    set msgs [exec -ignorestderr -- make]
+    puts $msgs
 }
 
 proc ::thtml::renderfile {filename __data__} {

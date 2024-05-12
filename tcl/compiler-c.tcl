@@ -187,7 +187,7 @@ proc ::thtml::compiler::c_compile_statement_include {codearrVar node} {
     foreach attname [$node attributes] {
         if { $attname eq {include} } { continue }
         append compiled_include "\n" [c_compile_quoted_arg codearr \"[$node @$attname]\" "include${include_num}_arg${argnum}_${attname}"]
-        append compiled_include "\n" "Tcl_IncrRefCount(include${include_num}_arg${argnum}_${attname});"
+        append compiled_include "\n" "Tcl_IncrRefCount(__include${include_num}_arg${argnum}_${attname}__);"
         lappend argvalues "__include${include_num}_arg${argnum}_${attname}__"
         incr argnum
     }
