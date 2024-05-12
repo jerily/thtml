@@ -869,11 +869,17 @@ int thtml_TclAppendCommand_Token(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, T
             return TCL_ERROR;
         }
 
-        Tcl_DStringAppend(ds_ptr, "\nappend __ds_", -1);
-        Tcl_DStringAppend(ds_ptr, name, -1);
-        Tcl_DStringAppend(ds_ptr, "__ $__", -1);
-        Tcl_DStringAppend(ds_ptr, subcmd_name, -1);
-        Tcl_DStringAppend(ds_ptr, "__", -1);
+        if (cmd_ds_ptr != NULL) {
+            Tcl_DStringAppend(cmd_ds_ptr, "[subst $__", -1);
+            Tcl_DStringAppend(cmd_ds_ptr, subcmd_name, -1);
+            Tcl_DStringAppend(cmd_ds_ptr, "__]", -1);
+        } else {
+            Tcl_DStringAppend(ds_ptr, "\nappend __ds_", -1);
+            Tcl_DStringAppend(ds_ptr, name, -1);
+            Tcl_DStringAppend(ds_ptr, "__ $__", -1);
+            Tcl_DStringAppend(ds_ptr, subcmd_name, -1);
+            Tcl_DStringAppend(ds_ptr, "__", -1);
+        }
 
     } else if (token->type == TCL_TOKEN_EXPAND_WORD) {
         SetResult("error parsing expression: expand word not supported");
