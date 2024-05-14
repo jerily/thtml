@@ -12,7 +12,7 @@
 static int subcmd_count = 0;
 static int template_cmd_count = 0;
 
-int thtml_TclAppendCommand_Token(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DString *ds_ptr, Tcl_Parse *parse_ptr,
+static int thtml_TclAppendCommand_Token(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DString *ds_ptr, Tcl_Parse *parse_ptr,
                                  Tcl_Size i, Tcl_Size *out_i, const char *name, Tcl_DString *cmd_ds_ptr, int in_eval_p);
 
 int thtml_TclTransformCmd(ClientData  clientData, Tcl_Interp *interp, int objc, Tcl_Obj * const objv[]) {
@@ -671,20 +671,6 @@ thtml_TclAppendExpr_Token(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DStr
         if (TCL_OK != thtml_TclAppendCommand_Token(interp, blocks_list_ptr, ds_ptr, parse_ptr, i, &i, name, expr_ds_ptr, in_eval_p)) {
             return TCL_ERROR;
         }
-
-//        Tcl_Parse subcmd_parse;
-//        if (TCL_OK != Tcl_ParseCommand(interp, token->start + 1, token->size - 2, 0, &subcmd_parse)) {
-//            Tcl_FreeParse(&subcmd_parse);
-//            return TCL_ERROR;
-//        }
-//
-//        Tcl_DStringAppend(expr_ds_ptr, "[", 1);
-//        if (TCL_OK != thtml_TclCompileCommand(interp, blocks_list_ptr, ds_ptr, &subcmd_parse, name, expr_ds_ptr, 0)) {
-//            Tcl_FreeParse(&subcmd_parse);
-//            return TCL_ERROR;
-//        }
-//        Tcl_DStringAppend(expr_ds_ptr, "]", 1);
-//        Tcl_FreeParse(&subcmd_parse);
     } else if (token->type == TCL_TOKEN_EXPAND_WORD) {
         SetResult("error parsing expression: expand word not supported");
         return TCL_ERROR;
@@ -826,7 +812,7 @@ thtml_TclCompileTemplateText(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_D
     return TCL_OK;
 }
 
-int thtml_TclAppendCommand_Token(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DString *ds_ptr, Tcl_Parse *parse_ptr,
+static int thtml_TclAppendCommand_Token(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DString *ds_ptr, Tcl_Parse *parse_ptr,
                                 Tcl_Size i, Tcl_Size *out_i, const char *name, Tcl_DString *cmd_ds_ptr, int in_eval_p) {
     if (i >= parse_ptr->numTokens) {
         return TCL_OK;
