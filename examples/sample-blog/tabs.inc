@@ -25,4 +25,6 @@
     <tpl if="$path eq {hello world} || $path eq {blah blah}">
         <p>Hello World!</p>
     </tpl>
+
+    abcdf = ${a.b.c.d.f}
 </div>

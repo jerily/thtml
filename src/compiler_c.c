@@ -896,18 +896,18 @@ static int thtml_CAppendCommand_Token(Tcl_Interp *interp, Tcl_Obj *blocks_list_p
 
     if (token->type == TCL_TOKEN_VARIABLE) {
         // Tcl_DStringStartSublist(__ds_val1__);
-        Tcl_DStringAppend(ds_ptr, "\nTcl_DStringStartSublist(__ds_", -1);
-        Tcl_DStringAppend(ds_ptr, name, -1);
-        Tcl_DStringAppend(ds_ptr, "__);", -1);
+//        Tcl_DStringAppend(ds_ptr, "\nTcl_DStringStartSublist(__ds_", -1);
+//        Tcl_DStringAppend(ds_ptr, name, -1);
+//        Tcl_DStringAppend(ds_ptr, "__);", -1);
 
         if (TCL_OK != thtml_CAppendVariable(interp, blocks_list_ptr, ds_ptr, parse_ptr, i, name, cmd_ds_ptr, in_eval_p)) {
             return TCL_ERROR;
         }
 
         // Tcl_DStringEndSublist(__ds_val1__);
-        Tcl_DStringAppend(ds_ptr, "\nTcl_DStringEndSublist(__ds_", -1);
-        Tcl_DStringAppend(ds_ptr, name, -1);
-        Tcl_DStringAppend(ds_ptr, "__);", -1);
+//        Tcl_DStringAppend(ds_ptr, "\nTcl_DStringEndSublist(__ds_", -1);
+//        Tcl_DStringAppend(ds_ptr, name, -1);
+//        Tcl_DStringAppend(ds_ptr, "__);", -1);
 
         *out_i = i + 2;
         return TCL_OK;
@@ -1014,11 +1014,11 @@ static int thtml_CAppendCommand_Token(Tcl_Interp *interp, Tcl_Obj *blocks_list_p
             Tcl_DStringAppend(ds_ptr, "_res__ = Tcl_GetObjResult(__interp__);", -1);
 
             // Tcl_DStringAppend(__ds_val3__, Tcl_GetString(__val3_subcmd1__), -1);
-            Tcl_DStringAppend(ds_ptr, "\nTcl_DStringAppend(__ds_", -1);
+            Tcl_DStringAppend(ds_ptr, "\nTcl_DStringAppendElement(__ds_", -1);
             Tcl_DStringAppend(ds_ptr, name, -1);
             Tcl_DStringAppend(ds_ptr, "__, Tcl_GetString(__", -1);
             Tcl_DStringAppend(ds_ptr, subcmd_name, -1);
-            Tcl_DStringAppend(ds_ptr, "_res__), -1);", -1);
+            Tcl_DStringAppend(ds_ptr, "_res__));", -1);
         }
 
     } else if (token->type == TCL_TOKEN_EXPAND_WORD) {
@@ -1056,7 +1056,7 @@ static int thtml_CAppendCommand_Token(Tcl_Interp *interp, Tcl_Obj *blocks_list_p
 
         Tcl_Size start_i = i;
         Tcl_Size j = i + 1;
-        while (i - start_i < token->numComponents) {
+        while (i - start_i - 1 < token->numComponents) {
 
             // Tcl_DStringStartSublist(__ds__wt1__);
 //            Tcl_DStringAppend(ds_ptr, "\nTcl_DStringStartSublist(__ds_", -1);
