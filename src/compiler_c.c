@@ -501,11 +501,11 @@ thtml_CAppendVariable_Dict(Tcl_Interp *interp, Tcl_DString *ds_ptr, const char *
     }
 
     if (expr_ds_ptr == NULL) {
-        Tcl_DStringAppend(ds_ptr, "\nTcl_DStringAppend(__ds_", -1);
+        Tcl_DStringAppend(ds_ptr, "\nTcl_DStringAppendElement(__ds_", -1);
         Tcl_DStringAppend(ds_ptr, name, -1);
         Tcl_DStringAppend(ds_ptr, "__, Tcl_GetString(__dict_", -1);
         Tcl_DStringAppend(ds_ptr, count_var_dict_subst_str, -1);
-        Tcl_DStringAppend(ds_ptr, "__), -1);\n", -1);
+        Tcl_DStringAppend(ds_ptr, "__));\n", -1);
     } else {
         Tcl_DStringAppend(expr_ds_ptr, "__dict_", -1);
         Tcl_DStringAppend(expr_ds_ptr, count_var_dict_subst_str, -1);
@@ -903,19 +903,19 @@ static int thtml_CAppendCommand_Token(Tcl_Interp *interp, Tcl_Obj *blocks_list_p
     } else if (token->type == TCL_TOKEN_SIMPLE_WORD) {
         Tcl_Token *text_token = &parse_ptr->tokenPtr[i + 1];
         assert(text_token->type == TCL_TOKEN_TEXT);
-        Tcl_DStringAppend(ds_ptr, "\nTcl_DStringAppend(__ds_", -1);
+        Tcl_DStringAppend(ds_ptr, "\nTcl_DStringAppendElement(__ds_", -1);
         Tcl_DStringAppend(ds_ptr, name, -1);
-        Tcl_DStringAppend(ds_ptr, "__, \"{", -1);
+        Tcl_DStringAppend(ds_ptr, "__, \"", -1);
         Tcl_DStringAppend(ds_ptr, text_token->start, text_token->size);
-        Tcl_DStringAppend(ds_ptr, "}\", -1);", -1);
+        Tcl_DStringAppend(ds_ptr, "\");", -1);
         *out_i = i + 2;
         return TCL_OK;
     } else if (token->type == TCL_TOKEN_TEXT) {
-        Tcl_DStringAppend(ds_ptr, "\nTcl_DStringAppend(__ds_", -1);
+        Tcl_DStringAppend(ds_ptr, "\nTcl_DStringAppendElement(__ds_", -1);
         Tcl_DStringAppend(ds_ptr, name, -1);
-        Tcl_DStringAppend(ds_ptr, "__, \"{", -1);
+        Tcl_DStringAppend(ds_ptr, "__, \"", -1);
         Tcl_DStringAppend(ds_ptr, token->start, token->size);
-        Tcl_DStringAppend(ds_ptr, "}\", -1);", -1);
+        Tcl_DStringAppend(ds_ptr, "\");", -1);
         *out_i = i + 1;
         return TCL_OK;
     } else if (token->type == TCL_TOKEN_COMMAND) {

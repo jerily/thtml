@@ -7,4 +7,4 @@ set rootdir [file join $dir sample-blog]
 
 set data [dict create title "My Index Page" content "Hello World!" path "/"]
 
-::thtml::renderfile "index.thtml" $data "c"
+puts [::thtml::renderfile "index.thtml" $data "c"]
