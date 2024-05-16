@@ -2,7 +2,7 @@
     return {{url / title Home} {url /blog title Blog}}
 </tpl>
 <tpl val="a b c d e">
-    return 12345
+    return "1 345"
 </tpl>
 <tpl val="a b c d f">
     return "heading: $heading - this is a test [expr {$heading eq {hello world}}] - [string index ${a.b.c.d.e} 2]"

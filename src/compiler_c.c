@@ -922,11 +922,11 @@ static int thtml_CAppendCommand_Token(Tcl_Interp *interp, Tcl_Obj *blocks_list_p
         *out_i = i + 2;
         return TCL_OK;
     } else if (token->type == TCL_TOKEN_TEXT) {
-        Tcl_DStringAppend(ds_ptr, "\nTcl_DStringAppendElement(__ds_", -1);
+        Tcl_DStringAppend(ds_ptr, "\nTcl_DStringAppend(__ds_", -1);
         Tcl_DStringAppend(ds_ptr, name, -1);
         Tcl_DStringAppend(ds_ptr, "__, \"", -1);
         Tcl_DStringAppend(ds_ptr, token->start, token->size);
-        Tcl_DStringAppend(ds_ptr, "\");", -1);
+        Tcl_DStringAppend(ds_ptr, "\", -1);", -1);
         *out_i = i + 1;
         return TCL_OK;
     } else if (token->type == TCL_TOKEN_COMMAND) {
@@ -1418,11 +1418,11 @@ int thtml_CCompileCommand(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DStr
     Tcl_Size i = 0;
     int first = 1;
     while (i < parse_ptr->numTokens) {
-//        if (!first) {
-//            Tcl_DStringAppend(ds_ptr, "\nTcl_DStringAppend(__ds_", -1);
-//            Tcl_DStringAppend(ds_ptr, name, -1);
-//            Tcl_DStringAppend(ds_ptr, "__, \" \", -1);", -1);
-//        }
+        if (!first) {
+            Tcl_DStringAppend(ds_ptr, "\nTcl_DStringAppend(__ds_", -1);
+            Tcl_DStringAppend(ds_ptr, name, -1);
+            Tcl_DStringAppend(ds_ptr, "__, \" \", -1);", -1);
+        }
 
         if (TCL_OK != thtml_CAppendCommand_Token(interp, blocks_list_ptr, ds_ptr, parse_ptr, i, &i, name, NULL, in_eval_p)) {
             fprintf(stderr, "thtml_CAppendCommand_Token failed\n");
