@@ -44,4 +44,18 @@ int __thtml_gt__(Tcl_Obj *a, Tcl_Obj *b) {
     return a_val > b_val;
 }
 
+double __thtml_add__(Tcl_Obj *a, Tcl_Obj *b) {
+
+    // todo: check if string is empty
+
+    double a_val, b_val;
+    if (Tcl_GetDoubleFromObj(NULL, a, &a_val) != TCL_OK) {
+        return 0;
+    }
+    if (Tcl_GetDoubleFromObj(NULL, b, &b_val) != TCL_OK) {
+        return 0;
+    }
+    return a_val + b_val;
+}
+
 #endif // THTML_H

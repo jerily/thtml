@@ -20,5 +20,5 @@ proc ::thtml::util::doublequote_and_escape_newlines {str {lengthVar ""}} {
 proc ::thtml::util::resolve_filepath {filepath} {
 
     set rootdir [::thtml::get_rootdir]
-    return [file normalize [file join $rootdir $filepath]]
+    return [file normalize [file join $rootdir www $filepath]]
 }
