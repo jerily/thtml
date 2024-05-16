@@ -1,4 +1,4 @@
-<import name="Master" src="master.thtml" />
+<import name="Master" src="master.inc" />
 
 <Master pagetitle="My Blog">
     <div class="blog">

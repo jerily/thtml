@@ -1,4 +1,4 @@
-<import name="Tabs" src="tabs.thtml" />
+<import name="Tabs" src="tabs.inc" />
 <html>
     <head>
         <title>$pagetitle</title>

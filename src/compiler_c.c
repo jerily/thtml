@@ -13,7 +13,6 @@
 
 static int count_text_subst = 0;
 static int count_var_dict_subst = 0;
-static int count_cmd = 0;
 
 static int template_cmd_count = 0;
 static int subcmd_count = 0;
@@ -281,24 +280,46 @@ int thtml_CCompileScriptCmd(ClientData  clientData, Tcl_Interp *interp, int objc
 
     Tcl_DStringAppend(&ds, "\nTcl_DString __ds_", -1);
     Tcl_DStringAppend(&ds, name, name_length);
-    Tcl_DStringAppend(&ds, "_base__;\n", -1);
+    Tcl_DStringAppend(&ds, "_base__;", -1);
     Tcl_DStringAppend(&ds, "\nTcl_DString *__ds_", -1);
     Tcl_DStringAppend(&ds, name, name_length);
     Tcl_DStringAppend(&ds, "__ = &__ds_", -1);
     Tcl_DStringAppend(&ds, name, name_length);
-    Tcl_DStringAppend(&ds, "_base__;\n", -1);
-    Tcl_DStringAppend(&ds, "Tcl_DStringInit(__ds_", -1);
+    Tcl_DStringAppend(&ds, "_base__;", -1);
+    Tcl_DStringAppend(&ds, "\nTcl_DStringInit(__ds_", -1);
     Tcl_DStringAppend(&ds, name, name_length);
-    Tcl_DStringAppend(&ds, "__);\n", -1);
+    Tcl_DStringAppend(&ds, "__);", -1);
+
+    Tcl_DString script_ds;
+    Tcl_DStringInit(&script_ds);
 
     int compiled_cmd = 0;
-    if (TCL_OK != thtml_CCompileCommand(interp, blocks_list_ptr, &ds, &parse, name, 0, &compiled_cmd)) {
+    if (TCL_OK != thtml_CCompileCommand(interp, blocks_list_ptr, &script_ds, &parse, name, 0, &compiled_cmd)) {
         Tcl_FreeParse(&parse);
         Tcl_DStringFree(&ds);
+        Tcl_DStringFree(&script_ds);
         return TCL_ERROR;
     }
 
     if (!compiled_cmd) {
+
+        // Tcl_DStringAppend(__ds_val1__, "::thtml::runtime::tcl::evaluate_script", -1);
+        Tcl_DStringAppend(&ds, "\nTcl_DStringAppend(__ds_", -1);
+        Tcl_DStringAppend(&ds, name, name_length);
+        Tcl_DStringAppend(&ds, "__, \"::thtml::runtime::tcl::evaluate_script\", -1);", -1);
+
+        // Tcl_DStringStartSublist(__ds_val1__);
+        Tcl_DStringAppend(&ds, "\nTcl_DStringStartSublist(__ds_", -1);
+        Tcl_DStringAppend(&ds, name, name_length);
+        Tcl_DStringAppend(&ds, "__);", -1);
+
+        Tcl_DStringAppend(&ds, Tcl_DStringValue(&script_ds), Tcl_DStringLength(&script_ds));
+
+        // Tcl_DStringStartSublist(__ds_val1__);
+        Tcl_DStringAppend(&ds, "\nTcl_DStringEndSublist(__ds_", -1);
+        Tcl_DStringAppend(&ds, name, name_length);
+        Tcl_DStringAppend(&ds, "__);", -1);
+
         // Tcl_Obj *__val${val_num}__ = Tcl_NewStringObj(Tcl_DStringValue(__ds_val${val_num}__), Tcl_DStringLength(__ds_val${val_num}__));
         Tcl_DStringAppend(&ds, "\nTcl_Obj *__", -1);
         Tcl_DStringAppend(&ds, name, name_length);
@@ -313,6 +334,11 @@ int thtml_CCompileScriptCmd(ClientData  clientData, Tcl_Interp *interp, int objc
         Tcl_DStringAppend(&ds, name, name_length);
         Tcl_DStringAppend(&ds, "__);\n", -1);
 
+        // fprintf(stderr, "%s\n", Tcl_GetString(__val${val_num}__));
+        Tcl_DStringAppend(&ds, "\nfprintf(stderr, \"__val${val_num}__ = %s\\n\", Tcl_GetString(__", -1);
+        Tcl_DStringAppend(&ds, name, name_length);
+        Tcl_DStringAppend(&ds, "__));\n", -1);
+
         // if (TCL_OK != Tcl_EvalObjEx(__interp__, __val${val_num}__, TCL_EVAL_DIRECT)) {return TCL_ERROR;}
         Tcl_DStringAppend(&ds, "\nif (TCL_OK != Tcl_EvalObjEx(__interp__, __", -1);
         Tcl_DStringAppend(&ds, name, name_length);
@@ -324,12 +350,15 @@ int thtml_CCompileScriptCmd(ClientData  clientData, Tcl_Interp *interp, int objc
         Tcl_DStringAppend(&ds, "__);\n", -1);
 
 
+    } else {
+        Tcl_DStringAppend(&ds, Tcl_DStringValue(&script_ds), Tcl_DStringLength(&script_ds));
     }
 
     Tcl_FreeParse(&parse);
 
     Tcl_DStringResult(interp, &ds);
     Tcl_DStringFree(&ds);
+    Tcl_DStringFree(&script_ds);
     return TCL_OK;
 }
 
@@ -340,7 +369,7 @@ thtml_CAppendExpr_Token(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DStrin
 static int thtml_CAppendVariable_Simple(Tcl_Interp *interp, Tcl_DString *ds_ptr, const char *varname_first_part,
                                           Tcl_Size varname_first_part_length, const char *name, Tcl_DString *expr_ds_ptr, int in_eval_p) {
     if (expr_ds_ptr == NULL) {
-        if (in_eval_p) {
+        if (0 && in_eval_p) {
             // Tcl_Obj *__script1_var_x__ = Tcl_NewStringObj("x", -1);
             Tcl_DStringAppend(ds_ptr, "\nTcl_Obj *__", -1);
             Tcl_DStringAppend(ds_ptr, name, -1);
@@ -363,7 +392,7 @@ static int thtml_CAppendVariable_Simple(Tcl_Interp *interp, Tcl_DString *ds_ptr,
             Tcl_DStringAppend(ds_ptr, varname_first_part, varname_first_part_length);
             Tcl_DStringAppend(ds_ptr, "__, NULL, ", -1);
             Tcl_DStringAppend(ds_ptr, varname_first_part, varname_first_part_length);
-            Tcl_DStringAppend(ds_ptr, ", TCL_LEAVE_ERR_MSG)) { return TCL_ERROR; }", -1);
+            Tcl_DStringAppend(ds_ptr, ", TCL_LEAVE_ERR_MSG)) { fprintf(stderr, \"here\\\n\"); return TCL_ERROR; }", -1);
             // Tcl_DecrRefCount(__script1_var_x__);
             Tcl_DStringAppend(ds_ptr, "\nTcl_DecrRefCount(__", -1);
             Tcl_DStringAppend(ds_ptr, name, -1);
@@ -376,7 +405,7 @@ static int thtml_CAppendVariable_Simple(Tcl_Interp *interp, Tcl_DString *ds_ptr,
             Tcl_DStringAppend(ds_ptr, name, -1);
             Tcl_DStringAppend(ds_ptr, "__, \"$", -1);
             Tcl_DStringAppend(ds_ptr, varname_first_part, varname_first_part_length);
-            Tcl_DStringAppend(ds_ptr, "\"), -1);", -1);
+            Tcl_DStringAppend(ds_ptr, "\", -1);", -1);
         } else {
             // Tcl_DStringAppend(__ds_default__, Tcl_GetString(x), -1);
             Tcl_DStringAppend(ds_ptr, "\nTcl_DStringAppend(__ds_", -1);
@@ -407,13 +436,21 @@ thtml_CAppendVariable_Dict(Tcl_Interp *interp, Tcl_DString *ds_ptr, const char *
     char count_var_dict_subst_str[12];
     snprintf(count_var_dict_subst_str, 12, "%d", count_var_dict_subst);
 
+    const char *prev_part = varname_first_part;
+    Tcl_Size prev_part_length = varname_first_part_length;
+    Tcl_DStringAppend(ds_ptr, "\nTcl_Obj *__dict_", -1);
+    Tcl_DStringAppend(ds_ptr, count_var_dict_subst_str, -1);
+    Tcl_DStringAppend(ds_ptr, "__ = ", -1);
+    Tcl_DStringAppend(ds_ptr, varname_first_part, varname_first_part_length);
+    Tcl_DStringAppend(ds_ptr, ";", -1);
+
     int first = 1;
     for (int i = 0; i < num_parts; i++) {
-        if (first) {
-            first = 0;
-        } else {
-            Tcl_DStringAppend(ds_ptr, " ", 1);
-        }
+//        if (first) {
+//            first = 0;
+//        } else {
+//            Tcl_DStringAppend(ds_ptr, " ", 1);
+//        }
         Tcl_Obj *part_ptr = parts[i];
         Tcl_Size part_length;
         const char *part = Tcl_GetStringFromObj(part_ptr, &part_length);
@@ -434,9 +471,9 @@ thtml_CAppendVariable_Dict(Tcl_Interp *interp, Tcl_DString *ds_ptr, const char *
         Tcl_DStringAppend(ds_ptr, count_var_dict_subst_str, -1);
         Tcl_DStringAppend(ds_ptr, "_key_ptr__);", -1);
         Tcl_DStringAppend(ds_ptr, "\nif (TCL_OK != Tcl_DictObjGet(__interp__, ", -1);
-        // TODO: this is a chain of keys, we need to get the name of the previous part in the chain
-        Tcl_DStringAppend(ds_ptr, varname_first_part, varname_first_part_length);
-        Tcl_DStringAppend(ds_ptr, ", __", -1);
+        Tcl_DStringAppend(ds_ptr, "__dict_", -1);
+        Tcl_DStringAppend(ds_ptr, count_var_dict_subst_str, -1);
+        Tcl_DStringAppend(ds_ptr, "__, __", -1);
         Tcl_DStringAppend(ds_ptr, part, part_length);
         Tcl_DStringAppend(ds_ptr, count_var_dict_subst_str, -1);
         Tcl_DStringAppend(ds_ptr, "_key_ptr__, &", -1);
@@ -448,18 +485,33 @@ thtml_CAppendVariable_Dict(Tcl_Interp *interp, Tcl_DString *ds_ptr, const char *
         Tcl_DStringAppend(ds_ptr, count_var_dict_subst_str, -1);
         Tcl_DStringAppend(ds_ptr, "_key_ptr__);", -1);
 
-        if (expr_ds_ptr == NULL) {
-            Tcl_DStringAppend(ds_ptr, "\nTcl_DStringAppend(__ds_", -1);
-            Tcl_DStringAppend(ds_ptr, name, -1);
-            Tcl_DStringAppend(ds_ptr, "__, Tcl_GetString(", -1);
-            Tcl_DStringAppend(ds_ptr, part, part_length);
-            Tcl_DStringAppend(ds_ptr, count_var_dict_subst_str, -1);
-            Tcl_DStringAppend(ds_ptr, "), -1);\n", -1);
-        } else {
-            Tcl_DStringAppend(expr_ds_ptr, part, part_length);
-            Tcl_DStringAppend(expr_ds_ptr, count_var_dict_subst_str, -1);
-        }
+
+        // fprintf(stderr, "dict: %s\n", Tcl_GetString(__dict1__));
+//        Tcl_DStringAppend(ds_ptr, "\nfprintf(stderr, \"dict: %s\\n\", Tcl_GetString(__dict_", -1);
+//        Tcl_DStringAppend(ds_ptr, count_var_dict_subst_str, -1);
+//        Tcl_DStringAppend(ds_ptr, "__));\n", -1);
+
+        Tcl_DStringAppend(ds_ptr, "\n__dict_", -1);
+        Tcl_DStringAppend(ds_ptr, count_var_dict_subst_str, -1);
+        Tcl_DStringAppend(ds_ptr, "__ = ", -1);
+        Tcl_DStringAppend(ds_ptr, part, part_length);
+        Tcl_DStringAppend(ds_ptr, count_var_dict_subst_str, -1);
+        Tcl_DStringAppend(ds_ptr, ";", -1);
+
     }
+
+    if (expr_ds_ptr == NULL) {
+        Tcl_DStringAppend(ds_ptr, "\nTcl_DStringAppend(__ds_", -1);
+        Tcl_DStringAppend(ds_ptr, name, -1);
+        Tcl_DStringAppend(ds_ptr, "__, Tcl_GetString(__dict_", -1);
+        Tcl_DStringAppend(ds_ptr, count_var_dict_subst_str, -1);
+        Tcl_DStringAppend(ds_ptr, "__), -1);\n", -1);
+    } else {
+        Tcl_DStringAppend(expr_ds_ptr, "__dict_", -1);
+        Tcl_DStringAppend(expr_ds_ptr, count_var_dict_subst_str, -1);
+        Tcl_DStringAppend(expr_ds_ptr, "__", -1);
+    }
+
     return TCL_OK;
 }
 
@@ -893,6 +945,16 @@ static int thtml_CAppendCommand_Token(Tcl_Interp *interp, Tcl_Obj *blocks_list_p
         Tcl_DStringAppend(ds_ptr, subcmd_name, -1);
         Tcl_DStringAppend(ds_ptr, "__);", -1);
 
+        // Tcl_DStringAppend(__ds_subcmd1__, "::thtml::runtime::tcl::evaluate_script", -1);
+        Tcl_DStringAppend(ds_ptr, "\nTcl_DStringAppend(__ds_", -1);
+        Tcl_DStringAppend(ds_ptr, subcmd_name, -1);
+        Tcl_DStringAppend(ds_ptr, "__, \"::thtml::runtime::tcl::evaluate_script\", -1);", -1);
+
+        // Tcl_DStringStartSublist(__ds__subcmd1__);
+        Tcl_DStringAppend(ds_ptr, "\nTcl_DStringStartSublist(__ds_", -1);
+        Tcl_DStringAppend(ds_ptr, subcmd_name, -1);
+        Tcl_DStringAppend(ds_ptr, "__);", -1);
+
         Tcl_Parse subcmd_parse;
         if (TCL_OK != Tcl_ParseCommand(interp, token->start + 1, token->size - 2, 0, &subcmd_parse)) {
             return TCL_ERROR;
@@ -901,6 +963,11 @@ static int thtml_CAppendCommand_Token(Tcl_Interp *interp, Tcl_Obj *blocks_list_p
         if (TCL_OK != thtml_CCompileCommand(interp, blocks_list_ptr, ds_ptr, &subcmd_parse, subcmd_name, 1, &compiled_cmd)) {
             return TCL_ERROR;
         }
+
+        // Tcl_DStringEndSublist(__ds__subcmd1__);
+        Tcl_DStringAppend(ds_ptr, "\nTcl_DStringEndSublist(__ds_", -1);
+        Tcl_DStringAppend(ds_ptr, subcmd_name, -1);
+        Tcl_DStringAppend(ds_ptr, "__);", -1);
 
         if (!compiled_cmd) {
             // Tcl_Obj *__val3_cmd1__ = Tcl_NewStringObj(Tcl_DStringValue(&__ds_val3_cmd1__), Tcl_DStringLength(&__ds_val3_cmd1__));
@@ -911,6 +978,12 @@ static int thtml_CAppendCommand_Token(Tcl_Interp *interp, Tcl_Obj *blocks_list_p
             Tcl_DStringAppend(ds_ptr, "__), Tcl_DStringLength(__ds_", -1);
             Tcl_DStringAppend(ds_ptr, subcmd_name, -1);
             Tcl_DStringAppend(ds_ptr, "__));", -1);
+
+            // fprintf(stderr, "script: %s\n", Tcl_GetString(__val3_cmd1__));
+            Tcl_DStringAppend(ds_ptr, "\nfprintf(stderr, \"script: %s\\n\", Tcl_GetString(__", -1);
+            Tcl_DStringAppend(ds_ptr, subcmd_name, -1);
+            Tcl_DStringAppend(ds_ptr, "__));", -1);
+
 
             // if (TCL_OK != Tcl_EvalObjEx(__interp__, __val3_cmd1__, TCL_EVAL_DIRECT)) { return TCL_ERROR; }
             Tcl_DStringAppend(ds_ptr, "\nif (TCL_OK != Tcl_EvalObjEx(__interp__, __", -1);
@@ -927,27 +1000,34 @@ static int thtml_CAppendCommand_Token(Tcl_Interp *interp, Tcl_Obj *blocks_list_p
             // Tcl_Obj *__val3_subcmd1__ = Tcl_GetObjResult(__interp__);
             Tcl_DStringAppend(ds_ptr, "\nTcl_Obj *__", -1);
             Tcl_DStringAppend(ds_ptr, subcmd_name, -1);
-            Tcl_DStringAppend(ds_ptr, "__ = Tcl_GetObjResult(__interp__);", -1);
+            Tcl_DStringAppend(ds_ptr, "_res__ = Tcl_GetObjResult(__interp__);", -1);
 
             // Tcl_DStringAppend(__ds_val3__, Tcl_GetString(__val3_subcmd1__), -1);
             Tcl_DStringAppend(ds_ptr, "\nTcl_DStringAppend(__ds_", -1);
             Tcl_DStringAppend(ds_ptr, name, -1);
             Tcl_DStringAppend(ds_ptr, "__, Tcl_GetString(__", -1);
             Tcl_DStringAppend(ds_ptr, subcmd_name, -1);
-            Tcl_DStringAppend(ds_ptr, "__), -1);", -1);
+            Tcl_DStringAppend(ds_ptr, "_res__), -1);", -1);
         }
 
     } else if (token->type == TCL_TOKEN_EXPAND_WORD) {
         SetResult("error parsing expression: expand word not supported");
         return TCL_ERROR;
     } else if (token->type == TCL_TOKEN_WORD) {
-        Tcl_Size start_i = i;
         Tcl_Size j = i + 1;
-        while (i - start_i < token->numComponents) {
+        Tcl_Size count = 0;
+        while (count < token->numComponents) {
+            if (count > 0) {
+                Tcl_DStringAppend(ds_ptr, "\nTcl_DStringAppend(__ds_", -1);
+                Tcl_DStringAppend(ds_ptr, name, -1);
+                Tcl_DStringAppend(ds_ptr, "__, \" \", -1);", -1);
+            }
+
             if (TCL_OK != thtml_CAppendCommand_Token(interp, blocks_list_ptr, ds_ptr, parse_ptr, j, &i, name, cmd_ds_ptr, in_eval_p)) {
                 return TCL_ERROR;
             }
             j = i;
+            count++;
         }
         *out_i = i + 1;
         return TCL_OK;
@@ -1150,12 +1230,12 @@ thtml_CCompileTemplateText(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DSt
             // Tcl_Obj *__cmd1__ = Tcl_GetObjResult(__interp__);
             Tcl_DStringAppend(ds_ptr, "\nTcl_Obj *__", -1);
             Tcl_DStringAppend(ds_ptr, cmd_name, -1);
-            Tcl_DStringAppend(ds_ptr, "__ = Tcl_GetObjResult(__interp__);", -1);
+            Tcl_DStringAppend(ds_ptr, "_res__ = Tcl_GetObjResult(__interp__);", -1);
 
             // Tcl_DStringAppend(__ds_default__, Tcl_GetString(__cmd1__), -1);
             Tcl_DStringAppend(ds_ptr, "\nTcl_DStringAppend(__ds_default__, Tcl_GetString(__", -1);
             Tcl_DStringAppend(ds_ptr, cmd_name, -1);
-            Tcl_DStringAppend(ds_ptr, "__), -1);", -1);
+            Tcl_DStringAppend(ds_ptr, "_res__), -1);", -1);
 
             Tcl_DStringAppend(ds_ptr, "\x02", -1);
 
@@ -1268,35 +1348,43 @@ int thtml_CCompileCommand(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DStr
         }
     }
 
-
-    Tcl_DString word_ds;
-    Tcl_DStringInit(&word_ds);
+//    if (nested) {
+//        Tcl_DStringAppend(ds_ptr, "\nappend __ds_", -1);
+//        Tcl_DStringAppend(ds_ptr, name, -1);
+//        Tcl_DStringAppend(ds_ptr, "__ {[}", -1);
+//    }
 
     int in_eval_p = 1;  // it is not a compiled command, so we are in eval
-    int i = 0;
+    Tcl_Size i = 0;
     int first = 1;
     while (i < parse_ptr->numTokens) {
+        if (!first) {
+            Tcl_DStringAppend(ds_ptr, "\nTcl_DStringAppend(__ds_", -1);
+            Tcl_DStringAppend(ds_ptr, name, -1);
+            Tcl_DStringAppend(ds_ptr, "__, \" \", -1);", -1);
+        }
+
         if (TCL_OK != thtml_CAppendCommand_Token(interp, blocks_list_ptr, ds_ptr, parse_ptr, i, &i, name, NULL, in_eval_p)) {
-            Tcl_DStringFree(&word_ds);
             fprintf(stderr, "thtml_CAppendCommand_Token failed\n");
             return TCL_ERROR;
         }
 
-//        if (first) {
-//            Tcl_DStringAppend(ds_ptr, "\nTcl_DStringAppend(__ds_", -1);
-//            Tcl_DStringAppend(ds_ptr, name, -1);
-//            Tcl_DStringAppend(ds_ptr, "__, \" \\\"\", -1);", -1);
-//        }
-        // fprintf(stderr, "i: %d / %d\n", i, parse_ptr->numTokens);
+        first = 0;
     }
 
-//    if (parse_ptr->numTokens > 1) {
-//        Tcl_DStringAppend(ds_ptr, "\nTcl_DStringAppend(__ds_", -1);
+//    if (nested) {
+//        Tcl_DStringAppend(ds_ptr, "\nappend __ds_", -1);
 //        Tcl_DStringAppend(ds_ptr, name, -1);
-//        Tcl_DStringAppend(ds_ptr, "__, \"\\\"\", -1);", -1);
+//        Tcl_DStringAppend(ds_ptr, "__ {]}", -1);
 //    }
 
-    Tcl_DStringFree(&word_ds);
+    // set __val3_subcmd1__ $__ds_val3_subcmd1__
+//    Tcl_DStringAppend(ds_ptr, "\nset __", -1);
+//    Tcl_DStringAppend(ds_ptr, name, -1);
+//    Tcl_DStringAppend(ds_ptr, "__ $__ds_", -1);
+//    Tcl_DStringAppend(ds_ptr, name, -1);
+//    Tcl_DStringAppend(ds_ptr, "__", -1);
+
     *compiled_command = 0;
     return TCL_OK;
 }

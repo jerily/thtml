@@ -957,7 +957,7 @@ int thtml_TclCompileCommand(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DS
         Tcl_DStringAppend(ds_ptr, "__ {[}", -1);
     }
 
-    int i = 1;
+    Tcl_Size i = 1;
     int first = 1;
     while (i < parse_ptr->numTokens) {
         if (!first) {

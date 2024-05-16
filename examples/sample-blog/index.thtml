@@ -1,4 +1,4 @@
-<import name="Master" src="master.thtml" />
+<import name="Master" src="master.inc" />
 
 <Master pagetitle="thtml - HTML Templating Engine for twebserver">
     <div>

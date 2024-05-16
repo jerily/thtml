@@ -3,12 +3,10 @@ package require thtml
 set dir [file dirname [info script]]
 set rootdir [file join $dir sample-blog]
 
-::thtml::init [dict create cache 0 rootdir $rootdir]
+::thtml::init [dict create cache 1 rootdir $rootdir]
 
-set filepath [file join $rootdir "index.thtml"]
-set fp [open $filepath]
-set template [read $fp]
-close $fp
-set tcl_code [::thtml::compile $template "tcl"]
+set data [dict create title "My Index Page" content "Hello World!" path "/"]
+
+set tcl_code [::thtml::renderfile index.thtml $data "tcl"]
 
 puts $tcl_code

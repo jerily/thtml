@@ -36,26 +36,27 @@ proc ::thtml::compiler::c_compile_statement_val {codearrVar node} {
     set compiled_statement ""
     append compiled_statement "\x03"
     append compiled_statement "\n" ${compiled_script}
-    set first_key [lindex $chain_of_keys 0]
-    set last_key [lindex $chain_of_keys end]
-    set prev_key $last_key
-    append compiled_statement "\n" "Tcl_Obj *__val${val_num}_key_${last_key}__ = Tcl_GetObjResult(__interp__);"
-    if { $first_key ne $last_key } {
-        for {set i [expr {[llength $chain_of_keys] - 2}]} {$i > 0} {incr i -1} {
-            set key [lindex $chain_of_keys $i]
-            append compiled_statement "\n" "Tcl_Obj *__val${val_num}_key_${key}__ = Tcl_NewDictObj();"
-            append compiled_statement "\n" "Tcl_IncrRefCount(__val${val_num}_key_${key}__);"
-            append compiled_statement "\n" "if (TCL_OK != Tcl_DictObjPut(__interp__, __val${val_num}_key_${prev_key}__, Tcl_NewStringObj(\"${key}\", -1), __val${val_num}_key_${prev_key}__)) {return TCL_ERROR;}"
-            set prev_key $key
-        }
+
+    set key_objs {}
+    for {set i 0} {$i < [llength $chain_of_keys]} {incr i} {
+        set key [lindex $chain_of_keys $i]
+        append compiled_statement "\n" "Tcl_Obj *__val${val_num}_key_${key}__ = Tcl_NewStringObj(\"${key}\", -1);"
+        append compiled_statement "\n" "Tcl_IncrRefCount(__val${val_num}_key_${key}__);"
+        lappend key_objs "__val${val_num}_key_${key}__"
     }
-    append compiled_statement "\n" "if (TCL_OK != Tcl_DictObjPut(__interp__, __data__, Tcl_NewStringObj(\"${first_key}\", -1), __val${val_num}_key_${prev_key}__)) {return TCL_ERROR;}"
-    if { $first_key ne $last_key } {
-        for {set i [expr {[llength $chain_of_keys] - 2}]} {$i > 0} {incr i -1} {
-            set key [lindex $chain_of_keys $i]
-            append compiled_statement "\n" "Tcl_DecrRefCount(__val${val_num}_key_${key}__);"
-        }
+    append compiled_statement "\n" "Tcl_Obj *__val${val_num}_keyv__\[\] = \{ [join $key_objs {,}] \};"
+
+    # todo: decr ref count when it errs
+    append compiled_statement "\n" "if (TCL_OK != Tcl_DictObjPutKeyList(__interp__, __data__, [llength $chain_of_keys], __val${val_num}_keyv__, Tcl_GetObjResult(__interp__))) {return TCL_ERROR;}"
+
+    for {set i 0} {$i < [llength $chain_of_keys]} {incr i} {
+        set key [lindex $chain_of_keys $i]
+        append compiled_statement "\n" "Tcl_DecrRefCount(__val${val_num}_key_${key}__);"
     }
+
+    append compiled_statement "\n" "fprintf(stderr, \"val${val_num} = %s\\n\", Tcl_GetString(Tcl_GetObjResult(__interp__)));"
+    append compiled_statement "\n" "Tcl_ResetResult(__interp__);"
+
     append compiled_statement "\x02"
     return $compiled_statement
 }
