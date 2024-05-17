@@ -54,7 +54,7 @@ proc ::thtml::compiler::c_compile_statement_val {codearrVar node} {
         append compiled_statement "\n" "Tcl_DecrRefCount(__val${val_num}_key_${key}__);"
     }
 
-    append compiled_statement "\n" "fprintf(stderr, \"val${val_num} = %s\\n\", Tcl_GetString(Tcl_GetObjResult(__interp__)));"
+#    append compiled_statement "\n" "fprintf(stderr, \"val${val_num} = %s\\n\", Tcl_GetString(Tcl_GetObjResult(__interp__)));"
     append compiled_statement "\n" "Tcl_ResetResult(__interp__);"
 
     append compiled_statement "\x02"
@@ -101,13 +101,11 @@ proc ::thtml::compiler::c_compile_statement_foreach {codearrVar node} {
 
     append compiled_statement "\n" ${compiled_foreach_list}
     append compiled_statement "\n" "Tcl_IncrRefCount(__list${foreach_num}__);"
-    append compiled_statement "\n" "fprintf(stderr, \"list${foreach_num} = %s\\n\", Tcl_GetString(__list${foreach_num}__));"
+#    append compiled_statement "\n" "fprintf(stderr, \"list${foreach_num} = %s\\n\", Tcl_GetString(__list${foreach_num}__));"
     append compiled_statement "\n" "Tcl_Size __list${foreach_num}_len__;"
     append compiled_statement "\n" "if (TCL_OK != Tcl_ListObjLength(__interp__, __list${foreach_num}__, &__list${foreach_num}_len__)) {return TCL_ERROR;}"
-    append compiled_statement "\n" "fprintf(stderr, \"list${foreach_num}_len = %d\\n\", __list${foreach_num}_len__);"
+#    append compiled_statement "\n" "fprintf(stderr, \"list${foreach_num}_len = %d\\n\", __list${foreach_num}_len__);"
     append compiled_statement "\n" "for (int __i${foreach_num}__ = 0; __i${foreach_num}__ < __list${foreach_num}_len__; __i${foreach_num}__ += [llength $foreach_varnames])  \{"
-#    append compiled_statement "\n" "Tcl_Obj *__elem${foreach_num}__;"
-#    append compiled_statement "\n" "if (TCL_OK != Tcl_ListObjIndex(__interp__, __list${foreach_num}__, __i${foreach_num}__, &__elem${foreach_num}__)) {return TCL_ERROR;}"
     set foreach_varname_i 0
     foreach foreach_varname $foreach_varnames {
         append compiled_statement "\n" "Tcl_Obj *${foreach_varname};"

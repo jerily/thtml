@@ -34,14 +34,28 @@ int __thtml_gt__(Tcl_Obj *a, Tcl_Obj *b) {
 
     // todo: check if string is empty
 
-    double a_val, b_val;
-    if (Tcl_GetDoubleFromObj(NULL, a, &a_val) != TCL_OK) {
+    void *a_val = NULL;
+    void *b_val = NULL;
+    int a_type = TCL_NUMBER_NAN;
+    int b_type = TCL_NUMBER_NAN;
+    if (TCL_OK != Tcl_GetNumberFromObj(NULL, a, &a_val, &a_type) || TCL_OK != Tcl_GetNumberFromObj(NULL, b, &b_val, &b_type)) {
+        fprintf(stderr, "error: a=%s b=%s\n", Tcl_GetString(a), Tcl_GetString(b));
         return 0;
     }
-    if (Tcl_GetDoubleFromObj(NULL, b, &b_val) != TCL_OK) {
+
+    if (a_type == TCL_NUMBER_NAN || b_type == TCL_NUMBER_NAN) {
         return 0;
     }
-    return a_val > b_val;
+
+    if (a_type == TCL_NUMBER_DOUBLE || b_type == TCL_NUMBER_DOUBLE) {
+        return *(double *)a_val > *(double *)b_val;
+    }
+
+    if (a_type == TCL_NUMBER_INT || b_type == TCL_NUMBER_INT) {
+        return *(int *)a_val > *(int *)b_val;
+    }
+
+    return 0;
 }
 
 double __thtml_add__(Tcl_Obj *a, Tcl_Obj *b) {

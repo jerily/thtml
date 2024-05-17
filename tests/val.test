@@ -12,14 +12,10 @@ proc escape {str} {
     return [string map {\r {\r} \n {\n}} $str]
 }
 
-set rootdir [file join [file dirname [info script]] ../examples/sample-blog]
-::thtml::init [dict create cache 1 rootdir $rootdir]
+set rootdir [file normalize [file dirname [info script]]]
+::thtml::init [dict create cache 1 rootdir $rootdir target_lang c debug 0]
 
 test val-1 {} -body {
-    global target_lang
-    if {![info exists target_lang]} {
-        set target_lang tcl
-    }
 
     set template {
         <html>
@@ -35,7 +31,7 @@ test val-1 {} -body {
             </body>
         </html>
     }
-    ::thtml::render $template {title "You rock!" loggedin 1} $target_lang
+    ::thtml::render $template {title "You rock!" loggedin 1}
 } -result {<html><head><title>You rock!</title></head><body><h1>You rock!</h1><p>3</p></body></html>}
 
 test val-2 {} -body {

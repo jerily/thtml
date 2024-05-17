@@ -335,9 +335,9 @@ int thtml_CCompileScriptCmd(ClientData  clientData, Tcl_Interp *interp, int objc
         Tcl_DStringAppend(&ds, "__);\n", -1);
 
         // fprintf(stderr, "%s\n", Tcl_GetString(__val${val_num}__));
-        Tcl_DStringAppend(&ds, "\nfprintf(stderr, \"__val${val_num}__ = %s\\n\", Tcl_GetString(__", -1);
-        Tcl_DStringAppend(&ds, name, name_length);
-        Tcl_DStringAppend(&ds, "__));\n", -1);
+//        Tcl_DStringAppend(&ds, "\nfprintf(stderr, \"__val${val_num}__ = %s\\n\", Tcl_GetString(__", -1);
+//        Tcl_DStringAppend(&ds, name, name_length);
+//        Tcl_DStringAppend(&ds, "__));\n", -1);
 
         // if (TCL_OK != Tcl_EvalObjEx(__interp__, __val${val_num}__, TCL_EVAL_DIRECT)) {return TCL_ERROR;}
         Tcl_DStringAppend(&ds, "\nif (TCL_OK != Tcl_EvalObjEx(__interp__, __", -1);
@@ -487,9 +487,9 @@ thtml_CAppendVariable_Dict(Tcl_Interp *interp, Tcl_DString *ds_ptr, const char *
 
 
         // fprintf(stderr, "dict: %s\n", Tcl_GetString(__dict1__));
-        Tcl_DStringAppend(ds_ptr, "\nfprintf(stderr, \"dict: %s\\n\", Tcl_GetString(__dict_", -1);
-        Tcl_DStringAppend(ds_ptr, count_var_dict_subst_str, -1);
-        Tcl_DStringAppend(ds_ptr, "__));\n", -1);
+//        Tcl_DStringAppend(ds_ptr, "\nfprintf(stderr, \"dict: %s\\n\", Tcl_GetString(__dict_", -1);
+//        Tcl_DStringAppend(ds_ptr, count_var_dict_subst_str, -1);
+//        Tcl_DStringAppend(ds_ptr, "__));\n", -1);
 
         Tcl_DStringAppend(ds_ptr, "\n__dict_", -1);
         Tcl_DStringAppend(ds_ptr, count_var_dict_subst_str, -1);
@@ -991,9 +991,9 @@ static int thtml_CAppendCommand_Token(Tcl_Interp *interp, Tcl_Obj *blocks_list_p
             Tcl_DStringAppend(ds_ptr, "__));", -1);
 
             // fprintf(stderr, "script: %s\n", Tcl_GetString(__val3_cmd1__));
-            Tcl_DStringAppend(ds_ptr, "\nfprintf(stderr, \"script: %s\\n\", Tcl_GetString(__", -1);
-            Tcl_DStringAppend(ds_ptr, subcmd_name, -1);
-            Tcl_DStringAppend(ds_ptr, "__));", -1);
+//            Tcl_DStringAppend(ds_ptr, "\nfprintf(stderr, \"script: %s\\n\", Tcl_GetString(__", -1);
+//            Tcl_DStringAppend(ds_ptr, subcmd_name, -1);
+//            Tcl_DStringAppend(ds_ptr, "__));", -1);
 
 
             // if (TCL_OK != Tcl_EvalObjEx(__interp__, __val3_cmd1__, TCL_EVAL_DIRECT)) { return TCL_ERROR; }
@@ -1366,7 +1366,7 @@ int thtml_CCompileGenericCommand(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, T
     Tcl_DStringAppend(&cmd_ds,"(__interp__, ", -1);
 
     int in_eval_p = 0;
-    int i = 2;
+    Tcl_Size i = 2;
     int first = 1;
     while (i < parse_ptr->numTokens) {
         if (!first) {
@@ -1393,7 +1393,7 @@ int thtml_CCompileCommand(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DStr
     Tcl_Token *token = &parse_ptr->tokenPtr[0];
     // if it is "expr" command, then call thtml_CCompileExpr
     if (token->type == TCL_TOKEN_SIMPLE_WORD) {
-        if (token->size == 4 && 0 == strncmp(token->start, "expr", 4)) {
+        if (token->size == 4 && 0 == strncmp(token->start, "expr", 4) && parse_ptr->numTokens == 4) {
             if (TCL_OK != thtml_CCompileExprCommand(interp, blocks_list_ptr, ds_ptr, parse_ptr, name)) {
                 return TCL_ERROR;
             }

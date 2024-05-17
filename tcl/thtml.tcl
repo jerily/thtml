@@ -7,12 +7,16 @@ package require tdom
 namespace eval ::thtml {
     variable rootdir
     variable cache 0
+    variable target_lang tcl
+    variable debug 0
 }
 namespace eval ::thtml::cache {}
 
 proc ::thtml::init {option_dict} {
     variable rootdir
     variable cache
+    variable target_lang
+    variable debug
 
     if { [dict exists $option_dict rootdir] } {
         set rootdir [dict get $option_dict rootdir]
@@ -20,6 +24,14 @@ proc ::thtml::init {option_dict} {
 
     if { [dict exists $option_dict cache] } {
         set cache [dict get $option_dict cache]
+    }
+
+    if { [dict exists $option_dict target_lang] } {
+        set target_lang [dict get $option_dict target_lang]
+    }
+
+    if { [dict exists $option_dict debug] } {
+        set debug [dict get $option_dict debug]
     }
 }
 
@@ -37,6 +49,8 @@ proc ::thtml::tcl_compile_template_and_load {codearrVar template} {
 }
 
 proc ::thtml::c_compile_template_and_load {codearrVar template} {
+    variable debug
+
     upvar $codearrVar codearr
 
     set md5 [::thtml::util::md5 $template]
@@ -62,10 +76,12 @@ proc ::thtml::c_compile_template_and_load {codearrVar template} {
     append c_code "\n" "return TCL_OK;"
     append c_code "\n" "}"
 
-    puts c_code=$c_code
+    if { $debug } { puts c_code=$c_code }
 
     set dir [::thtml::get_rootdir]
+    if { $debug } { puts rootdir=$dir }
     set cachedir [file normalize [file join $dir "cache/"]]
+    if { $debug } { puts cachedir=$cachedir }
     set outfile [file join $cachedir "index.c"]
     set fp [open $outfile w]
     puts $fp $c_code
@@ -74,17 +90,20 @@ proc ::thtml::c_compile_template_and_load {codearrVar template} {
     set builddir [file join $cachedir "build"]
     cd $builddir
     set msgs [exec -ignorestderr -- cmake $cachedir -DTHTML_PROJECT_NAME=$md5 -DTHTML_PROJECT_CODE=index.c]
-    puts $msgs
+    if { $debug } { puts $msgs }
     set msgs [exec -ignorestderr -- make]
-    puts $msgs
+    if { $debug } { puts $msgs }
 
     load [file join $builddir "libthtml-${md5}.so"]
 }
 
-proc ::thtml::render {template __data__ {target_lang "tcl"}} {
+proc ::thtml::render {template __data__} {
     variable cache
     variable rootdir
+    variable target_lang
+    variable debug
 
+    if { $debug } { puts target_lang=$target_lang }
     array set codearr [list blocks {} target_lang $target_lang defs {} seen {}]
 
     if { $cache } {
@@ -102,6 +121,8 @@ proc ::thtml::render {template __data__ {target_lang "tcl"}} {
 }
 
 proc ::thtml::c_compile_file_and_load {codearrVar filename} {
+    variable debug
+
     upvar $codearrVar codearr
 
     set filepath [::thtml::util::resolve_filepath $filename]
@@ -133,10 +154,12 @@ proc ::thtml::c_compile_file_and_load {codearrVar filename} {
     append c_code "\n" "return TCL_OK;"
     append c_code "\n" "}"
 
-    puts c_code=$c_code
+    if { $debug } { puts c_code=$c_code }
 
     set dir [::thtml::get_rootdir]
+    if { $debug } { puts rootdir=$dir }
     set cachedir [file normalize [file join $dir "cache/"]]
+    if { $debug } { puts cachedir=$cachedir }
     set outfile [file join $cachedir "index.c"]
     set fp [open $outfile w]
     puts $fp $c_code
@@ -145,9 +168,9 @@ proc ::thtml::c_compile_file_and_load {codearrVar filename} {
     set builddir [file join $cachedir "build"]
     cd $builddir
     set msgs [exec -ignorestderr -- cmake $cachedir -DTHTML_PROJECT_NAME=$md5 -DTHTML_PROJECT_CODE=index.c]
-    puts $msgs
+    if { $debug } { puts $msgs }
     set msgs [exec -ignorestderr -- make]
-    puts $msgs
+    if { $debug } { puts $msgs }
 
     load [file join $builddir "libthtml-${md5}.so"]
 }
@@ -170,9 +193,10 @@ proc ::thtml::tcl_compile_file_and_load {codearrVar filename} {
     proc $proc_name {__data__} "return \"<!doctype html>\[eval \{${compiled_template}\}\]\""
 }
 
-proc ::thtml::renderfile {filename __data__ {target_lang "tcl"}} {
+proc ::thtml::renderfile {filename __data__} {
     variable cache
     variable rootdir
+    variable target_lang
 
     array set codearr [list blocks {} target_lang $target_lang defs {} seen {}]
 
