@@ -49,10 +49,10 @@ int __thtml_gt__(Tcl_Obj *a, Tcl_Obj *b) {
 
     if (a_type == TCL_NUMBER_DOUBLE || b_type == TCL_NUMBER_DOUBLE) {
         return *(double *)a_val > *(double *)b_val;
-    }
-
-    if (a_type == TCL_NUMBER_INT || b_type == TCL_NUMBER_INT) {
+    } else if (a_type == TCL_NUMBER_INT || b_type == TCL_NUMBER_INT) {
         return *(int *)a_val > *(int *)b_val;
+    } else if (a_type == TCL_NUMBER_BIG || b_type == TCL_NUMBER_BIG) {
+        return *(Tcl_WideInt *)a_val > *(Tcl_WideInt *)b_val;
     }
 
     return 0;
