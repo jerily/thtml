@@ -116,11 +116,32 @@ int thtml_TclCompileExprCmd(ClientData  clientData, Tcl_Interp *interp, int objc
     Tcl_DString ds;
     Tcl_DStringInit(&ds);
 
+    Tcl_DStringAppend(&ds, "\nset __ds_", -1);
+    Tcl_DStringAppend(&ds, name, -1);
+    Tcl_DStringAppend(&ds, "__ {}", -1);
+
     if (TCL_OK != thtml_TclCompileExpr(interp, blocks_list_ptr, &ds, &parse, name)) {
         Tcl_FreeParse(&parse);
         Tcl_DStringFree(&ds);
         return TCL_ERROR;
     }
+
+    // # in TclCompileExprCmd
+    Tcl_DStringAppend(&ds, "\n# in TclCompileExpr", -1);
+
+    // puts __ds_${name}__=$__ds_${name}__
+//    Tcl_DStringAppend(&ds, "\nputs __ds_", -1);
+//    Tcl_DStringAppend(&ds, name, -1);
+//    Tcl_DStringAppend(&ds, "__=$__ds_", -1);
+//    Tcl_DStringAppend(&ds, name, -1);
+//    Tcl_DStringAppend(&ds, "__", -1);
+
+    Tcl_DStringAppend(&ds, "\nset __", -1);
+    Tcl_DStringAppend(&ds, name, -1);
+    Tcl_DStringAppend(&ds, "__ [::thtml::runtime::tcl::evaluate_script $__ds_", -1);
+    Tcl_DStringAppend(&ds, name, -1);
+    Tcl_DStringAppend(&ds, "__]", -1);
+
 
     Tcl_DStringResult(interp, &ds);
     Tcl_DStringFree(&ds);
@@ -283,11 +304,15 @@ int thtml_TclCompileScriptCmd(ClientData  clientData, Tcl_Interp *interp, int ob
         Tcl_DStringFree(&ds);
         return TCL_ERROR;
     }
-    Tcl_DStringAppend(&ds, "\nset __", -1);
-    Tcl_DStringAppend(&ds, name, name_length);
-    Tcl_DStringAppend(&ds, "__ $__ds_", -1);
-    Tcl_DStringAppend(&ds, name, name_length);
-    Tcl_DStringAppend(&ds, "__", -1);
+
+    // # in TclCompileScript
+//    Tcl_DStringAppend(&ds, "\n# in TclCompileScript", -1);
+//
+//    Tcl_DStringAppend(&ds, "\nset __", -1);
+//    Tcl_DStringAppend(&ds, name, name_length);
+//    Tcl_DStringAppend(&ds, "__ $__ds_", -1);
+//    Tcl_DStringAppend(&ds, name, name_length);
+//    Tcl_DStringAppend(&ds, "__", -1);
 
     Tcl_DStringResult(interp, &ds);
     Tcl_DStringFree(&ds);
@@ -698,14 +723,14 @@ int thtml_TclCompileExpr(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DStri
 
     Tcl_DString expr_ds;
     Tcl_DStringInit(&expr_ds);
-    Tcl_DStringAppend(&expr_ds, "\nset __", -1);
+    Tcl_DStringAppend(&expr_ds, "\nappend __ds_", -1);
     Tcl_DStringAppend(&expr_ds, name, -1);
-    Tcl_DStringAppend(&expr_ds, "__ [expr {", -1);
+    Tcl_DStringAppend(&expr_ds, "__ {expr {", -1);
 
     if (TCL_OK != thtml_TclAppendExpr_Token(interp, blocks_list_ptr, ds_ptr, parse_ptr, 0, name, &expr_ds)) {
         return TCL_ERROR;
     }
-    Tcl_DStringAppend(&expr_ds, "}]", -1);
+    Tcl_DStringAppend(&expr_ds, "}}", -1);
 
     Tcl_DStringAppend(ds_ptr, Tcl_DStringValue(&expr_ds), Tcl_DStringLength(&expr_ds));
     Tcl_DStringFree(&expr_ds);
@@ -858,9 +883,20 @@ static int thtml_TclAppendCommand_Token(Tcl_Interp *interp, Tcl_Obj *blocks_list
         Tcl_DStringAppend(ds_ptr, "\n#SubCommand: ", -1);
         Tcl_DStringAppend(ds_ptr, token->start, token->size);
 
+        // set __ds_subcmd1__ {}
         Tcl_DStringAppend(ds_ptr, "\nset __ds_", -1);
         Tcl_DStringAppend(ds_ptr, subcmd_name, -1);
         Tcl_DStringAppend(ds_ptr, "__ {}", -1);
+
+        // append __ds_subcmd1__ {::thtml::runtime::tcl::evaluate_script}
+        Tcl_DStringAppend(ds_ptr, "\nappend __ds_", -1);
+        Tcl_DStringAppend(ds_ptr, subcmd_name, -1);
+        Tcl_DStringAppend(ds_ptr, "__ {::thtml::runtime::tcl::evaluate_script}", -1);
+
+        // start sublist, tcl-style
+        Tcl_DStringAppend(ds_ptr, "\nappend __ds_", -1);
+        Tcl_DStringAppend(ds_ptr, subcmd_name, -1);
+        Tcl_DStringAppend(ds_ptr, "__ \" \\{\"", -1);
 
         Tcl_Parse subcmd_parse;
         if (TCL_OK != Tcl_ParseCommand(interp, token->start + 1, token->size - 2, 0, &subcmd_parse)) {
@@ -870,16 +906,28 @@ static int thtml_TclAppendCommand_Token(Tcl_Interp *interp, Tcl_Obj *blocks_list
             return TCL_ERROR;
         }
 
+        // end sublist, tcl-style
+        Tcl_DStringAppend(ds_ptr, "\nappend __ds_", -1);
+        Tcl_DStringAppend(ds_ptr, subcmd_name, -1);
+        Tcl_DStringAppend(ds_ptr, "__ \"\\}\"", -1);
+
+        Tcl_DStringAppend(ds_ptr, "\nset __", -1);
+        Tcl_DStringAppend(ds_ptr, subcmd_name, -1);
+        Tcl_DStringAppend(ds_ptr, "__ $__ds_", -1);
+        Tcl_DStringAppend(ds_ptr, subcmd_name, -1);
+        Tcl_DStringAppend(ds_ptr, "__", -1);
+
         if (cmd_ds_ptr != NULL) {
-            Tcl_DStringAppend(cmd_ds_ptr, "[subst $__", -1);
+            Tcl_DStringAppend(cmd_ds_ptr, "[::thtml::runtime::tcl::evaluate_script $__", -1);
             Tcl_DStringAppend(cmd_ds_ptr, subcmd_name, -1);
             Tcl_DStringAppend(cmd_ds_ptr, "__]", -1);
         } else {
-            Tcl_DStringAppend(ds_ptr, "\nappend __ds_", -1);
+            // append __ds_val3__ [::thtml::runtime::tcl::evaluate_script $__val3_subcmd1__]
+            Tcl_DStringAppend(ds_ptr, "\nlappend __ds_", -1);
             Tcl_DStringAppend(ds_ptr, name, -1);
-            Tcl_DStringAppend(ds_ptr, "__ $__", -1);
+            Tcl_DStringAppend(ds_ptr, "__ [::thtml::runtime::tcl::evaluate_script $__", -1);
             Tcl_DStringAppend(ds_ptr, subcmd_name, -1);
-            Tcl_DStringAppend(ds_ptr, "__", -1);
+            Tcl_DStringAppend(ds_ptr, "__]", -1);
         }
 
     } else if (token->type == TCL_TOKEN_EXPAND_WORD) {
@@ -941,6 +989,7 @@ int thtml_TclCompileCommand(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DS
                     return TCL_ERROR;
                 }
                 Tcl_FreeParse(&expr_parse);
+
                 return TCL_OK;
 
             }
@@ -951,11 +1000,11 @@ int thtml_TclCompileCommand(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DS
     Tcl_DStringAppend(ds_ptr, "\n#CompileCommand: numTokens=", -1);
     Tcl_DStringAppend(ds_ptr, Tcl_GetString(Tcl_NewIntObj(parse_ptr->numTokens)), -1);
 
-    if (nested) {
-        Tcl_DStringAppend(ds_ptr, "\nappend __ds_", -1);
-        Tcl_DStringAppend(ds_ptr, name, -1);
-        Tcl_DStringAppend(ds_ptr, "__ {[}", -1);
-    }
+//    if (nested) {
+//        Tcl_DStringAppend(ds_ptr, "\nappend __ds_", -1);
+//        Tcl_DStringAppend(ds_ptr, name, -1);
+//        Tcl_DStringAppend(ds_ptr, "__ {[}", -1);
+//    }
 
     Tcl_Size i = 1;
     int first = 1;
@@ -975,14 +1024,16 @@ int thtml_TclCompileCommand(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DS
         // fprintf(stderr, "i: %d / %d\n", i, parse_ptr->numTokens);
     }
 
-    if (nested) {
-        Tcl_DStringAppend(ds_ptr, "\nappend __ds_", -1);
-        Tcl_DStringAppend(ds_ptr, name, -1);
-        Tcl_DStringAppend(ds_ptr, "__ {]}", -1);
-    }
+//    if (nested) {
+//        Tcl_DStringAppend(ds_ptr, "\nappend __ds_", -1);
+//        Tcl_DStringAppend(ds_ptr, name, -1);
+//        Tcl_DStringAppend(ds_ptr, "__ {]}", -1);
+//    }
 
+    // # in TclCompileCommand
+    Tcl_DStringAppend(ds_ptr, "\n# in TclCompileCommand", -1);
 
-    // set __val3_subcmd1__ $__ds_val3_subcmd1__
+    // set __val3__ $__ds_val3__
     Tcl_DStringAppend(ds_ptr, "\nset __", -1);
     Tcl_DStringAppend(ds_ptr, name, -1);
     Tcl_DStringAppend(ds_ptr, "__ $__ds_", -1);
@@ -1029,6 +1080,9 @@ thtml_TclCompileForeachList(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DS
             return TCL_ERROR;
         }
     }
+    // # in TclCompileForeachList
+    Tcl_DStringAppend(ds_ptr, "\n# in TclCompileForeachList", -1);
+
     Tcl_DStringAppend(ds_ptr, "\nset __", -1);
     Tcl_DStringAppend(ds_ptr, name, -1);
     Tcl_DStringAppend(ds_ptr, "__ $__ds_", -1);

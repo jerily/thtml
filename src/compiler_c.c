@@ -939,19 +939,19 @@ static int thtml_CAppendCommand_Token(Tcl_Interp *interp, Tcl_Obj *blocks_list_p
         Tcl_DStringAppend(ds_ptr, "\n// SubCommand: ", -1);
         Tcl_DStringAppend(ds_ptr, token->start, token->size);
 
-        // Tcl_DString __ds__subcmd1_base__;
+        // Tcl_DString __ds_subcmd1_base__;
         Tcl_DStringAppend(ds_ptr, "\nTcl_DString __ds_", -1);
         Tcl_DStringAppend(ds_ptr, subcmd_name, -1);
         Tcl_DStringAppend(ds_ptr, "_base__;", -1);
 
-        // Tcl_DString * __ds__subcmd1__ = &__ds__subcmd1_base__;
+        // Tcl_DString * __ds_subcmd1__ = &__ds__subcmd1_base__;
         Tcl_DStringAppend(ds_ptr, "\nTcl_DString *__ds_", -1);
         Tcl_DStringAppend(ds_ptr, subcmd_name, -1);
         Tcl_DStringAppend(ds_ptr, "__ = &__ds_", -1);
         Tcl_DStringAppend(ds_ptr, subcmd_name, -1);
         Tcl_DStringAppend(ds_ptr, "_base__;", -1);
 
-        // Tcl_DStringInit(__ds__subcmd1__);
+        // Tcl_DStringInit(__ds_subcmd1__);
         Tcl_DStringAppend(ds_ptr, "\nTcl_DStringInit(__ds_", -1);
         Tcl_DStringAppend(ds_ptr, subcmd_name, -1);
         Tcl_DStringAppend(ds_ptr, "__);", -1);
@@ -961,7 +961,7 @@ static int thtml_CAppendCommand_Token(Tcl_Interp *interp, Tcl_Obj *blocks_list_p
         Tcl_DStringAppend(ds_ptr, subcmd_name, -1);
         Tcl_DStringAppend(ds_ptr, "__, \"::thtml::runtime::tcl::evaluate_script\", -1);", -1);
 
-        // Tcl_DStringStartSublist(__ds__subcmd1__);
+        // Tcl_DStringStartSublist(__ds_subcmd1__);
         Tcl_DStringAppend(ds_ptr, "\nTcl_DStringStartSublist(__ds_", -1);
         Tcl_DStringAppend(ds_ptr, subcmd_name, -1);
         Tcl_DStringAppend(ds_ptr, "__);", -1);

@@ -17,6 +17,9 @@ set rootdir [file join [file dirname [info script]] ../examples/sample-blog]
 
 test val-1 {} -body {
     global target_lang
+    if {![info exists target_lang]} {
+        set target_lang tcl
+    }
 
     set template {
         <html>

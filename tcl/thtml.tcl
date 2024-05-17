@@ -32,6 +32,8 @@ proc ::thtml::tcl_compile_template_and_load {codearrVar template} {
     set compiled_template [compile codearr $template tcl]
     eval $codearr(defs)
     proc $proc_name {__data__} "return \"<!doctype html>\[eval \{${compiled_template}\}\]\""
+
+    #puts "$codearr(defs)\n$compiled_template"
 }
 
 proc ::thtml::c_compile_template_and_load {codearrVar template} {

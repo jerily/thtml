@@ -12,6 +12,9 @@ proc escape {str} {
     return [string map {\r {\r} \n {\n}} $str]
 }
 
+set rootdir [file dirname [info script]]
+::thtml::init [dict create cache 1 rootdir $rootdir]
+
 test include-1 {} -body {
     set data {
         title "Hello, World!"
@@ -25,7 +28,7 @@ test include-1 {} -body {
             </head>
             <body>
                 <h1>${title}</h1>
-                <tpl include="./templates/name_and_age.thtml" name="${name}" age="${age} ye\[a\]rs">
+                <tpl include="name_and_age.inc" name="${name}" age="${age} ye\[a\]rs">
                     <tpl if="${age} > 21">
                         You are an adult.
                     </tpl>
@@ -36,6 +39,7 @@ test include-1 {} -body {
     set html [::thtml::render $template $data]
     escape $html
 } -result {<html><head><title>Hello, World!</title></head><body><h1>Hello, World!</h1><div><h2>Name and age</h2>\n    John Smith is 47 ye[a]rs old.\n    \n                        You are an adult.\n                    <div>This is the footer</div>.\n</div></body></html>}
+
 
 test include-2-circular-dependency {} -body {
     set data {
@@ -50,10 +54,10 @@ test include-2-circular-dependency {} -body {
             </head>
             <body>
                 <h1>${title}</h1>
-                <tpl include="./templates/name_and_age.thtml" name="${name}" age="${age} ye\[a\]rs">
+                <tpl include="name_and_age.inc" name="${name}" age="${age} ye\[a\]rs">
                     <tpl if="${age} > 21">
                         You are an adult.
-                        <tpl include="./templates/name_and_age.thtml" name="${name}" age="${age} ye\[a\]rs" />
+                        <tpl include="name_and_age.inc" name="${name}" age="${age} ye\[a\]rs" />
                     </tpl>
                 </tpl>
             </body>
