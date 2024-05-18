@@ -10,11 +10,14 @@
 <tpl val="first_tab">
     lindex $tabs 0
 </tpl>
+<tpl val="zero">
+    return 0
+</tpl>
 <div>
     <h2>$heading [lindex $tabs 0]</h2>
 
     <tpl foreach="tab" in="$tabs" indexvar="i">
-        <tpl if="$i > 0"> | </tpl>
+        <tpl if="$i > $zero"> | </tpl>
         <tpl if="$path eq ${tab.url}">
             <strong>${tab.title}</strong>
         </tpl>

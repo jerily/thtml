@@ -30,7 +30,7 @@ int __thtml_strneq__(Tcl_Obj *a, Tcl_Obj *b) {
     return !__thtml_streq__(a, b);
 }
 
-int __thtml_gt__(Tcl_Obj *a, Tcl_Obj *b) {
+int __thtml_compare_op__(Tcl_Obj *a, Tcl_Obj *b) {
 
     // todo: check if string is empty
 
@@ -39,23 +39,56 @@ int __thtml_gt__(Tcl_Obj *a, Tcl_Obj *b) {
     int a_type = TCL_NUMBER_NAN;
     int b_type = TCL_NUMBER_NAN;
     if (TCL_OK != Tcl_GetNumberFromObj(NULL, a, &a_val, &a_type) || TCL_OK != Tcl_GetNumberFromObj(NULL, b, &b_val, &b_type)) {
+        // we should never get here
+        // we check before calling this function
         fprintf(stderr, "error: a=%s b=%s\n", Tcl_GetString(a), Tcl_GetString(b));
         return 0;
     }
 
     if (a_type == TCL_NUMBER_NAN || b_type == TCL_NUMBER_NAN) {
+        // we should never get here
+        // we check before calling this function
         return 0;
     }
 
     if (a_type == TCL_NUMBER_DOUBLE || b_type == TCL_NUMBER_DOUBLE) {
-        return *(double *)a_val > *(double *)b_val;
-    } else if (a_type == TCL_NUMBER_INT || b_type == TCL_NUMBER_INT) {
-        return *(int *)a_val > *(int *)b_val;
+        double res = *(double *)a_val - *(double *)b_val;
+        return res < 0 ? -1 : (res > 0 ? 1 : 0);
     } else if (a_type == TCL_NUMBER_BIG || b_type == TCL_NUMBER_BIG) {
-        return *(Tcl_WideInt *)a_val > *(Tcl_WideInt *)b_val;
+        Tcl_WideInt res = *(Tcl_WideInt *)a_val - *(Tcl_WideInt *)b_val;
+        return res < 0 ? -1 : (res > 0 ? 1 : 0);
+    } else if (a_type == TCL_NUMBER_INT || b_type == TCL_NUMBER_INT) {
+        int res = *(int *)a_val - *(int *)b_val;
+        return res < 0 ? -1 : (res > 0 ? 1 : 0);
     }
 
+    // we should never get here
+    // we check before calling this function
     return 0;
+}
+
+int __thtml_gt__(Tcl_Obj *a, Tcl_Obj *b) {
+    return __thtml_compare_op__(a, b) > 0;
+}
+
+int __thtml_gte__(Tcl_Obj *a, Tcl_Obj *b) {
+    return __thtml_compare_op__(a, b) >= 0;
+}
+
+int __thtml_lt__(Tcl_Obj *a, Tcl_Obj *b) {
+    return __thtml_compare_op__(a, b) < 0;
+}
+
+int __thtml_lte__(Tcl_Obj *a, Tcl_Obj *b) {
+    return __thtml_compare_op__(a, b) <= 0;
+}
+
+int __thtml_eq__(Tcl_Obj *a, Tcl_Obj *b) {
+    return __thtml_compare_op__(a, b) == 0;
+}
+
+int __thtml_ne__(Tcl_Obj *a, Tcl_Obj *b) {
+    return __thtml_compare_op__(a, b) != 0;
 }
 
 double __thtml_add__(Tcl_Obj *a, Tcl_Obj *b) {
