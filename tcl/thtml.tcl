@@ -224,6 +224,11 @@ proc ::thtml::renderfile {filename __data__} {
 proc ::thtml::compile {codearrVar template target_lang} {
     upvar $codearrVar codearr
 
+    # TODO: temporary hack to escape special characters
+    # this should be done in a more robust way
+    # by escaping these characters when they are enclosed in square brackets
+    # for expr commands, double quotes for if conditions, or val tags
+    # set escaped_template [string map {{&&} {&amp;&amp;} {<} {&lt;} {>} {&gt;}} $template]
     set escaped_template [string map {{&&} {&amp;&amp;}} $template]
     dom parse -paramentityparsing never -- <root>$escaped_template</root> doc
     set root [$doc documentElement]

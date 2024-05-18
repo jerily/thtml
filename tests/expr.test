@@ -1,0 +1,130 @@
+#set dir [file dirname [info script]]
+#set auto_path [linsert $auto_path 0 [file join $dir ..]]
+
+package require tcltest
+package require thtml
+
+namespace import -force ::tcltest::test
+
+::tcltest::configure {*}$argv
+
+proc escape {str} {
+    return [string map {\r {\r} \n {\n}} $str]
+}
+
+set rootdir [file normalize [file dirname [info script]]]
+::thtml::init [dict create cache 1 rootdir $rootdir target_lang c debug 1]
+
+# integer comparison
+
+test expr-lt-true {} -body {
+    ::thtml::render {<div>[expr {1 < 2}]</div>} {}
+} -result {<div>1</div>}
+
+test expr-lt-false {} -body {
+    ::thtml::render {<div>[expr {1 < 0}]</div>} {}
+} -result {<div>0</div>}
+
+test expr-gt-true {} -body {
+    ::thtml::render {<div>[expr {1 > 0}]</div>} {}
+} -result {<div>1</div>}
+
+test expr-gt-false {} -body {
+    ::thtml::render {<div>[expr {1 > 2}]</div>} {}
+} -result {<div>0</div>}
+
+test expr-lte-true-lt {} -body {
+    ::thtml::render {<div>[expr {1 <= 2}]</div>} {}
+} -result {<div>1</div>}
+
+test expr-lte-true-eq {} -body {
+    ::thtml::render {<div>[expr {2 <= 2}]</div>} {}
+} -result {<div>1</div>}
+
+test expr-lte-false {} -body {
+    ::thtml::render {<div>[expr {1 <= 0}]</div>} {}
+} -result {<div>0</div>}
+
+test expr-gte-true-gt {} -body {
+    ::thtml::render {<div>[expr {1 >= 0}]</div>} {}
+} -result {<div>1</div>}
+
+test expr-gte-true-eq {} -body {
+    ::thtml::render {<div>[expr {0 >= 0}]</div>} {}
+} -result {<div>1</div>}
+
+test expr-gte-false {} -body {
+    ::thtml::render {<div>[expr {1 >= 2}]</div>} {}
+} -result {<div>0</div>}
+
+test expr-eq-true {} -body {
+    ::thtml::render {<div>[expr {1 == 1}]</div>} {}
+} -result {<div>1</div>}
+
+test expr-eq-false {} -body {
+    ::thtml::render {<div>[expr {1 == 2}]</div>} {}
+} -result {<div>0</div>}
+
+test expr-ne-true {} -body {
+    ::thtml::render {<div>[expr {0 != 1}]</div>} {}
+} -result {<div>1</div>}
+
+test expr-ne-false {} -body {
+    ::thtml::render {<div>[expr {1 != 1}]</div>} {}
+} -result {<div>0</div>}
+
+# string comparison
+
+test expr-streq-true {} -body {
+    ::thtml::render {<div>[expr {"abc" eq "abc"}]</div>} {}
+} -result {<div>1</div>}
+
+test expr-streq-false {} -body {
+    ::thtml::render {<div>[expr {"abc" eq "qwe"}]</div>} {}
+} -result {<div>0</div>}
+
+test expr-strneq-true {} -body {
+    ::thtml::render {<div>[expr {"abc" ne "qwe"}]</div>} {}
+} -result {<div>1</div>}
+
+test expr-strneq-false {} -body {
+    ::thtml::render {<div>[expr {"abc" ne "abc"}]</div>} {}
+} -result {<div>0</div>}
+
+# logical operators
+
+test expr-and-true {} -body {
+    ::thtml::render {<div>[expr {1 && 1}]</div>} {}
+} -result {<div>1</div>}
+
+test expr-and-false {} -body {
+    ::thtml::render {<div>[expr {1 && 0}]</div>} {}
+} -result {<div>0</div>}
+
+test expr-or-true {} -body {
+    ::thtml::render {<div>[expr {1 || 0}]</div>} {}
+} -result {<div>1</div>}
+
+test expr-or-false {} -body {
+    ::thtml::render {<div>[expr {0 || 0}]</div>} {}
+} -result {<div>0</div>}
+
+test expr-not-true {} -body {
+    ::thtml::render {<div>[expr {!0}]</div>} {}
+} -result {<div>1</div>}
+
+test expr-not-false {} -body {
+    ::thtml::render {<div>[expr {!1}]</div>} {}
+} -result {<div>0</div>}
+
+# ternary operator
+
+#test expr-ternary-true {} -body {
+#    ::thtml::render {<div>[expr {1 ? 1 : 0}]</div>} {}
+#} -result {<div>1</div>}
+#
+#test expr-ternary-false {} -body {
+#    ::thtml::render {<div>[expr {0 ? 1 : 0}]</div>} {}
+#} -result {<div>0</div>}
+
+# math operators

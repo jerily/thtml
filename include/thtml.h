@@ -3,6 +3,7 @@
 
 #include <tcl.h>
 #include <string.h>
+#include <assert.h>
 
 #ifndef TCL_SIZE_MAX
 typedef int Tcl_Size;
@@ -42,12 +43,14 @@ int __thtml_compare_op__(Tcl_Obj *a, Tcl_Obj *b) {
         // we should never get here
         // we check before calling this function
         fprintf(stderr, "error: a=%s b=%s\n", Tcl_GetString(a), Tcl_GetString(b));
+        assert(0);
         return 0;
     }
 
     if (a_type == TCL_NUMBER_NAN || b_type == TCL_NUMBER_NAN) {
         // we should never get here
         // we check before calling this function
+        assert(0);
         return 0;
     }
 
@@ -64,6 +67,7 @@ int __thtml_compare_op__(Tcl_Obj *a, Tcl_Obj *b) {
 
     // we should never get here
     // we check before calling this function
+    assert(0);
     return 0;
 }
 
@@ -89,6 +93,36 @@ int __thtml_eq__(Tcl_Obj *a, Tcl_Obj *b) {
 
 int __thtml_ne__(Tcl_Obj *a, Tcl_Obj *b) {
     return __thtml_compare_op__(a, b) != 0;
+}
+
+int __thtml_and__(Tcl_Obj *a, Tcl_Obj *b) {
+    int a_val, b_val;
+    if (Tcl_GetBooleanFromObj(NULL, a, &a_val) != TCL_OK) {
+        return 0;
+    }
+    if (Tcl_GetBooleanFromObj(NULL, b, &b_val) != TCL_OK) {
+        return 0;
+    }
+    return a_val && b_val;
+}
+
+int __thtml_or__(Tcl_Obj *a, Tcl_Obj *b) {
+    int a_val, b_val;
+    if (Tcl_GetBooleanFromObj(NULL, a, &a_val) != TCL_OK) {
+        return 0;
+    }
+    if (Tcl_GetBooleanFromObj(NULL, b, &b_val) != TCL_OK) {
+        return 0;
+    }
+    return a_val || b_val;
+}
+
+int __thtml_not__(Tcl_Obj *a) {
+    int a_val;
+    if (Tcl_GetBooleanFromObj(NULL, a, &a_val) != TCL_OK) {
+        return 0;
+    }
+    return !a_val;
 }
 
 double __thtml_add__(Tcl_Obj *a, Tcl_Obj *b) {
