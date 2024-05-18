@@ -630,6 +630,7 @@ thtml_TclAppendExpr_Operator(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_D
         char ch2 = operator_token->start[1];
         if ((ch1 == '&' && ch2 == '&') || (ch1 == '|' && ch2 == '|') || (ch1 == '<' && ch2 == '<') ||
             (ch1 == '>' && ch2 == '>') || (ch1 == '=' && ch2 == '=') || (ch1 == '!' && ch2 == '=') ||
+            (ch1 == '<' && ch2 == '=') || (ch1 == '>' && ch2 == '=') ||
             (ch1 == 'e' && ch2 == 'q') || (ch1 == 'n' && ch2 == 'e') ||
             (ch1 == 'i' && ch2 == 'n') || (ch1 == 'n' && ch2 == 'i')) {
             // two operands
