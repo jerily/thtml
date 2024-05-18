@@ -1,0 +1,48 @@
+#set dir [file dirname [info script]]
+#set auto_path [linsert $auto_path 0 [file join $dir ..]]
+
+package require tcltest
+package require thtml
+
+namespace import -force ::tcltest::test
+
+::tcltest::configure {*}$argv
+
+proc escape {str} {
+    return [string map {\r {\r} \n {\n}} $str]
+}
+
+set rootdir [file normalize [file dirname [info script]]]
+::thtml::init [dict create cache 1 rootdir $rootdir target_lang c debug 1]
+
+test escape-sq-attvalue-entity-gt { '>' inside_singlequote_attvalue} -body {
+    ::thtml::escape_template {<tpl if='$a > 123'>this is a test</tpl>}
+} -result {<tpl if='$a &gt; 123'>this is a test</tpl>}
+
+test escape-dq-attvalue-entity-gt { '>' inside_doublequote_attvalue} -body {
+    ::thtml::escape_template {<tpl if="$a > 123">this is a test</tpl>}
+} -result {<tpl if="$a &gt; 123">this is a test</tpl>}
+
+test escape-sq-attvalue-entity-lt { '<' inside_singlequote_attvalue} -body {
+    ::thtml::escape_template {<tpl if='$a < 123'>this is a test</tpl>}
+} -result {<tpl if='$a &lt; 123'>this is a test</tpl>}
+
+test escape-dq-attvalue-entity-lt { '<' inside_doublequote_attvalue} -body {
+    ::thtml::escape_template {<tpl if="$a < 123">this is a test</tpl>}
+} -result {<tpl if="$a &lt; 123">this is a test</tpl>}
+
+test escape-sq-attvalue-entity-amp { '&&' inside_singlequote_attvalue} -body {
+    ::thtml::escape_template {<tpl if='$a < 123 && $b > 456'>this is a test</tpl>}
+} -result {<tpl if='$a &lt; 123 &amp;&amp; $b &gt; 456'>this is a test</tpl>}
+
+test escape-dq-attvalue-entity-amp { '&&' inside_doublequote_attvalue} -body {
+    ::thtml::escape_template {<tpl if="$a < 123 && $b > 456">this is a test</tpl>}
+} -result {<tpl if="$a &lt; 123 &amp;&amp; $b &gt; 456">this is a test</tpl>}
+
+test escape-command-lt { '<' inside_expr_command} -body {
+    ::thtml::escape_template {<div>[expr { $a < 123 }]</div>}
+} -result {<div>[expr { $a &lt; 123 }]</div>}
+
+test escape-command-gt { '>' inside_expr_command} -body {
+    ::thtml::escape_template {<div>[expr { $a > 123 }]</div>}
+} -result {<div>[expr { $a &gt; 123 }]</div>}

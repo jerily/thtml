@@ -40,6 +40,7 @@ typedef int Tcl_Size;
 #define CHARTYPE(what, c) (is ## what ((int)((unsigned char)(c))))
 
 void thtml_AppendEscaped(const char *p, const char *end, Tcl_DString *dsPtr);
+void thtml_EscapeTemplate(const char *p, const char *end, Tcl_DString *dsPtr);
 
 
 #endif //THTML_COMMON_H

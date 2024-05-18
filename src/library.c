@@ -51,6 +51,25 @@ void thtml_InitModule() {
 #define MIN_VERSION "8.6"
 #endif
 
+int thtml_EscapeTemplateCmd(ClientData  clientData, Tcl_Interp *interp, int objc, Tcl_Obj * const objv[]) {
+    DBG(fprintf(stderr,"TclTransformCmd\n"));
+
+    CheckArgs(2,2,1,"html");
+
+    Tcl_Size text_length;
+    char *text = Tcl_GetStringFromObj(objv[1], &text_length);
+
+    Tcl_DString ds;
+    Tcl_DStringInit(&ds);
+
+    thtml_EscapeTemplate(text, text + text_length, &ds);
+
+    Tcl_SetObjResult(interp, Tcl_NewStringObj(Tcl_DStringValue(&ds), Tcl_DStringLength(&ds)));
+    Tcl_DStringFree(&ds);
+
+    return TCL_OK;
+
+}
 
 int Thtml_Init(Tcl_Interp *interp) {
 
@@ -63,6 +82,8 @@ int Thtml_Init(Tcl_Interp *interp) {
 
     Tcl_CreateNamespace(interp, "::thmtl", NULL, NULL);
     Tcl_CreateNamespace(interp, "::thmtl::compiler", NULL, NULL);
+
+    Tcl_CreateObjCommand(interp, "::thtml::escape_template", thtml_EscapeTemplateCmd, NULL, NULL);
 
     Tcl_CreateObjCommand(interp, "::thtml::compiler::tcl_transform", thtml_TclTransformCmd, NULL, NULL);
     Tcl_CreateObjCommand(interp, "::thtml::compiler::tcl_compile_expr", thtml_TclCompileExprCmd, NULL, NULL);
