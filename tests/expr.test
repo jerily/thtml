@@ -20,7 +20,7 @@ set rootdir [file normalize [file dirname [info script]]]
 test expr-lt-true {} -body {
     ::thtml::render {<div>[expr {1 < 2}]</div>} {}
 } -result {<div>1</div>}
-exit
+
 test expr-lt-false {} -body {
     ::thtml::render {<div>[expr {1 < 0}]</div>} {}
 } -result {<div>0</div>}
@@ -128,3 +128,9 @@ test expr-not-false {} -body {
 #} -result {<div>0</div>}
 
 # math operators
+
+# more complex expressions
+
+test expr-complex-1 {} -body {
+    ::thtml::render {<div>[expr {$a < $b && $c == 3}]</div>} {a 1 b 2 c 3}
+} -result {<div>1</div>}
