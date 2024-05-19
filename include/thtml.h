@@ -151,4 +151,85 @@ Tcl_Obj *__thtml_add__(Tcl_Obj *a, Tcl_Obj *b) {
     return NULL;
 }
 
+Tcl_Obj *__thtml_sub__(Tcl_Obj *a, Tcl_Obj *b) {
+    void *a_val = NULL;
+    void *b_val = NULL;
+    int a_type = TCL_NUMBER_NAN;
+    int b_type = TCL_NUMBER_NAN;
+    if (TCL_OK != Tcl_GetNumberFromObj(NULL, a, &a_val, &a_type) ||
+        TCL_OK != Tcl_GetNumberFromObj(NULL, b, &b_val, &b_type) || a_type == TCL_NUMBER_NAN ||
+        b_type == TCL_NUMBER_NAN) {
+        // we should never get here
+        // we check before calling this function
+        fprintf(stderr, "error: a=%s b=%s\n", Tcl_GetString(a), Tcl_GetString(b));
+        assert(0);
+        return 0;
+    }
+
+    if (a_type == TCL_NUMBER_DOUBLE || b_type == TCL_NUMBER_DOUBLE) {
+        return Tcl_NewDoubleObj(*(const double *)a_val - *(const double *)b_val);
+    } else if (a_type == TCL_NUMBER_BIG || b_type == TCL_NUMBER_BIG) {
+        return Tcl_NewWideIntObj(*(const Tcl_WideInt *)a_val - *(const Tcl_WideInt *)b_val);
+    } else if (a_type == TCL_NUMBER_INT || b_type == TCL_NUMBER_INT) {
+        return Tcl_NewIntObj(*(const int *)a_val - *(const int *)b_val);
+    }
+
+    assert(0);
+    return NULL;
+}
+
+Tcl_Obj *__thtml_mult__(Tcl_Obj *a, Tcl_Obj *b) {
+    void *a_val = NULL;
+    void *b_val = NULL;
+    int a_type = TCL_NUMBER_NAN;
+    int b_type = TCL_NUMBER_NAN;
+    if (TCL_OK != Tcl_GetNumberFromObj(NULL, a, &a_val, &a_type) ||
+        TCL_OK != Tcl_GetNumberFromObj(NULL, b, &b_val, &b_type) || a_type == TCL_NUMBER_NAN ||
+        b_type == TCL_NUMBER_NAN) {
+        // we should never get here
+        // we check before calling this function
+        fprintf(stderr, "error: a=%s b=%s\n", Tcl_GetString(a), Tcl_GetString(b));
+        assert(0);
+        return 0;
+    }
+
+    if (a_type == TCL_NUMBER_DOUBLE || b_type == TCL_NUMBER_DOUBLE) {
+        return Tcl_NewDoubleObj(*(const double *)a_val * *(const double *)b_val);
+    } else if (a_type == TCL_NUMBER_BIG || b_type == TCL_NUMBER_BIG) {
+        return Tcl_NewWideIntObj(*(const Tcl_WideInt *)a_val * *(const Tcl_WideInt *)b_val);
+    } else if (a_type == TCL_NUMBER_INT || b_type == TCL_NUMBER_INT) {
+        return Tcl_NewIntObj(*(const int *)a_val * *(const int *)b_val);
+    }
+
+    assert(0);
+    return NULL;
+}
+
+Tcl_Obj *__thtml_div__(Tcl_Obj *a, Tcl_Obj *b) {
+    void *a_val = NULL;
+    void *b_val = NULL;
+    int a_type = TCL_NUMBER_NAN;
+    int b_type = TCL_NUMBER_NAN;
+    if (TCL_OK != Tcl_GetNumberFromObj(NULL, a, &a_val, &a_type) ||
+        TCL_OK != Tcl_GetNumberFromObj(NULL, b, &b_val, &b_type) || a_type == TCL_NUMBER_NAN ||
+        b_type == TCL_NUMBER_NAN) {
+        // we should never get here
+        // we check before calling this function
+        fprintf(stderr, "error: a=%s b=%s\n", Tcl_GetString(a), Tcl_GetString(b));
+        assert(0);
+        return 0;
+    }
+
+    if (a_type == TCL_NUMBER_DOUBLE || b_type == TCL_NUMBER_DOUBLE) {
+        return Tcl_NewDoubleObj(*(const double *)a_val / *(const double *)b_val);
+    } else if (a_type == TCL_NUMBER_BIG || b_type == TCL_NUMBER_BIG) {
+        return Tcl_NewWideIntObj(*(const Tcl_WideInt *)a_val / *(const Tcl_WideInt *)b_val);
+    } else if (a_type == TCL_NUMBER_INT || b_type == TCL_NUMBER_INT) {
+        return Tcl_NewIntObj(*(const int *)a_val / *(const int *)b_val);
+    }
+
+    assert(0);
+    return NULL;
+}
+
 #endif // THTML_H

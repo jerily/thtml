@@ -129,6 +129,22 @@ test expr-not-false {} -body {
 
 # math operators
 
+test expr-add {} -body {
+    ::thtml::render {<div>[expr {1 + 2}]</div>} {}
+} -result {<div>3</div>}
+
+test expr-sub {} -body {
+    ::thtml::render {<div>[expr {1 - 2}]</div>} {}
+} -result {<div>-1</div>}
+
+test expr-mult {} -body {
+    ::thtml::render {<div>[expr {2 * 3}]</div>} {}
+} -result {<div>6</div>}
+
+test expr-div {} -body {
+    ::thtml::render {<div>[expr {6 / 2}]</div>} {}
+} -result {<div>3</div>}
+
 # more complex expressions
 
 test expr-complex-1 {} -body {
