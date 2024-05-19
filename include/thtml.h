@@ -13,7 +13,7 @@ typedef int Tcl_Size;
 # define TCL_SIZE_MODIFIER ""
 #endif
 
-int __thtml_streq__(Tcl_Obj *a, Tcl_Obj *b) {
+int __thtml_string_compare__(Tcl_Obj *a, Tcl_Obj *b) {
     Tcl_Size a_len;
     const char *a_str = Tcl_GetStringFromObj(a, &a_len);
 
@@ -21,14 +21,18 @@ int __thtml_streq__(Tcl_Obj *a, Tcl_Obj *b) {
     const char *b_str = Tcl_GetStringFromObj(b, &b_len);
 
     if (a_len != b_len) {
-        return 0;
+        return a_len - b_len;
     }
 
-    return memcmp(a_str, b_str, a_len) == 0;
+    return memcmp(a_str, b_str, a_len);
 }
 
-int __thtml_strneq__(Tcl_Obj *a, Tcl_Obj *b) {
-    return !__thtml_streq__(a, b);
+Tcl_Obj *__thtml_streq__(Tcl_Obj *a, Tcl_Obj *b) {
+    return Tcl_NewBooleanObj(__thtml_string_compare__(a, b) == 0);
+}
+
+Tcl_Obj *__thtml_strneq__(Tcl_Obj *a, Tcl_Obj *b) {
+    return Tcl_NewBooleanObj(__thtml_string_compare__(a, b) != 0);
 }
 
 int __thtml_compare_op__(Tcl_Obj *a, Tcl_Obj *b) {
@@ -39,7 +43,9 @@ int __thtml_compare_op__(Tcl_Obj *a, Tcl_Obj *b) {
     void *b_val = NULL;
     int a_type = TCL_NUMBER_NAN;
     int b_type = TCL_NUMBER_NAN;
-    if (TCL_OK != Tcl_GetNumberFromObj(NULL, a, &a_val, &a_type) || TCL_OK != Tcl_GetNumberFromObj(NULL, b, &b_val, &b_type)) {
+    if (TCL_OK != Tcl_GetNumberFromObj(NULL, a, &a_val, &a_type) ||
+        TCL_OK != Tcl_GetNumberFromObj(NULL, b, &b_val, &b_type) || a_type == TCL_NUMBER_NAN ||
+        b_type == TCL_NUMBER_NAN) {
         // we should never get here
         // we check before calling this function
         fprintf(stderr, "error: a=%s b=%s\n", Tcl_GetString(a), Tcl_GetString(b));
@@ -47,21 +53,14 @@ int __thtml_compare_op__(Tcl_Obj *a, Tcl_Obj *b) {
         return 0;
     }
 
-    if (a_type == TCL_NUMBER_NAN || b_type == TCL_NUMBER_NAN) {
-        // we should never get here
-        // we check before calling this function
-        assert(0);
-        return 0;
-    }
-
     if (a_type == TCL_NUMBER_DOUBLE || b_type == TCL_NUMBER_DOUBLE) {
-        double res = *(double *)a_val - *(double *)b_val;
+        double res = *(const double *)a_val - *(const double *)b_val;
         return res < 0 ? -1 : (res > 0 ? 1 : 0);
     } else if (a_type == TCL_NUMBER_BIG || b_type == TCL_NUMBER_BIG) {
-        Tcl_WideInt res = *(Tcl_WideInt *)a_val - *(Tcl_WideInt *)b_val;
+        Tcl_WideInt res = *(const Tcl_WideInt *)a_val - *(const Tcl_WideInt *)b_val;
         return res < 0 ? -1 : (res > 0 ? 1 : 0);
     } else if (a_type == TCL_NUMBER_INT || b_type == TCL_NUMBER_INT) {
-        int res = *(int *)a_val - *(int *)b_val;
+        int res = *(const int *)a_val - *(const int *)b_val;
         return res < 0 ? -1 : (res > 0 ? 1 : 0);
     }
 
@@ -71,31 +70,31 @@ int __thtml_compare_op__(Tcl_Obj *a, Tcl_Obj *b) {
     return 0;
 }
 
-int __thtml_gt__(Tcl_Obj *a, Tcl_Obj *b) {
-    return __thtml_compare_op__(a, b) > 0;
+Tcl_Obj *__thtml_gt__(Tcl_Obj *a, Tcl_Obj *b) {
+    return Tcl_NewBooleanObj(__thtml_compare_op__(a, b) > 0);
 }
 
-int __thtml_gte__(Tcl_Obj *a, Tcl_Obj *b) {
-    return __thtml_compare_op__(a, b) >= 0;
+Tcl_Obj *__thtml_gte__(Tcl_Obj *a, Tcl_Obj *b) {
+    return Tcl_NewBooleanObj(__thtml_compare_op__(a, b) >= 0);
 }
 
-int __thtml_lt__(Tcl_Obj *a, Tcl_Obj *b) {
-    return __thtml_compare_op__(a, b) < 0;
+Tcl_Obj *__thtml_lt__(Tcl_Obj *a, Tcl_Obj *b) {
+    return Tcl_NewBooleanObj(__thtml_compare_op__(a, b) < 0);
 }
 
-int __thtml_lte__(Tcl_Obj *a, Tcl_Obj *b) {
-    return __thtml_compare_op__(a, b) <= 0;
+Tcl_Obj *__thtml_lte__(Tcl_Obj *a, Tcl_Obj *b) {
+    return Tcl_NewBooleanObj(__thtml_compare_op__(a, b) <= 0);
 }
 
-int __thtml_eq__(Tcl_Obj *a, Tcl_Obj *b) {
-    return __thtml_compare_op__(a, b) == 0;
+Tcl_Obj *__thtml_eq__(Tcl_Obj *a, Tcl_Obj *b) {
+    return Tcl_NewBooleanObj(__thtml_compare_op__(a, b) == 0);
 }
 
-int __thtml_ne__(Tcl_Obj *a, Tcl_Obj *b) {
-    return __thtml_compare_op__(a, b) != 0;
+Tcl_Obj *__thtml_ne__(Tcl_Obj *a, Tcl_Obj *b) {
+    return Tcl_NewBooleanObj(__thtml_compare_op__(a, b) != 0);
 }
 
-int __thtml_and__(Tcl_Obj *a, Tcl_Obj *b) {
+Tcl_Obj *__thtml_and__(Tcl_Obj *a, Tcl_Obj *b) {
     int a_val, b_val;
     if (Tcl_GetBooleanFromObj(NULL, a, &a_val) != TCL_OK) {
         return 0;
@@ -103,10 +102,10 @@ int __thtml_and__(Tcl_Obj *a, Tcl_Obj *b) {
     if (Tcl_GetBooleanFromObj(NULL, b, &b_val) != TCL_OK) {
         return 0;
     }
-    return a_val && b_val;
+    return Tcl_NewBooleanObj(a_val && b_val);
 }
 
-int __thtml_or__(Tcl_Obj *a, Tcl_Obj *b) {
+Tcl_Obj *__thtml_or__(Tcl_Obj *a, Tcl_Obj *b) {
     int a_val, b_val;
     if (Tcl_GetBooleanFromObj(NULL, a, &a_val) != TCL_OK) {
         return 0;
@@ -114,29 +113,42 @@ int __thtml_or__(Tcl_Obj *a, Tcl_Obj *b) {
     if (Tcl_GetBooleanFromObj(NULL, b, &b_val) != TCL_OK) {
         return 0;
     }
-    return a_val || b_val;
+    return Tcl_NewBooleanObj(a_val || b_val);
 }
 
-int __thtml_not__(Tcl_Obj *a) {
+Tcl_Obj *__thtml_not__(Tcl_Obj *a) {
     int a_val;
     if (Tcl_GetBooleanFromObj(NULL, a, &a_val) != TCL_OK) {
         return 0;
     }
-    return !a_val;
+    return Tcl_NewBooleanObj(!a_val);
 }
 
-double __thtml_add__(Tcl_Obj *a, Tcl_Obj *b) {
-
-    // todo: check if string is empty
-
-    double a_val, b_val;
-    if (Tcl_GetDoubleFromObj(NULL, a, &a_val) != TCL_OK) {
+Tcl_Obj *__thtml_add__(Tcl_Obj *a, Tcl_Obj *b) {
+    void *a_val = NULL;
+    void *b_val = NULL;
+    int a_type = TCL_NUMBER_NAN;
+    int b_type = TCL_NUMBER_NAN;
+    if (TCL_OK != Tcl_GetNumberFromObj(NULL, a, &a_val, &a_type) ||
+        TCL_OK != Tcl_GetNumberFromObj(NULL, b, &b_val, &b_type) || a_type == TCL_NUMBER_NAN ||
+        b_type == TCL_NUMBER_NAN) {
+        // we should never get here
+        // we check before calling this function
+        fprintf(stderr, "error: a=%s b=%s\n", Tcl_GetString(a), Tcl_GetString(b));
+        assert(0);
         return 0;
     }
-    if (Tcl_GetDoubleFromObj(NULL, b, &b_val) != TCL_OK) {
-        return 0;
+
+    if (a_type == TCL_NUMBER_DOUBLE || b_type == TCL_NUMBER_DOUBLE) {
+        return Tcl_NewDoubleObj(*(const double *)a_val + *(const double *)b_val);
+    } else if (a_type == TCL_NUMBER_BIG || b_type == TCL_NUMBER_BIG) {
+        return Tcl_NewWideIntObj(*(const Tcl_WideInt *)a_val + *(const Tcl_WideInt *)b_val);
+    } else if (a_type == TCL_NUMBER_INT || b_type == TCL_NUMBER_INT) {
+        return Tcl_NewIntObj(*(const int *)a_val + *(const int *)b_val);
     }
-    return a_val + b_val;
+
+    assert(0);
+    return NULL;
 }
 
 #endif // THTML_H

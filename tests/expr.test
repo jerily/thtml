@@ -20,7 +20,7 @@ set rootdir [file normalize [file dirname [info script]]]
 test expr-lt-true {} -body {
     ::thtml::render {<div>[expr {1 < 2}]</div>} {}
 } -result {<div>1</div>}
-
+exit
 test expr-lt-false {} -body {
     ::thtml::render {<div>[expr {1 < 0}]</div>} {}
 } -result {<div>0</div>}

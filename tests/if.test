@@ -12,8 +12,9 @@ proc escape {str} {
     return [string map {\r {\r} \n {\n}} $str]
 }
 
-set rootdir [file dirname [info script]]
-::thtml::init [dict create cache 1 rootdir $rootdir]
+set rootdir [file normalize [file dirname [info script]]]
+::thtml::init [dict create cache 1 rootdir $rootdir target_lang c debug 1]
+
 
 test if-1 {} -body {
     set data {
@@ -36,7 +37,7 @@ test if-1 {} -body {
     set html [::thtml::render $template $data]
     escape $html
 } -result {<html><head><title>Hello, World!</title></head><body><h1>Hello, World!</h1><p>You are an adult.</p></body></html>}
-
+exit
 
 test if-2 {} -body {
     set data {

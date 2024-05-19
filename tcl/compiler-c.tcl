@@ -70,9 +70,13 @@ proc ::thtml::compiler::c_compile_statement_if {codearrVar node} {
     #puts conditional=$conditional
     set compiled_conditional [c_compile_expr codearr $conditional "flag${conditional_num}"]
 
+    append compiled_conditional "\n" "int __flag${conditional_num}_bool__;"
+    append compiled_conditional "\n" "if (Tcl_GetBooleanFromObj(__interp__, __flag${conditional_num}__, &__flag${conditional_num}_bool__) != TCL_OK) {return TCL_ERROR;}"
+    append compiled_conditional "\n" "Tcl_DecrRefCount(__flag${conditional_num}__);"
+
     set compiled_statement ""
     append compiled_statement "\x03" "\n" $compiled_conditional "\x02"
-    append compiled_statement "\x03" "\n" "if ( __flag${conditional_num}__ ) \{ " "\x02"
+    append compiled_statement "\x03" "\n" "if ( __flag${conditional_num}_bool__ ) \{ " "\x02"
     append compiled_statement [compile_children codearr $node]
     append compiled_statement "\x03" "\n" "\} " "\x02"
     return $compiled_statement
