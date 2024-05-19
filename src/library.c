@@ -45,12 +45,6 @@ void thtml_InitModule() {
     }
 }
 
-#if TCL_MAJOR_VERSION > 8
-#define MIN_VERSION "9.0"
-#else
-#define MIN_VERSION "8.6"
-#endif
-
 int thtml_EscapeTemplateCmd(ClientData  clientData, Tcl_Interp *interp, int objc, Tcl_Obj * const objv[]) {
     DBG(fprintf(stderr,"TclTransformCmd\n"));
 
@@ -70,6 +64,8 @@ int thtml_EscapeTemplateCmd(ClientData  clientData, Tcl_Interp *interp, int objc
     return TCL_OK;
 
 }
+
+#define MIN_VERSION "9.0"
 
 int Thtml_Init(Tcl_Interp *interp) {
 

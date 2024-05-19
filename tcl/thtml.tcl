@@ -60,11 +60,7 @@ proc ::thtml::c_compile_template_and_load {codearrVar template} {
 
     set c_code {}
     append c_code "\n" "#include \"thtml.h\""
-    append c_code "\n" "#if TCL_MAJOR_VERSION > 8"
     append c_code "\n" "#define MIN_VERSION \"9.0\""
-    append c_code "\n" "#else"
-    append c_code "\n" "#define MIN_VERSION \"8.6\""
-    append c_code "\n" "#endif"
 
     append c_code $codearr(defs)
     append c_code "\n" "int thtml_${md5}Cmd(ClientData  clientData, Tcl_Interp *__interp__, int objc, Tcl_Obj * const objv\[\]) {"
