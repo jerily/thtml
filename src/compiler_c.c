@@ -1431,16 +1431,16 @@ thtml_CAppendCommand_Token(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DSt
             Tcl_DStringAppend(ds_ptr, "__, TCL_EVAL_DIRECT)) { return TCL_ERROR; }", -1);
         }
 
-        if (cmd_ds_ptr != NULL) {
-            Tcl_DStringAppend(cmd_ds_ptr, "[subst $__", -1);
-            Tcl_DStringAppend(cmd_ds_ptr, subcmd_name, -1);
-            Tcl_DStringAppend(cmd_ds_ptr, "__]", -1);
-        } else {
+        // Tcl_Obj *__val3_subcmd1__ = Tcl_GetObjResult(__interp__);
+        Tcl_DStringAppend(ds_ptr, "\nTcl_Obj *__", -1);
+        Tcl_DStringAppend(ds_ptr, subcmd_name, -1);
+        Tcl_DStringAppend(ds_ptr, "_res__ = Tcl_GetObjResult(__interp__);", -1);
 
-            // Tcl_Obj *__val3_subcmd1__ = Tcl_GetObjResult(__interp__);
-            Tcl_DStringAppend(ds_ptr, "\nTcl_Obj *__", -1);
-            Tcl_DStringAppend(ds_ptr, subcmd_name, -1);
-            Tcl_DStringAppend(ds_ptr, "_res__ = Tcl_GetObjResult(__interp__);", -1);
+        if (cmd_ds_ptr != NULL) {
+            Tcl_DStringAppend(cmd_ds_ptr, "__", -1);
+            Tcl_DStringAppend(cmd_ds_ptr, subcmd_name, -1);
+            Tcl_DStringAppend(cmd_ds_ptr, "_res__", -1);
+        } else {
 
             // Tcl_DStringAppend(__ds_val3__, Tcl_GetString(__val3_subcmd1__), -1);
             Tcl_DStringAppend(ds_ptr, "\nTcl_DStringAppendElement(__ds_", -1);
