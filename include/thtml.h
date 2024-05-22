@@ -1150,4 +1150,13 @@ Tcl_Obj *__thtml_bitnot__(Tcl_Obj *a) {
 Tcl_Obj *__thtml_uminus__(Tcl_Obj *a) {
     return __thtml_unary_math_op(INST_UMINUS, a);
 }
+
+Tcl_Obj *__thtml_ternary__(Tcl_Interp *interp, Tcl_Obj *a, Tcl_Obj *b, Tcl_Obj *c) {
+    int a_val;
+    if (Tcl_GetBooleanFromObj(interp, a, &a_val) != TCL_OK) {
+        return GENERAL_ARITHMETIC_ERROR;
+    }
+    return a_val ? b : c;
+}
+
 #endif // THTML_H

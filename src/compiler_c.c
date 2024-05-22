@@ -1072,6 +1072,19 @@ thtml_CAppendExpr_Operator(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DSt
 
         } else if (ch == '?') {
             // three operands
+            op_count++;
+            char op_count_str[12];
+            snprintf(op_count_str, 12, "%d", op_count);
+
+            char varname[64];
+            snprintf(varname, 64, "__%s_op%s__", name, op_count_str);
+
+            Tcl_DString operator_ds;
+            Tcl_DStringInit(&operator_ds);
+
+            Tcl_DStringAppend(&operator_ds, "\nTcl_Obj *", -1);
+            Tcl_DStringAppend(&operator_ds, varname, -1);
+            Tcl_DStringAppend(&operator_ds, " = __thtml_ternary__(__interp__, ", -1);
 
             Tcl_Token *first_operand = &parse_ptr->tokenPtr[operands_offset];
             Tcl_Size second_operand_index = operands_offset + first_operand->numComponents + 1;
@@ -1080,23 +1093,47 @@ thtml_CAppendExpr_Operator(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DSt
 
             // fprintf(stderr, "first_operand of op: %c has numComponents: %d\n", ch, first_operand->numComponents);
             if (TCL_OK !=
-                thtml_CAppendExpr_Token(interp, blocks_list_ptr, ds_ptr, parse_ptr, operands_offset, name, cmd_ds_ptr,
+                thtml_CAppendExpr_Token(interp, blocks_list_ptr, ds_ptr, parse_ptr, operands_offset, name, &operator_ds,
                                         after_ds_ptr, THTML_BOOL)) {
                 return TCL_ERROR;
             }
-            Tcl_DStringAppend(ds_ptr, " ", 1);
-            Tcl_DStringAppend(ds_ptr, operator_token->start, operator_token->size);
-            Tcl_DStringAppend(ds_ptr, " ", 1);
+            Tcl_DStringAppend(&operator_ds, ", ", -1);
             if (TCL_OK !=
                 thtml_CAppendExpr_Token(interp, blocks_list_ptr, ds_ptr, parse_ptr, second_operand_index, name,
-                                        cmd_ds_ptr, after_ds_ptr, flags)) {
+                                        &operator_ds, after_ds_ptr, flags)) {
                 return TCL_ERROR;
             }
-            Tcl_DStringAppend(ds_ptr, " : ", 3);
+            Tcl_DStringAppend(&operator_ds, ", ", -1);
             if (TCL_OK != thtml_CAppendExpr_Token(interp, blocks_list_ptr, ds_ptr, parse_ptr, third_operand_index, name,
-                                                  cmd_ds_ptr, after_ds_ptr, flags)) {
+                                                  &operator_ds, after_ds_ptr, flags)) {
                 return TCL_ERROR;
             }
+
+            Tcl_DStringAppend(&operator_ds, ");", -1);
+
+            // check for divided_by_zero, exponent_of_zero, general_arithmetic_error, and out_of_memory
+            // if ( __cmd29_expr_op30__ < 0 && __cmd29_expr_op30__ > -5 ) { return TCL_ERROR; }
+            Tcl_DStringAppend(&operator_ds, "\nif ( ", -1);
+            Tcl_DStringAppend(&operator_ds, varname, -1);
+            Tcl_DStringAppend(&operator_ds, " < (Tcl_Obj *) 0 ", -1);
+            Tcl_DStringAppend(&operator_ds, " && ", -1);
+            Tcl_DStringAppend(&operator_ds, varname, -1);
+            Tcl_DStringAppend(&operator_ds, " > (Tcl_Obj *) -5 ) { return TCL_ERROR; }", -1);
+
+            Tcl_DStringAppend(ds_ptr, Tcl_DStringValue(&operator_ds), Tcl_DStringLength(&operator_ds));
+            Tcl_DStringFree(&operator_ds);
+
+            Tcl_DStringAppend(ds_ptr, "\nTcl_IncrRefCount(", -1);
+            Tcl_DStringAppend(ds_ptr, varname, -1);
+            Tcl_DStringAppend(ds_ptr, ");", -1);
+
+            Tcl_DStringAppend(cmd_ds_ptr, varname, -1);
+
+            Tcl_DStringAppend(after_ds_ptr, "\nTcl_DecrRefCount(", -1);
+            Tcl_DStringAppend(after_ds_ptr, varname, -1);
+            Tcl_DStringAppend(after_ds_ptr, ");", -1);
+
+
         } else {
             SetResult("error parsing expression: unsupported operator");
             return TCL_ERROR;
