@@ -145,6 +145,10 @@ test expr-div {} -body {
     ::thtml::render {<div>[expr {6 / 2}]</div>} {}
 } -result {<div>3</div>}
 
+test expr-expon {} -body {
+    ::thtml::render {<div>[expr {2 ** 3}]</div>} {}
+} -result {<div>8</div>}
+
 # more complex expressions
 
 test expr-complex-1 {} -body {

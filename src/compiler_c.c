@@ -1172,9 +1172,7 @@ thtml_CAppendExpr_Operator(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DSt
             Tcl_DStringAppend(&operator_ds, "\nTcl_Obj *", -1);
             Tcl_DStringAppend(&operator_ds, varname, -1);
             Tcl_DStringAppend(&operator_ds, " = ", -1);
-            Tcl_DStringAppend(&operator_ds, " __thtml_", -11);
-            Tcl_DStringAppend(&operator_ds, INSTR[operator_token->start[0]], -1);
-            Tcl_DStringAppend(&operator_ds, "__(__interp__, ", -1);
+            Tcl_DStringAppend(&operator_ds, " __thtml_expon__(__interp__, ", -1);
 
             Tcl_Token *first_operand = &parse_ptr->tokenPtr[operands_offset];
 
