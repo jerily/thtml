@@ -37,6 +37,10 @@ test command-in-if-1 {} -body {
     ::thtml::render {<tpl if='[lindex $b 1] eq {world}'><div>this is a test</div></tpl>} {a 12345 b "hello world" c "test"}
 } -result {<div>this is a test</div>}
 
-#test command-in-foreach-list-1 {} -body {
-#    ::thtml::render {<tpl foreach="w" in='hi [lindex $b 1] wow'><div>this is a test: $w</div></tpl>} {a 12345 b "hello world" c "test"}
-#} -result {<div>this is a test: hi</div><div>this is a test: world</div><div>this is a test: wow</div>}
+test command-in-foreach-list-1 {} -body {
+    ::thtml::render {<tpl foreach="w" in='hi [lindex $b 1] wow'><div>this is a test: $w</div></tpl>} {a 12345 b "hello world" c "test"}
+} -result {<div>this is a test: hi</div><div>this is a test: world</div><div>this is a test: wow</div>}
+
+test command-in-foreach-list-2 {} -body {
+    ::thtml::render {<tpl foreach="w" in='hi [lrange $b 0 1] wow'><div>this is a test: $w</div></tpl>} {a 12345 b "hello world" c "test"}
+} -result {<div>this is a test: hi</div><div>this is a test: hello world</div><div>this is a test: wow</div>}

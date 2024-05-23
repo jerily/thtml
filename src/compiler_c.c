@@ -15,6 +15,7 @@ static int count_text_subst = 0;
 static int count_var_dict_subst = 0;
 
 static int template_cmd_count = 0;
+static int foreach_cmd_count = 0;
 static int subcmd_count = 0;
 static int op_count = 0;
 
@@ -1943,16 +1944,88 @@ thtml_CCompileForeachList(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DStr
     for (int i = 0; i < parse_ptr->numTokens; i++) {
         Tcl_Token *token = &parse_ptr->tokenPtr[i];
         if (token->type == TCL_TOKEN_TEXT) {
-            Tcl_DStringAppend(ds_ptr, "\nTcl_DStringAppendElement(__ds_", -1);
+            Tcl_DStringAppend(ds_ptr, "\nTcl_DStringAppend(__ds_", -1);
             Tcl_DStringAppend(ds_ptr, name, -1);
             Tcl_DStringAppend(ds_ptr, "__, \"", -1);
             Tcl_DStringAppend(ds_ptr, token->start, token->size);
-            Tcl_DStringAppend(ds_ptr, "\");", -1);
+            Tcl_DStringAppend(ds_ptr, "\", -1);", -1);
         } else if (token->type == TCL_TOKEN_BS) {
             Tcl_DStringAppend(ds_ptr, token->start, token->size);
         } else if (token->type == TCL_TOKEN_COMMAND) {
-            SetResult("error parsing quoted string: command substitution not supported");
-            return TCL_ERROR;
+
+            foreach_cmd_count++;
+
+            char cmd_name[64];
+            snprintf(cmd_name, 64, "forcmd%d", foreach_cmd_count);
+
+            Tcl_Parse cmd_parse;
+            if (TCL_OK != Tcl_ParseCommand(interp, token->start + 1, token->size - 2, 0, &cmd_parse)) {
+                Tcl_FreeParse(&cmd_parse);
+                return TCL_ERROR;
+            }
+
+            Tcl_DString cmd_ds;
+            Tcl_DStringInit(&cmd_ds);
+
+            int compiled_cmd = 0;
+            if (TCL_OK !=
+                thtml_CCompileCommand(interp, blocks_list_ptr, &cmd_ds, &cmd_parse, cmd_name, 0, &compiled_cmd)) {
+                Tcl_FreeParse(&cmd_parse);
+                Tcl_DStringFree(&cmd_ds);
+                return TCL_ERROR;
+            }
+
+//            Tcl_DStringAppend(ds_ptr, "\x03", -1);
+
+            if (!compiled_cmd) {
+                // Tcl_DString __ds_cmd1_base__;
+                Tcl_DStringAppend(ds_ptr, "\nTcl_DString __ds_", -1);
+                Tcl_DStringAppend(ds_ptr, cmd_name, -1);
+                Tcl_DStringAppend(ds_ptr, "_base__", -1);
+
+                // Tcl_DString *__ds_cmd1__ = &__ds_cmd1_base__;
+                Tcl_DStringAppend(ds_ptr, ";\nTcl_DString *__ds_", -1);
+                Tcl_DStringAppend(ds_ptr, cmd_name, -1);
+                Tcl_DStringAppend(ds_ptr, "__ = &__ds_", -1);
+                Tcl_DStringAppend(ds_ptr, cmd_name, -1);
+                Tcl_DStringAppend(ds_ptr, "_base__;", -1);
+
+                // Tcl_DStringInit(__ds_cmd1__);
+                Tcl_DStringAppend(ds_ptr, "\nTcl_DStringInit(__ds_", -1);
+                Tcl_DStringAppend(ds_ptr, cmd_name, -1);
+                Tcl_DStringAppend(ds_ptr, "__);", -1);
+            }
+
+            Tcl_DStringAppend(ds_ptr, Tcl_DStringValue(&cmd_ds), Tcl_DStringLength(&cmd_ds));
+            Tcl_DStringFree(&cmd_ds);
+
+            if (!compiled_cmd) {
+                // if (TCL_OK != Tcl_EvalObjEx(interp, Tcl_NewStringObj(Tcl_DStringValue(&__ds_cmd1__), Tcl_DStringLength(&__ds_cmd1__)), 0)) { return TCL_ERROR; }
+                Tcl_DStringAppend(ds_ptr,
+                                  "\nif (TCL_OK != Tcl_EvalObjEx(__interp__, Tcl_NewStringObj(Tcl_DStringValue(__ds_",
+                                  -1);
+                Tcl_DStringAppend(ds_ptr, cmd_name, -1);
+                Tcl_DStringAppend(ds_ptr, "__), Tcl_DStringLength(__ds_", -1);
+                Tcl_DStringAppend(ds_ptr, cmd_name, -1);
+                Tcl_DStringAppend(ds_ptr, "__)), TCL_EVAL_DIRECT)) { return TCL_ERROR; }", -1);
+            }
+
+            // Tcl_Obj *__cmd1__ = Tcl_GetObjResult(__interp__);
+            Tcl_DStringAppend(ds_ptr, "\nTcl_Obj *__", -1);
+            Tcl_DStringAppend(ds_ptr, cmd_name, -1);
+            Tcl_DStringAppend(ds_ptr, "_res__ = Tcl_GetObjResult(__interp__);", -1);
+
+            // Tcl_DStringAppendElement(__ds_list1__, Tcl_GetString(__forcmd1__));
+            Tcl_DStringAppend(ds_ptr, "\nTcl_DStringAppendElement(__ds_", -1);
+            Tcl_DStringAppend(ds_ptr, name, -1);
+            Tcl_DStringAppend(ds_ptr, "__, Tcl_GetString(__", -1);
+            Tcl_DStringAppend(ds_ptr, cmd_name, -1);
+            Tcl_DStringAppend(ds_ptr, "_res__));", -1);
+
+//            Tcl_DStringAppend(ds_ptr, "\x02", -1);
+
+            Tcl_FreeParse(&cmd_parse);
+
         } else if (token->type == TCL_TOKEN_VARIABLE) {
             if (TCL_OK != thtml_CAppendVariable(interp, blocks_list_ptr, ds_ptr, parse_ptr, i, name, NULL, 0)) {
                 return TCL_ERROR;

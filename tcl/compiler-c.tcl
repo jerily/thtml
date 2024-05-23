@@ -131,7 +131,9 @@ proc ::thtml::compiler::c_compile_statement_foreach {codearrVar node} {
     }
     append compiled_statement "\n" "\} "
     append compiled_statement "\n" "Tcl_DecrRefCount(__list${foreach_num}__);" "\n"
-    append compiled_statement "\n" "Tcl_DecrRefCount(${foreach_indexvar});" "\n"
+    if { $foreach_indexvar ne "" } {
+        append compiled_statement "\n" "Tcl_DecrRefCount(${foreach_indexvar});" "\n"
+    }
     append compiled_statement "\n" "\}" "\x02"
     return $compiled_statement
 }
