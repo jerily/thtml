@@ -6,6 +6,8 @@ package require tdom
 
 namespace eval ::thtml {
     variable rootdir
+    variable cachedir /tmp/cache/thtml
+    variable cmakedir [file normalize [file join [file dirname [info script]] "../cmake"]]
     variable cache 0
     variable target_lang tcl
     variable debug 0
@@ -14,12 +16,17 @@ namespace eval ::thtml::cache {}
 
 proc ::thtml::init {option_dict} {
     variable rootdir
+    variable cachedir
     variable cache
     variable target_lang
     variable debug
 
     if { [dict exists $option_dict rootdir] } {
         set rootdir [dict get $option_dict rootdir]
+    }
+
+    if { [dict exists $option_dict cachedir] } {
+        set cachedir [dict get $option_dict cachedir]
     }
 
     if { [dict exists $option_dict cache] } {
@@ -33,6 +40,16 @@ proc ::thtml::init {option_dict} {
     if { [dict exists $option_dict debug] } {
         set debug [dict get $option_dict debug]
     }
+
+    if { ![file isdirectory $cachedir] } {
+        file mkdir $cachedir
+    }
+
+    set builddir [file join $cachedir "build"]
+    if { ![file isdirectory $builddir] } {
+        file mkdir $builddir
+    }
+
 }
 
 proc ::thtml::tcl_compile_template_and_load {codearrVar template} {
@@ -76,7 +93,8 @@ proc ::thtml::c_compile_template_and_load {codearrVar template} {
 
     set dir [::thtml::get_rootdir]
     if { $debug } { puts rootdir=$dir }
-    set cachedir [file normalize [file join $dir "cache/"]]
+    #set cachedir [file normalize [file join $dir "cache/"]]
+    variable cachedir
     if { $debug } { puts cachedir=$cachedir }
     set outfile [file join $cachedir "index.c"]
     set fp [open $outfile w]
@@ -85,7 +103,8 @@ proc ::thtml::c_compile_template_and_load {codearrVar template} {
 
     set builddir [file join $cachedir "build"]
     cd $builddir
-    set msgs [exec -ignorestderr -- cmake $cachedir -DTHTML_PROJECT_NAME=$md5 -DTHTML_PROJECT_CODE=index.c]
+    variable cmakedir
+    set msgs [exec -ignorestderr -- cmake $cmakedir -DTHTML_CMAKE_DIR=$cmakedir -DTHTML_PROJECT_NAME=$md5 -DTHTML_PROJECT_CODE=$outfile]
     if { $debug } { puts $msgs }
     set msgs [exec -ignorestderr -- make]
     if { $debug } { puts $msgs }
@@ -154,7 +173,8 @@ proc ::thtml::c_compile_file_and_load {codearrVar filename} {
 
     set dir [::thtml::get_rootdir]
     if { $debug } { puts rootdir=$dir }
-    set cachedir [file normalize [file join $dir "cache/"]]
+    variable cachedir
+    #set cachedir [file normalize [file join $dir "cache/"]]
     if { $debug } { puts cachedir=$cachedir }
     set outfile [file join $cachedir "index.c"]
     set fp [open $outfile w]
@@ -163,7 +183,8 @@ proc ::thtml::c_compile_file_and_load {codearrVar filename} {
 
     set builddir [file join $cachedir "build"]
     cd $builddir
-    set msgs [exec -ignorestderr -- cmake $cachedir -DTHTML_PROJECT_NAME=$md5 -DTHTML_PROJECT_CODE=index.c]
+    variable cmakedir
+    set msgs [exec -ignorestderr -- cmake $cmakedir -DTHTML_CMAKE_DIR=$cmakedir -DTHTML_PROJECT_NAME=$md5 -DTHTML_PROJECT_CODE=$outfile]
     if { $debug } { puts $msgs }
     set msgs [exec -ignorestderr -- make]
     if { $debug } { puts $msgs }
