@@ -9,8 +9,13 @@ set init_script {
     package require thtml
 
     ::thtml::init [dict create \
-        cache 0 \
-        rootdir [::twebserver::get_rootdir]]
+        debug 1 \
+        cache 1 \
+        target_lang c \
+        rootdir [::twebserver::get_rootdir] \
+        cachedir "/tmp/cache/thtml/"]
+
+    ::thtml::load_compiled_templates
 
     # create a router
     set router [::twebserver::create_router]
