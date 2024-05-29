@@ -1500,20 +1500,10 @@ thtml_CAppendCommand_Token(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DSt
         Tcl_Size j = i + 1;
         while (i - start_i - 1 < token->numComponents) {
 
-            // Tcl_DStringStartSublist(__ds__wt1__);
-//            Tcl_DStringAppend(ds_ptr, "\nTcl_DStringStartSublist(__ds_", -1);
-//            Tcl_DStringAppend(ds_ptr, word_token_name, -1);
-//            Tcl_DStringAppend(ds_ptr, "__);", -1);
-
             if (TCL_OK != thtml_CAppendCommand_Token(interp, blocks_list_ptr, ds_ptr, parse_ptr, j, &i, word_token_name,
                                                      cmd_ds_ptr, flags)) {
                 return TCL_ERROR;
             }
-
-            // Tcl_DStringEndSublist(__ds__wt1__);
-//            Tcl_DStringAppend(ds_ptr, "\nTcl_DStringEndSublist(__ds_", -1);
-//            Tcl_DStringAppend(ds_ptr, word_token_name, -1);
-//            Tcl_DStringAppend(ds_ptr, "__);", -1);
 
             j = i;
         }
@@ -1525,7 +1515,7 @@ thtml_CAppendCommand_Token(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DSt
         Tcl_DStringAppend(ds_ptr, word_token_name, -1);
         Tcl_DStringAppend(ds_ptr, "__));", -1);
 
-        // Tcl_DStringAppend(__ds_val1__, "\nTcl_DStringFree(__ds_wt1__);", -1);
+        // Tcl_DStringFree(__ds_wt1__);
         Tcl_DStringAppend(ds_ptr, "\nTcl_DStringFree(__ds_", -1);
         Tcl_DStringAppend(ds_ptr, word_token_name, -1);
         Tcl_DStringAppend(ds_ptr, "__);", -1);

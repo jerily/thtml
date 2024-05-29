@@ -11,6 +11,7 @@
 
 static int subcmd_count = 0;
 static int template_cmd_count = 0;
+static int count_var_dict_subst = 0;
 
 static int thtml_TclAppendCommand_Token(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DString *ds_ptr, Tcl_Parse *parse_ptr,
                                  Tcl_Size i, Tcl_Size *out_i, const char *name, Tcl_DString *cmd_ds_ptr, int in_eval_p);
@@ -347,19 +348,28 @@ static int thtml_TclAppendVariable_Simple(Tcl_Interp *interp, Tcl_DString *ds_pt
 static int
 thtml_TclAppendVariable_Dict(Tcl_Interp *interp, Tcl_DString *ds_ptr, const char *varname_first_part,
                              Tcl_Size varname_first_part_length, Tcl_Obj **parts,
-                             Tcl_Size num_parts, const char *name, Tcl_DString *cmd_ds_ptr, int in_eval_p) {
-    static int count_var_dict_subst = 0;
+                             Tcl_Size num_parts, const char *name, Tcl_DString *expr_ds_ptr, int in_eval_p) {
+
     count_var_dict_subst++;
     char count_var_dict_subst_str[12];
     snprintf(count_var_dict_subst_str, 12, "%d", count_var_dict_subst);
 
+    char varname[64];
+    snprintf(varname, 64, "__dict_%s__", count_var_dict_subst_str);
+
+    Tcl_DStringAppend(ds_ptr, "\nset ", -1);
+    Tcl_DStringAppend(ds_ptr, varname, -1);
+    Tcl_DStringAppend(ds_ptr, " $", -1);
+    Tcl_DStringAppend(ds_ptr, varname_first_part, varname_first_part_length);
+    Tcl_DStringAppend(ds_ptr, ";", -1);
+
     int first = 1;
     for (int i = 0; i < num_parts; i++) {
-        if (first) {
-            first = 0;
-        } else {
-            Tcl_DStringAppend(ds_ptr, " ", 1);
-        }
+//        if (first) {
+//            first = 0;
+//        } else {
+//            Tcl_DStringAppend(ds_ptr, " ", 1);
+//        }
         Tcl_Obj *part_ptr = parts[i];
         Tcl_Size part_length;
         const char *part = Tcl_GetStringFromObj(part_ptr, &part_length);
@@ -367,37 +377,30 @@ thtml_TclAppendVariable_Dict(Tcl_Interp *interp, Tcl_DString *ds_ptr, const char
         Tcl_DStringAppend(ds_ptr, "\nset __", -1);
         Tcl_DStringAppend(ds_ptr, part, part_length);
         Tcl_DStringAppend(ds_ptr, count_var_dict_subst_str, -1);
-        Tcl_DStringAppend(ds_ptr, "__ ", -1);
-        Tcl_DStringAppend(ds_ptr, "[dict get $", -1);
-        // TODO: this is a chain of keys, we need to get the name of the previous part in the chain
-        Tcl_DStringAppend(ds_ptr, varname_first_part, varname_first_part_length);
+        Tcl_DStringAppend(ds_ptr, "__ [dict get $", -1);
+        Tcl_DStringAppend(ds_ptr, varname, -1);
         Tcl_DStringAppend(ds_ptr, " ", -1);
         Tcl_DStringAppend(ds_ptr, part, part_length);
         Tcl_DStringAppend(ds_ptr, "]", -1);
 
-        if (cmd_ds_ptr == NULL) {
-            if (in_eval_p) {
-                Tcl_DStringAppend(ds_ptr, "\nappend __ds_", -1);
-                Tcl_DStringAppend(ds_ptr, name, -1);
-                Tcl_DStringAppend(ds_ptr, "__ \\{$__", -1);
-                Tcl_DStringAppend(ds_ptr, part, part_length);
-                Tcl_DStringAppend(ds_ptr, count_var_dict_subst_str, -1);
-                Tcl_DStringAppend(ds_ptr, "__\\}", -1);
-            } else {
-                Tcl_DStringAppend(ds_ptr, "\nappend __ds_", -1);
-                Tcl_DStringAppend(ds_ptr, name, -1);
-                Tcl_DStringAppend(ds_ptr, "__ $__", -1);
-                Tcl_DStringAppend(ds_ptr, part, part_length);
-                Tcl_DStringAppend(ds_ptr, count_var_dict_subst_str, -1);
-                Tcl_DStringAppend(ds_ptr, "__", -1);
-            }
+        Tcl_DStringAppend(ds_ptr, "\nset ", -1);
+        Tcl_DStringAppend(ds_ptr, varname, -1);
+        Tcl_DStringAppend(ds_ptr, " $__", -1);
+        Tcl_DStringAppend(ds_ptr, part, part_length);
+        Tcl_DStringAppend(ds_ptr, count_var_dict_subst_str, -1);
+        Tcl_DStringAppend(ds_ptr, "__", -1);
+    }
 
-        } else {
-            Tcl_DStringAppend(cmd_ds_ptr, "$__", -1);
-            Tcl_DStringAppend(cmd_ds_ptr, part, part_length);
-            Tcl_DStringAppend(cmd_ds_ptr, count_var_dict_subst_str, -1);
-            Tcl_DStringAppend(cmd_ds_ptr, "__", -1);
-        }
+    if (expr_ds_ptr == NULL) {
+        // Tcl_DStringAppend(__ds_wt3__, Tcl_GetString(__dict_2__), -1);
+        Tcl_DStringAppend(ds_ptr, "\nappend __ds_", -1);
+        Tcl_DStringAppend(ds_ptr, name, -1);
+        Tcl_DStringAppend(ds_ptr, "__ $", -1);
+        Tcl_DStringAppend(ds_ptr, varname, -1);
+
+    } else {
+        Tcl_DStringAppend(expr_ds_ptr, "$", -1);
+        Tcl_DStringAppend(expr_ds_ptr, varname, -1);
     }
     return TCL_OK;
 }
@@ -923,7 +926,7 @@ static int thtml_TclAppendCommand_Token(Tcl_Interp *interp, Tcl_Obj *blocks_list
             Tcl_DStringAppend(cmd_ds_ptr, subcmd_name, -1);
             Tcl_DStringAppend(cmd_ds_ptr, "__]", -1);
         } else {
-            // append __ds_val3__ [::thtml::runtime::tcl::evaluate_script $__val3_subcmd1__]
+            // lappend __ds_val3__ [::thtml::runtime::tcl::evaluate_script $__val3_subcmd1__]
             Tcl_DStringAppend(ds_ptr, "\nlappend __ds_", -1);
             Tcl_DStringAppend(ds_ptr, name, -1);
             Tcl_DStringAppend(ds_ptr, "__ [::thtml::runtime::tcl::evaluate_script $__", -1);
@@ -935,14 +938,48 @@ static int thtml_TclAppendCommand_Token(Tcl_Interp *interp, Tcl_Obj *blocks_list
         SetResult("error parsing expression: expand word not supported");
         return TCL_ERROR;
     } else if (token->type == TCL_TOKEN_WORD) {
+
+        static int word_token_count = 0;
+        word_token_count++;
+
+        char word_token_name[64];
+        snprintf(word_token_name, 64, "wt%d", word_token_count);
+
+        Tcl_DStringAppend(ds_ptr, "\n# TOKEN_WORD: ", -1);
+        Tcl_DStringAppend(ds_ptr, token->start, token->size);
+        Tcl_DStringAppend(ds_ptr, " numComponents: ", -1);
+        Tcl_DStringAppend(ds_ptr, Tcl_GetString(Tcl_NewIntObj(token->numComponents)), -1);
+
+        // set __ds__wt1__ {}
+        Tcl_DStringAppend(ds_ptr, "\nset __ds_", -1);
+        Tcl_DStringAppend(ds_ptr, word_token_name, -1);
+        Tcl_DStringAppend(ds_ptr, "__ {}", -1);
+
         Tcl_Size start_i = i;
         Tcl_Size j = i + 1;
-        while (i - start_i < token->numComponents) {
-            if (TCL_OK != thtml_TclAppendCommand_Token(interp, blocks_list_ptr, ds_ptr, parse_ptr, j, &i, name, cmd_ds_ptr, in_eval_p)) {
+        while (i - start_i - 1 < token->numComponents) {
+
+            if (TCL_OK != thtml_TclAppendCommand_Token(interp, blocks_list_ptr, ds_ptr, parse_ptr, j, &i, word_token_name,
+                                                     cmd_ds_ptr, 0)) {
                 return TCL_ERROR;
             }
+
             j = i;
         }
+
+        // lappend __ds_val1__ $__ds_wt1__
+        Tcl_DStringAppend(ds_ptr, "\nappend __ds_", -1);
+        Tcl_DStringAppend(ds_ptr, name, -1);
+        Tcl_DStringAppend(ds_ptr, "__ \\{$__ds_", -1);
+        Tcl_DStringAppend(ds_ptr, word_token_name, -1);
+        Tcl_DStringAppend(ds_ptr, "__\\}", -1);
+
+        // unset __ds_wt1__
+        Tcl_DStringAppend(ds_ptr, "\nunset __ds_", -1);
+        Tcl_DStringAppend(ds_ptr, word_token_name, -1);
+        Tcl_DStringAppend(ds_ptr, "__", -1);
+
+
         *out_i = i + 1;
         return TCL_OK;
     } else if (token->type == TCL_TOKEN_BS) {
