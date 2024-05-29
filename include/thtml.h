@@ -57,6 +57,9 @@ typedef int Tcl_Size;
 # define TCL_SIZE_MODIFIER ""
 #endif
 
+#define SetResult(str) Tcl_ResetResult(__interp__); \
+                     Tcl_SetStringObj(Tcl_GetObjResult(__interp__), (str), -1)
+
 #define UWIDE_MAX ((Tcl_WideUInt)-1)
 #define WIDE_MAX ((Tcl_WideInt)(UWIDE_MAX >> 1))
 #define WIDE_MIN ((Tcl_WideInt)((Tcl_WideUInt)WIDE_MAX+1))

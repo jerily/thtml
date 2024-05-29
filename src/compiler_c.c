@@ -393,7 +393,7 @@ static int thtml_CAppendCheck_Bool(Tcl_DString *ds_ptr, const char *varname) {
     Tcl_DStringAppend(ds_ptr, ", &__", -1);
     Tcl_DStringAppend(ds_ptr, varname, -1);
     Tcl_DStringAppend(ds_ptr, "_val", -1);
-    Tcl_DStringAppend(ds_ptr, "__)) { return TCL_ERROR; }", -1);
+    Tcl_DStringAppend(ds_ptr, "__)) { SetResult(\"invalid in boolean check\"); return TCL_ERROR; }", -1);
 
     return TCL_OK;
 }
@@ -426,7 +426,7 @@ static int thtml_CAppendCheck_Number(Tcl_DString *ds_ptr, const char *varname) {
     Tcl_DStringAppend(ds_ptr, ") || __", -1);
     Tcl_DStringAppend(ds_ptr, varname, -1);
     Tcl_DStringAppend(ds_ptr, "_type__", -1);
-    Tcl_DStringAppend(ds_ptr, " == TCL_NUMBER_NAN) { return TCL_ERROR; }", -1);
+    Tcl_DStringAppend(ds_ptr, " == TCL_NUMBER_NAN) { SetResult(\"invalid in number check\");  return TCL_ERROR; }", -1);
     return TCL_OK;
 }
 
@@ -554,17 +554,19 @@ thtml_CAppendVariable_Dict(Tcl_Interp *interp, Tcl_DString *ds_ptr, const char *
         Tcl_DStringAppend(ds_ptr, ") || !", -1);
         Tcl_DStringAppend(ds_ptr, part, part_length);
         Tcl_DStringAppend(ds_ptr, count_var_dict_subst_str, -1);
-        Tcl_DStringAppend(ds_ptr, ") { // todo: decr ref count\nreturn TCL_ERROR; }", -1);
+        Tcl_DStringAppend(ds_ptr, ") { // todo: decr ref count\n SetResult(\"dict obj get failed: ", -1);
+        Tcl_DStringAppend(ds_ptr, part, part_length);
+        Tcl_DStringAppend(ds_ptr, "\"); return TCL_ERROR; }", -1);
         Tcl_DStringAppend(ds_ptr, "\nTcl_DecrRefCount(__", -1);
         Tcl_DStringAppend(ds_ptr, part, part_length);
         Tcl_DStringAppend(ds_ptr, count_var_dict_subst_str, -1);
         Tcl_DStringAppend(ds_ptr, "_key_ptr__);", -1);
 
 
-        // fprintf(stderr, "dict: %s\n", Tcl_GetString(__dict1__));
-//        Tcl_DStringAppend(ds_ptr, "\nfprintf(stderr, \"dict: %s\\n\", Tcl_GetString(__dict_", -1);
-//        Tcl_DStringAppend(ds_ptr, count_var_dict_subst_str, -1);
-//        Tcl_DStringAppend(ds_ptr, "__));\n", -1);
+//         fprintf(stderr, "dict: %s\n", Tcl_GetString(__dict1__));
+        Tcl_DStringAppend(ds_ptr, "\nfprintf(stderr, \"dict: %s\\n\", Tcl_GetString(__dict_", -1);
+        Tcl_DStringAppend(ds_ptr, count_var_dict_subst_str, -1);
+        Tcl_DStringAppend(ds_ptr, "__));\n", -1);
 
         Tcl_DStringAppend(ds_ptr, "\n", -1);
         Tcl_DStringAppend(ds_ptr, varname, -1);
@@ -1000,7 +1002,7 @@ thtml_CAppendExpr_Operator(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DSt
             Tcl_DStringAppend(&operator_ds, " < (Tcl_Obj *) 0 ", -1);
             Tcl_DStringAppend(&operator_ds, " && ", -1);
             Tcl_DStringAppend(&operator_ds, varname, -1);
-            Tcl_DStringAppend(&operator_ds, " > (Tcl_Obj *) -5 ) { return TCL_ERROR; }", -1);
+            Tcl_DStringAppend(&operator_ds, " > (Tcl_Obj *) -5 ) { SetResult(\"math error in CAppendExpr_Operator\");  return TCL_ERROR; }", -1);
 
             Tcl_DStringAppend(ds_ptr, Tcl_DStringValue(&operator_ds), Tcl_DStringLength(&operator_ds));
             Tcl_DStringFree(&operator_ds);
@@ -1066,7 +1068,7 @@ thtml_CAppendExpr_Operator(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DSt
             Tcl_DStringAppend(&operator_ds, " < (Tcl_Obj *) 0 ", -1);
             Tcl_DStringAppend(&operator_ds, " && ", -1);
             Tcl_DStringAppend(&operator_ds, varname, -1);
-            Tcl_DStringAppend(&operator_ds, " > (Tcl_Obj *) -5 ) { return TCL_ERROR; }", -1);
+            Tcl_DStringAppend(&operator_ds, " > (Tcl_Obj *) -5 ) { SetResult(\"math error in CAppendExpr_Operator\");  return TCL_ERROR; }", -1);
 
             Tcl_DStringAppend(ds_ptr, Tcl_DStringValue(&operator_ds), Tcl_DStringLength(&operator_ds));
             Tcl_DStringFree(&operator_ds);
@@ -1129,7 +1131,7 @@ thtml_CAppendExpr_Operator(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DSt
             Tcl_DStringAppend(&operator_ds, " < (Tcl_Obj *) 0 ", -1);
             Tcl_DStringAppend(&operator_ds, " && ", -1);
             Tcl_DStringAppend(&operator_ds, varname, -1);
-            Tcl_DStringAppend(&operator_ds, " > (Tcl_Obj *) -5 ) { return TCL_ERROR; }", -1);
+            Tcl_DStringAppend(&operator_ds, " > (Tcl_Obj *) -5 ) { SetResult(\"math error in CAppendExpr_Operator\");  return TCL_ERROR; }", -1);
 
             Tcl_DStringAppend(ds_ptr, Tcl_DStringValue(&operator_ds), Tcl_DStringLength(&operator_ds));
             Tcl_DStringFree(&operator_ds);
@@ -1249,7 +1251,7 @@ thtml_CAppendExpr_Operator(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DSt
             Tcl_DStringAppend(&operator_ds, " < (Tcl_Obj *) 0 ", -1);
             Tcl_DStringAppend(&operator_ds, " && ", -1);
             Tcl_DStringAppend(&operator_ds, varname, -1);
-            Tcl_DStringAppend(&operator_ds, " > (Tcl_Obj *) -5 ) { return TCL_ERROR; }", -1);
+            Tcl_DStringAppend(&operator_ds, " > (Tcl_Obj *) -5 ) {  SetResult(\"math error in CAppendExpr_Operator\"); return TCL_ERROR; }", -1);
 
             Tcl_DStringAppend(ds_ptr, Tcl_DStringValue(&operator_ds), Tcl_DStringLength(&operator_ds));
             Tcl_DStringFree(&operator_ds);
@@ -1439,7 +1441,7 @@ thtml_CAppendCommand_Token(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DSt
             // if (TCL_OK != Tcl_EvalObjEx(__interp__, __val3_cmd1__, TCL_EVAL_DIRECT)) { return TCL_ERROR; }
             Tcl_DStringAppend(ds_ptr, "\nif (TCL_OK != Tcl_EvalObjEx(__interp__, __", -1);
             Tcl_DStringAppend(ds_ptr, subcmd_name, -1);
-            Tcl_DStringAppend(ds_ptr, "__, TCL_EVAL_DIRECT)) { return TCL_ERROR; }", -1);
+            Tcl_DStringAppend(ds_ptr, "__, TCL_EVAL_DIRECT)) {  SetResult(\"eval command failed in CAppendCommand_Token\"); return TCL_ERROR; }", -1);
         }
 
         // Tcl_Obj *__val3_subcmd1__ = Tcl_GetObjResult(__interp__);
@@ -1758,7 +1760,7 @@ thtml_CCompileTemplateText(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DSt
                 Tcl_DStringAppend(ds_ptr, cmd_name, -1);
                 Tcl_DStringAppend(ds_ptr, "__), Tcl_DStringLength(__ds_", -1);
                 Tcl_DStringAppend(ds_ptr, cmd_name, -1);
-                Tcl_DStringAppend(ds_ptr, "__)), TCL_EVAL_DIRECT)) { return TCL_ERROR; }", -1);
+                Tcl_DStringAppend(ds_ptr, "__)), TCL_EVAL_DIRECT)) {  SetResult(\"eval command failed in CCompileTemplateText\"); return TCL_ERROR; }", -1);
             }
 
             // Tcl_Obj *__cmd1__ = Tcl_GetObjResult(__interp__);
@@ -1861,7 +1863,7 @@ thtml_CCompileGenericCommand(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_D
         }
         first = 0;
     }
-    Tcl_DStringAppend(&cmd_ds, ")) { return TCL_ERROR; }", -1);
+    Tcl_DStringAppend(&cmd_ds, ")) {  SetResult(\"failure in CCompileGenericCommand\"); return TCL_ERROR; }", -1);
 
     Tcl_DStringAppend(ds_ptr, Tcl_DStringValue(&cmd_ds), Tcl_DStringLength(&cmd_ds));
     Tcl_DStringFree(&cmd_ds);
@@ -2017,7 +2019,7 @@ thtml_CCompileForeachList(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DStr
                 Tcl_DStringAppend(ds_ptr, cmd_name, -1);
                 Tcl_DStringAppend(ds_ptr, "__), Tcl_DStringLength(__ds_", -1);
                 Tcl_DStringAppend(ds_ptr, cmd_name, -1);
-                Tcl_DStringAppend(ds_ptr, "__)), TCL_EVAL_DIRECT)) { return TCL_ERROR; }", -1);
+                Tcl_DStringAppend(ds_ptr, "__)), TCL_EVAL_DIRECT)) {  SetResult(\"eval failed in CCompileForeachList\"); return TCL_ERROR; }", -1);
             }
 
             // Tcl_Obj *__cmd1__ = Tcl_GetObjResult(__interp__);

@@ -144,6 +144,7 @@ proc ::thtml::compiler::c_compile_statement_include {codearrVar node} {
     set include_num [incr codearr(include_count)]
 
     set filepath [::thtml::util::resolve_filepath [$node @include]]
+    puts filepath=$filepath,rootdir=[::thtml::get_rootdir]
     set filepath_from_rootdir [string range $filepath [string length [::thtml::get_rootdir]] end]
     set filepath_md5 [::thtml::util::md5 $filepath_from_rootdir]
 
@@ -158,14 +159,16 @@ proc ::thtml::compiler::c_compile_statement_include {codearrVar node} {
     set template [read $fp]
     close $fp
 
-    set escaped_template [string map {{&&} {&amp;&amp;}} $template]
+    set escaped_template [::thtml::escape_template $template]
     dom parse -paramentityparsing never -- <root>$escaped_template</root> doc
     set root [$doc documentElement]
     ::thtml::rewrite $root
 
     # replace the slave node with the children of the include node
+    set slave_md5 "noslave"
     set slave [lindex [$root getElementsByTagName "slave"] 0]
     if { $slave ne {} } {
+        set slave_md5 [::thtml::util::md5 [$node asXML]]
         set pn [$slave parentNode]
         foreach child [$node childNodes] {
             $pn insertBefore $child $slave
@@ -175,7 +178,7 @@ proc ::thtml::compiler::c_compile_statement_include {codearrVar node} {
 
     # compile the include template into a procedure and call it
 
-    set proc_name __include__$filepath_md5
+    set proc_name __include_${filepath_md5}_${slave_md5}__
 
     set compiled_include "\x03"
 

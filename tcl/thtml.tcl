@@ -73,6 +73,8 @@ proc ::thtml::c_compiledir {dir} {
     set compiled_cmds {}
     set compiled_code {}
     foreach file $files {
+        if { $debug } { puts file=$file,codearr(seen)=$codearr(seen) }
+
         set filepath [::thtml::util::resolve_filepath $file]
         set filemd5 [::thtml::util::md5 $filepath]
         set proc_name ::thtml::cache::__file__$filemd5
@@ -82,6 +84,7 @@ proc ::thtml::c_compiledir {dir} {
         append compiled_code [c_compilefile codearr $file]
         append compiled_code "\n" "}"
         append compiled_cmds "\n" "Tcl_CreateObjCommand(interp, \"${proc_name}\", thtml_${filemd5}Cmd, NULL, NULL);"
+
     }
 
     set dirpath [::thtml::util::resolve_filepath $dir]
@@ -392,6 +395,6 @@ proc ::thtml::get_rootdir {} {
     if { ![info exists rootdir] || $rootdir eq {} } {
         set rootdir [file normalize [file dirname [info script]]]
     }
-    return $rootdir
+    return [file normalize $rootdir]
 }
 

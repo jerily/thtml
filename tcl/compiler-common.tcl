@@ -100,10 +100,12 @@ proc ::thtml::compiler::top_block {codearrVar} {
 
 proc ::thtml::compiler::get_seen {codearrVar what} {
     upvar $codearrVar codearr
+    puts "get_seen $what: [dict exists $codearr(seen) $what]"
     return [dict exists $codearr(seen) $what]
 }
 
 proc ::thtml::compiler::set_seen {codearrVar what} {
+    puts "set_seen $what"
     upvar $codearrVar codearr
-    set codearr(seen) [dict set $codearr(seen) $what 1]
+    set codearr(seen) [dict set codearr(seen) $what 1]
 }
