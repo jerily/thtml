@@ -73,15 +73,13 @@ proc ::thtml::c_compiledir {dir} {
     set compiled_cmds {}
     set compiled_code {}
     foreach file $files {
-        if { $debug } { puts file=$file,codearr(seen)=$codearr(seen) }
-
         set filepath [::thtml::util::resolve_filepath $file]
         set filemd5 [::thtml::util::md5 $filepath]
         set proc_name ::thtml::cache::__file__$filemd5
 
         append compiled_code "\n" "// $filepath"
         append compiled_code "\n" "int thtml_${filemd5}Cmd(ClientData  clientData, Tcl_Interp *__interp__, int objc, Tcl_Obj * const objv\[\]) {"
-        append compiled_code [c_compilefile codearr $file]
+        append compiled_code [compilefile codearr $file "c"]
         append compiled_code "\n" "}"
         append compiled_cmds "\n" "Tcl_CreateObjCommand(interp, \"${proc_name}\", thtml_${filemd5}Cmd, NULL, NULL);"
 
@@ -124,24 +122,77 @@ proc ::thtml::c_build {dirmd5 c_code} {
     if { $debug } { puts $msgs }
 }
 
-proc ::thtml::load_compiled_templates {} {
+proc ::thtml::tcl_compiledir {dir} {
+    variable debug
+
+    set target_lang "tcl"
+    array set codearr [list blocks {} target_lang $target_lang defs {} seen {}]
+
+    set files [::thtml::util::find_files $dir "*.thtml"]
+    if { $debug } { puts files=$files }
+
+    set compiled_cmds {}
+    set compiled_code {}
+    foreach file $files {
+        set filepath [::thtml::util::resolve_filepath $file]
+        set filemd5 [::thtml::util::md5 $filepath]
+        set proc_name ::thtml::cache::__file__$filemd5
+
+        append compiled_code "\n" "# $filepath"
+        append compiled_code "\n" "proc ${proc_name} {__data__} {"
+        append compiled_code [compilefile codearr $file "tcl"]
+        append compiled_code "\n" "}"
+
+    }
+
+    set tcl_code "$codearr(defs)\n$compiled_code"
+
+    set dirpath [::thtml::util::resolve_filepath $dir]
+    set dirmd5 [::thtml::util::md5 $dirpath]
+
+    return [tcl_build $dirmd5 $tcl_code]
+}
+
+proc ::thtml::tcl_build {dirmd5 tcl_code} {
     variable debug
     variable cachedir
 
-    set builddir [file normalize [file join $cachedir "build"]]
-    set files [glob -nocomplain -directory $builddir libthtml-*.so]
-    puts builddir=$builddir,files=$files
+    if { $debug } { puts cachedir=$cachedir }
+
+    set outfile [file normalize [file join $cachedir "dir-$dirmd5.tcl"]]
+    set fp [open $outfile w]
+    puts $fp $tcl_code
+    close $fp
+
+}
+
+proc ::thtml::load_compiled_templates {} {
+    variable debug
+    variable cachedir
+    variable target_lang
+
+    if { $target_lang eq {c} } {
+        set libdir [file normalize [file join $cachedir "build"]]
+        set files [glob -nocomplain -directory $libdir libthtml-*.so]
+    } else {
+        set libdir [file normalize $cachedir]
+        set files [glob -nocomplain -directory $libdir dir-*.tcl]
+    }
     foreach file $files {
         if { $debug } { puts "loading $file" }
-        load $file
+        if { $target_lang eq {c} } {
+            load $file
+        } else {
+            source $file
+        }
         if { $debug } { puts "loaded $file" }
     }
 }
 
-proc ::thtml::c_compilefile {codearrVar filename} {
+proc ::thtml::compilefile {codearrVar filename target_lang} {
     variable debug
 
-    if { $debug } { puts c_compilefile=$filename }
+    if { $debug } { puts target_lang=$target_lang,compilefile=$filename }
 
     upvar $codearrVar codearr
 
@@ -151,7 +202,7 @@ proc ::thtml::c_compilefile {codearrVar filename} {
     set template [read $fp]
     close $fp
 
-    set compiled_template [compile codearr $template "c"]
+    set compiled_template [compile codearr $template $target_lang]
     return $compiled_template
 }
 

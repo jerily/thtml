@@ -11,7 +11,7 @@ set init_script {
     ::thtml::init [dict create \
         debug 1 \
         cache 1 \
-        target_lang c \
+        target_lang tcl \
         rootdir [::twebserver::get_rootdir] \
         cachedir "/tmp/cache/thtml/"]
 
