@@ -1,5 +1,5 @@
 # Copyright Jerily LTD. All Rights Reserved.
-# SPDX-FileCopyrightText: 2023 Neofytos Dimitriou (neo@jerily.cy)
+# SPDX-FileCopyrightText: 2024 Neofytos Dimitriou (neo@jerily.cy)
 # SPDX-License-Identifier: MIT.
 
 package require twebserver
@@ -10,7 +10,7 @@ set init_script {
 
     ::thtml::init [dict create \
         debug 1 \
-        cache 1 \
+        cache 0 \
         target_lang tcl \
         rootdir [::twebserver::get_rootdir] \
         cachedir "/tmp/cache/thtml/"]

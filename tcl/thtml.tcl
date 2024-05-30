@@ -168,8 +168,14 @@ proc ::thtml::tcl_build {dirmd5 tcl_code} {
 
 proc ::thtml::load_compiled_templates {} {
     variable debug
+    variable cache
     variable cachedir
     variable target_lang
+
+    if { !$cache } {
+        puts "load_compiled_templates called with cache disabled, returning..."
+        return
+    }
 
     if { $target_lang eq {c} } {
         set libdir [file normalize [file join $cachedir "build"]]
