@@ -12,11 +12,6 @@ proc escape {str} {
     return [string map {\r {\r} \n {\n}} $str]
 }
 
-set rootdir [file normalize [file dirname [info script]]]
-::thtml::init [dict create cache 1 rootdir $rootdir target_lang c debug 1]
-
-# integer comparison
-
 test command-in-template-text-1 {} -body {
     ::thtml::render {<div>[lindex $b 1]</div>} {a 12345 b "hello world" c "test"}
 } -result {<div>world</div>}

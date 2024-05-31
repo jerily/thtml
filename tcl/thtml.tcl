@@ -212,66 +212,6 @@ proc ::thtml::compilefile {codearrVar filename target_lang} {
     return $compiled_template
 }
 
-proc ::thtml::tcl_compile_template_and_load {codearrVar template} {
-    upvar $codearrVar codearr
-
-    set md5 [::thtml::util::md5 $template]
-    set proc_name ::thtml::cache::__template__$md5
-
-    set compiled_template [compile codearr $template tcl]
-    eval $codearr(defs)
-    proc $proc_name {__data__} "return \"<!doctype html>\[eval \{${compiled_template}\}\]\""
-
-    #puts "$codearr(defs)\n$compiled_template"
-}
-
-proc ::thtml::c_compile_template_and_load {codearrVar template} {
-    variable debug
-
-    upvar $codearrVar codearr
-
-    set md5 [::thtml::util::md5 $template]
-    set proc_name ::thtml::cache::__template__$md5
-
-    set compiled_template [compile codearr $template "c"]
-
-    set c_code {}
-    append c_code "\n" "#include \"thtml.h\""
-    append c_code "\n" "#define MIN_VERSION \"9.0\""
-
-    append c_code $codearr(defs)
-    append c_code "\n" "int thtml_${md5}Cmd(ClientData  clientData, Tcl_Interp *__interp__, int objc, Tcl_Obj * const objv\[\]) {"
-    append c_code $compiled_template
-    append c_code "\n" "}"
-    append c_code "\n" "int Thtml_Init(Tcl_Interp *interp) {"
-    append c_code "\n" "if (Tcl_InitStubs(interp, MIN_VERSION, 0) == NULL) { return TCL_ERROR; }"
-    append c_code "\n" "Tcl_CreateObjCommand(interp, \"${proc_name}\", thtml_${md5}Cmd, NULL, NULL);"
-    append c_code "\n" "return TCL_OK;"
-    append c_code "\n" "}"
-
-    if { $debug } { puts c_code=$c_code }
-
-    set dir [::thtml::get_rootdir]
-    if { $debug } { puts rootdir=$dir }
-    #set cachedir [file normalize [file join $dir "cache/"]]
-    variable cachedir
-    if { $debug } { puts cachedir=$cachedir }
-    set outfile [file join $cachedir "index.c"]
-    set fp [open $outfile w]
-    puts $fp $c_code
-    close $fp
-
-    set builddir [file join $cachedir "build"]
-    cd $builddir
-    variable cmakedir
-    set msgs [exec -ignorestderr -- cmake $cmakedir -DTHTML_CMAKE_DIR=$cmakedir -DTHTML_PROJECT_NAME=$md5 -DTHTML_PROJECT_CODE=$outfile]
-    if { $debug } { puts $msgs }
-    set msgs [exec -ignorestderr -- make]
-    if { $debug } { puts $msgs }
-
-    load [file join $builddir "libthtml-${md5}.so"]
-}
-
 proc ::thtml::render {template __data__} {
     variable cache
     variable rootdir
@@ -284,90 +224,12 @@ proc ::thtml::render {template __data__} {
     if { $cache } {
         set md5 [::thtml::util::md5 $template]
         set proc_name ::thtml::cache::__template__$md5
-        if { [info proc $proc_name] eq {} } {
-            ${target_lang}_compile_template_and_load codearr $template
-        }
         return [$proc_name $__data__]
     }
     set compiled_template [compile codearr $template tcl]
     #puts compiled_template=$compiled_template
     eval $codearr(defs)
     return "<!doctype html>[eval $compiled_template]"
-}
-
-proc ::thtml::c_compile_file_and_load {codearrVar filename} {
-    variable debug
-
-    upvar $codearrVar codearr
-
-    set filepath [::thtml::util::resolve_filepath $filename]
-
-    set md5 [::thtml::util::md5 $filepath]
-    set proc_name ::thtml::cache::__file__$md5
-
-    set fp [open $filepath]
-    set template [read $fp]
-    close $fp
-
-    set compiled_template [compile codearr $template "c"]
-
-    set c_code {}
-    append c_code "\n" "#include \"thtml.h\""
-    append c_code "\n" "#if TCL_MAJOR_VERSION > 8"
-    append c_code "\n" "#define MIN_VERSION \"9.0\""
-    append c_code "\n" "#else"
-    append c_code "\n" "#define MIN_VERSION \"8.6\""
-    append c_code "\n" "#endif"
-
-    append c_code $codearr(defs)
-    append c_code "\n" "int thtml_${md5}Cmd(ClientData  clientData, Tcl_Interp *__interp__, int objc, Tcl_Obj * const objv\[\]) {"
-    append c_code $compiled_template
-    append c_code "\n" "}"
-    append c_code "\n" "int Thtml_Init(Tcl_Interp *interp) {"
-    append c_code "\n" "if (Tcl_InitStubs(interp, MIN_VERSION, 0) == NULL) { return TCL_ERROR; }"
-    append c_code "\n" "Tcl_CreateObjCommand(interp, \"${proc_name}\", thtml_${md5}Cmd, NULL, NULL);"
-    append c_code "\n" "return TCL_OK;"
-    append c_code "\n" "}"
-
-    if { $debug } { puts c_code=$c_code }
-
-    set dir [::thtml::get_rootdir]
-    if { $debug } { puts rootdir=$dir }
-    variable cachedir
-    #set cachedir [file normalize [file join $dir "cache/"]]
-    if { $debug } { puts cachedir=$cachedir }
-    set outfile [file join $cachedir "index.c"]
-    set fp [open $outfile w]
-    puts $fp $c_code
-    close $fp
-
-    set builddir [file join $cachedir "build"]
-    cd $builddir
-    variable cmakedir
-    set msgs [exec -ignorestderr -- cmake $cmakedir -DTHTML_CMAKE_DIR=$cmakedir -DTHTML_PROJECT_NAME=$md5 -DTHTML_PROJECT_CODE=$outfile]
-    if { $debug } { puts $msgs }
-    set msgs [exec -ignorestderr -- make]
-    if { $debug } { puts $msgs }
-
-    load [file join $builddir "libthtml-${md5}.so"]
-}
-
-proc ::thtml::tcl_compile_file_and_load {codearrVar filename} {
-    upvar $codearrVar codearr
-
-    set filepath [::thtml::util::resolve_filepath $filename]
-
-    set md5 [::thtml::util::md5 $filepath]
-    set proc_name ::thtml::cache::__file__$md5
-
-    set fp [open $filepath]
-    set template [read $fp]
-    close $fp
-
-    set compiled_template [compile codearr $template tcl]
-    puts compiled_template=$codearr(defs)\n$compiled_template
-    eval $codearr(defs)
-    proc $proc_name {__data__} "return \"<!doctype html>\[eval \{${compiled_template}\}\]\""
 }
 
 proc ::thtml::renderfile {filename __data__} {
@@ -386,9 +248,6 @@ proc ::thtml::renderfile {filename __data__} {
     if { $cache } {
         set md5 [::thtml::util::md5 $filepath]
         set proc_name ::thtml::cache::__file__$md5
-#        if { [info proc $proc_name] eq {} } {
-#            ${target_lang}_compile_file_and_load codearr $filename
-#        }
         return [$proc_name $__data__]
     }
 

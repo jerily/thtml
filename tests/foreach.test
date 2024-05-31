@@ -12,9 +12,6 @@ proc escape {str} {
     return [string map {\r {\r} \n {\n}} $str]
 }
 
-set rootdir [file dirname [info script]]
-::thtml::init [dict create cache 1 rootdir $rootdir]
-
 test nested-foreach-1 {} -body {
     set data {
         title "Hello, World!"

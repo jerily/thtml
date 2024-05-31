@@ -816,7 +816,7 @@ thtml_CAppendExpr_Operator(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DSt
                            int flags) {
     Tcl_Token *subexpr_token = &parse_ptr->tokenPtr[i];
     Tcl_Token *operator_token = &parse_ptr->tokenPtr[i + 1];
-    int operands_offset = i + 2;
+    Tcl_Size operands_offset = i + 2;
 
     // The numComponents field for a TCL_TOKEN_OPERATOR token is always 0
     // So, we get numComponents from the TCL_TOKEN_SUB_EXPR token that precedes it
@@ -1940,9 +1940,6 @@ thtml_CCompileForeachList(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DStr
     Tcl_DStringAppend(ds_ptr, name, -1);
     Tcl_DStringAppend(ds_ptr, "__);\n", -1);
 
-//    char ds_name[64];
-//    snprintf(ds_name, 64, "__ds_%s__", name);
-
     for (int i = 0; i < parse_ptr->numTokens; i++) {
         Tcl_Token *token = &parse_ptr->tokenPtr[i];
         if (token->type == TCL_TOKEN_TEXT) {
@@ -2039,6 +2036,8 @@ thtml_CCompileForeachList(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DStr
             return TCL_ERROR;
         }
     }
+
+    // Tcl_Obj *__list1__ = Tcl_NewStringObj(Tcl_DStringValue(__ds_list1__), Tcl_DStringLength(__ds_list1__));
     Tcl_DStringAppend(ds_ptr, "\nTcl_Obj *__", -1);
     Tcl_DStringAppend(ds_ptr, name, -1);
     Tcl_DStringAppend(ds_ptr, "__ = Tcl_NewStringObj(Tcl_DStringValue(__ds_", -1);
@@ -2046,9 +2045,11 @@ thtml_CCompileForeachList(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DStr
     Tcl_DStringAppend(ds_ptr, "__), Tcl_DStringLength(__ds_", -1);
     Tcl_DStringAppend(ds_ptr, name, -1);
     Tcl_DStringAppend(ds_ptr, "__));", -1);
+
+    // Tcl_DStringFree(__ds_list1__);
     Tcl_DStringAppend(ds_ptr, "\nTcl_DStringFree(__ds_", -1);
     Tcl_DStringAppend(ds_ptr, name, -1);
-    Tcl_DStringAppend(ds_ptr, "__);\n", -1);
+    Tcl_DStringAppend(ds_ptr, "__);", -1);
 
     return TCL_OK;
 }

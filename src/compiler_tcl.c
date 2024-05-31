@@ -12,6 +12,7 @@
 static int subcmd_count = 0;
 static int template_cmd_count = 0;
 static int count_var_dict_subst = 0;
+static int foreach_cmd_count = 0;
 
 static int thtml_TclAppendCommand_Token(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DString *ds_ptr, Tcl_Parse *parse_ptr,
                                  Tcl_Size i, Tcl_Size *out_i, const char *name, Tcl_DString *cmd_ds_ptr, int in_eval_p);
@@ -576,10 +577,10 @@ thtml_TclAppendExpr_Operator(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_D
 
     if (operator_token->size == 1) {
         char ch = operator_token->start[0];
-        if (num_operands == 1 && (ch == '!' || ch == '-' || ch == '+')) {
+        if (num_operands == 1 && (ch == '!' || ch == '-')) {
             // one operand
 
-            Tcl_DStringAppend(ds_ptr, operator_token->start, operator_token->size);
+            Tcl_DStringAppend(cmd_ds_ptr, operator_token->start, operator_token->size);
             if (TCL_OK != thtml_TclAppendExpr_Token(interp, blocks_list_ptr, ds_ptr, parse_ptr, operands_offset, name, cmd_ds_ptr)) {
                 return TCL_ERROR;
             }
@@ -635,7 +636,8 @@ thtml_TclAppendExpr_Operator(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_D
             (ch1 == '>' && ch2 == '>') || (ch1 == '=' && ch2 == '=') || (ch1 == '!' && ch2 == '=') ||
             (ch1 == '<' && ch2 == '=') || (ch1 == '>' && ch2 == '=') ||
             (ch1 == 'e' && ch2 == 'q') || (ch1 == 'n' && ch2 == 'e') ||
-            (ch1 == 'i' && ch2 == 'n') || (ch1 == 'n' && ch2 == 'i')) {
+            (ch1 == 'i' && ch2 == 'n') || (ch1 == 'n' && ch2 == 'i') ||
+            (ch1 == '*' && ch2 == '*')) {
             // two operands
 
             Tcl_Token *first_operand = &parse_ptr->tokenPtr[operands_offset];
@@ -817,8 +819,8 @@ thtml_TclCompileTemplateText(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_D
 //            Tcl_DStringAppend(ds_ptr, cmd_name, -1);
 //            Tcl_DStringAppend(ds_ptr, "__", -1);
 
-            // append __ds_default__ [::thtml::runtime::tcl::evaluate_script $__cmd1__]
-            Tcl_DStringAppend(ds_ptr, "\nappend __ds_default__ [::thtml::runtime::tcl::evaluate_script $__", -1);
+            // append __ds_default__ [::thtml::runtime::tcl::evaluate_script $__ds_cmd1__]
+            Tcl_DStringAppend(ds_ptr, "\nappend __ds_default__ [::thtml::runtime::tcl::evaluate_script $__ds_", -1);
             Tcl_DStringAppend(ds_ptr, cmd_name, -1);
             Tcl_DStringAppend(ds_ptr, "__]", -1);
 
@@ -1091,9 +1093,6 @@ thtml_TclCompileForeachList(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DS
     Tcl_DStringAppend(ds_ptr, name, -1);
     Tcl_DStringAppend(ds_ptr, "__ {}", -1);
 
-//    char ds_name[64];
-//    snprintf(ds_name, 64, "__ds_%s__", name);
-
     for (int i = 0; i < parse_ptr->numTokens; i++) {
         Tcl_Token *token = &parse_ptr->tokenPtr[i];
         if (token->type == TCL_TOKEN_TEXT) {
@@ -1105,8 +1104,52 @@ thtml_TclCompileForeachList(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DS
         } else if (token->type == TCL_TOKEN_BS) {
             Tcl_DStringAppend(ds_ptr, token->start, token->size);
         } else if (token->type == TCL_TOKEN_COMMAND) {
-            SetResult("error compiling foreach list: command substitution not supported");
-            return TCL_ERROR;
+
+            foreach_cmd_count++;
+
+            char cmd_name[64];
+            snprintf(cmd_name, 64, "forcmd%d", foreach_cmd_count);
+
+            Tcl_Parse cmd_parse;
+            if (TCL_OK != Tcl_ParseCommand(interp, token->start + 1, token->size - 2, 0, &cmd_parse)) {
+                Tcl_FreeParse(&cmd_parse);
+                return TCL_ERROR;
+            }
+
+            Tcl_DString cmd_ds;
+            Tcl_DStringInit(&cmd_ds);
+
+            if (TCL_OK !=
+                thtml_TclCompileCommand(interp, blocks_list_ptr, &cmd_ds, &cmd_parse, cmd_name, 0)) {
+                Tcl_FreeParse(&cmd_parse);
+                Tcl_DStringFree(&cmd_ds);
+                return TCL_ERROR;
+            }
+
+            // Tcl_DStringInit(__ds_forcmd1__);
+            Tcl_DStringAppend(ds_ptr, "\nset __ds_", -1);
+            Tcl_DStringAppend(ds_ptr, cmd_name, -1);
+            Tcl_DStringAppend(ds_ptr, "__ {}", -1);
+
+            Tcl_DStringAppend(ds_ptr, Tcl_DStringValue(&cmd_ds), Tcl_DStringLength(&cmd_ds));
+            Tcl_DStringFree(&cmd_ds);
+
+            // set __forcmd1_res__ [::thtml::runtime::tcl::evaluate_script $__ds_forcmd1__]
+            Tcl_DStringAppend(ds_ptr, "\nset __", -1);
+            Tcl_DStringAppend(ds_ptr, cmd_name, -1);
+            Tcl_DStringAppend(ds_ptr, "_res__ [::thtml::runtime::tcl::evaluate_script $__ds_", -1);
+            Tcl_DStringAppend(ds_ptr, cmd_name, -1);
+            Tcl_DStringAppend(ds_ptr, "__]", -1);
+
+            // lappend __ds_list1__ $__forcmd1__
+            Tcl_DStringAppend(ds_ptr, "\nlappend __ds_", -1);
+            Tcl_DStringAppend(ds_ptr, name, -1);
+            Tcl_DStringAppend(ds_ptr, "__ $__", -1);
+            Tcl_DStringAppend(ds_ptr, cmd_name, -1);
+            Tcl_DStringAppend(ds_ptr, "_res__", -1);
+
+            Tcl_FreeParse(&cmd_parse);
+
         } else if (token->type == TCL_TOKEN_VARIABLE) {
             if (TCL_OK != thtml_TclAppendVariable(interp, blocks_list_ptr, ds_ptr, parse_ptr, i, name, NULL, 0)) {
                 return TCL_ERROR;
@@ -1121,9 +1164,15 @@ thtml_TclCompileForeachList(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DS
     // # in TclCompileForeachList
     Tcl_DStringAppend(ds_ptr, "\n# in TclCompileForeachList", -1);
 
+    // set __list1__ $__ds_list1__
     Tcl_DStringAppend(ds_ptr, "\nset __", -1);
     Tcl_DStringAppend(ds_ptr, name, -1);
     Tcl_DStringAppend(ds_ptr, "__ $__ds_", -1);
+    Tcl_DStringAppend(ds_ptr, name, -1);
+    Tcl_DStringAppend(ds_ptr, "__", -1);
+
+    // unset __ds_list1__
+    Tcl_DStringAppend(ds_ptr, "\nunset __ds_", -1);
     Tcl_DStringAppend(ds_ptr, name, -1);
     Tcl_DStringAppend(ds_ptr, "__", -1);
 
