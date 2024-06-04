@@ -362,7 +362,6 @@ thtml_TclAppendVariable_Dict(Tcl_Interp *interp, Tcl_DString *ds_ptr, const char
     Tcl_DStringAppend(ds_ptr, varname, -1);
     Tcl_DStringAppend(ds_ptr, " $", -1);
     Tcl_DStringAppend(ds_ptr, varname_first_part, varname_first_part_length);
-    Tcl_DStringAppend(ds_ptr, ";", -1);
 
     int first = 1;
     for (int i = 0; i < num_parts; i++) {
@@ -1063,27 +1062,6 @@ int thtml_TclCompileCommand(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DS
         first = 0;
         // fprintf(stderr, "i: %d / %d\n", i, parse_ptr->numTokens);
     }
-
-//    if (nested) {
-//        Tcl_DStringAppend(ds_ptr, "\nappend __ds_", -1);
-//        Tcl_DStringAppend(ds_ptr, name, -1);
-//        Tcl_DStringAppend(ds_ptr, "__ {]}", -1);
-//    }
-
-    // # in TclCompileCommand
-    Tcl_DStringAppend(ds_ptr, "\n# in TclCompileCommand", -1);
-
-    // set __val3__ $__ds_val3__
-    Tcl_DStringAppend(ds_ptr, "\nset __", -1);
-    Tcl_DStringAppend(ds_ptr, name, -1);
-    Tcl_DStringAppend(ds_ptr, "__ $__ds_", -1);
-    Tcl_DStringAppend(ds_ptr, name, -1);
-    Tcl_DStringAppend(ds_ptr, "__", -1);
-
-    // puts $__val3_subcmd1__
-//    Tcl_DStringAppend(ds_ptr, "\nputs $__", -1);
-//    Tcl_DStringAppend(ds_ptr, name, -1);
-//    Tcl_DStringAppend(ds_ptr, "__", -1);
 
     return TCL_OK;
 }

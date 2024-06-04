@@ -1883,12 +1883,6 @@ int thtml_CCompileCommand(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DStr
         }
     }
 
-//    if (nested) {
-//        Tcl_DStringAppend(ds_ptr, "\nappend __ds_", -1);
-//        Tcl_DStringAppend(ds_ptr, name, -1);
-//        Tcl_DStringAppend(ds_ptr, "__ {[}", -1);
-//    }
-
     int in_eval_p = 1;  // it is not a compiled command, so we are in eval
     Tcl_Size i = 0;
     int first = 1;
@@ -1907,19 +1901,6 @@ int thtml_CCompileCommand(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DStr
 
         first = 0;
     }
-
-//    if (nested) {
-//        Tcl_DStringAppend(ds_ptr, "\nappend __ds_", -1);
-//        Tcl_DStringAppend(ds_ptr, name, -1);
-//        Tcl_DStringAppend(ds_ptr, "__ {]}", -1);
-//    }
-
-    // set __val3_subcmd1__ $__ds_val3_subcmd1__
-//    Tcl_DStringAppend(ds_ptr, "\nset __", -1);
-//    Tcl_DStringAppend(ds_ptr, name, -1);
-//    Tcl_DStringAppend(ds_ptr, "__ $__ds_", -1);
-//    Tcl_DStringAppend(ds_ptr, name, -1);
-//    Tcl_DStringAppend(ds_ptr, "__", -1);
 
     *compiled_command = 0;
     return TCL_OK;
