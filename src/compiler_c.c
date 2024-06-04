@@ -348,7 +348,12 @@ int thtml_CCompileScriptCmd(ClientData clientData, Tcl_Interp *interp, int objc,
         // if (TCL_OK != Tcl_EvalObjEx(__interp__, __val${val_num}__, TCL_EVAL_DIRECT)) {return TCL_ERROR;}
         Tcl_DStringAppend(&ds, "\nif (TCL_OK != Tcl_EvalObjEx(__interp__, __", -1);
         Tcl_DStringAppend(&ds, name, name_length);
-        Tcl_DStringAppend(&ds, "__, TCL_EVAL_DIRECT)) {return TCL_ERROR;}\n", -1);
+        Tcl_DStringAppend(&ds, "__, TCL_EVAL_DIRECT)) {", -1);
+        // Tcl_DecrRefCount(__val${val_num}__);
+        Tcl_DStringAppend(&ds, "\nTcl_DecrRefCount(__", -1);
+        Tcl_DStringAppend(&ds, name, name_length);
+        Tcl_DStringAppend(&ds, "__);", -1);
+        Tcl_DStringAppend(&ds, "\nreturn TCL_ERROR;\n}", -1);
 
         // Tcl_DecrRefCount(__val${val_num}__);
         Tcl_DStringAppend(&ds, "\nTcl_DecrRefCount(__", -1);
@@ -554,9 +559,14 @@ thtml_CAppendVariable_Dict(Tcl_Interp *interp, Tcl_DString *ds_ptr, const char *
         Tcl_DStringAppend(ds_ptr, ") || !", -1);
         Tcl_DStringAppend(ds_ptr, part, part_length);
         Tcl_DStringAppend(ds_ptr, count_var_dict_subst_str, -1);
-        Tcl_DStringAppend(ds_ptr, ") { // todo: decr ref count\n SetResult(\"dict obj get failed: ", -1);
+        Tcl_DStringAppend(ds_ptr, ") {", -1);
+        Tcl_DStringAppend(ds_ptr, "\nTcl_DecrRefCount(__", -1);
         Tcl_DStringAppend(ds_ptr, part, part_length);
-        Tcl_DStringAppend(ds_ptr, "\"); return TCL_ERROR; }", -1);
+        Tcl_DStringAppend(ds_ptr, count_var_dict_subst_str, -1);
+        Tcl_DStringAppend(ds_ptr, "_key_ptr__);", -1);
+        Tcl_DStringAppend(ds_ptr, "\nSetResult(\"dict obj get failed: ", -1);
+        Tcl_DStringAppend(ds_ptr, part, part_length);
+        Tcl_DStringAppend(ds_ptr, "\");\nreturn TCL_ERROR;\n}", -1);
         Tcl_DStringAppend(ds_ptr, "\nTcl_DecrRefCount(__", -1);
         Tcl_DStringAppend(ds_ptr, part, part_length);
         Tcl_DStringAppend(ds_ptr, count_var_dict_subst_str, -1);
@@ -564,9 +574,9 @@ thtml_CAppendVariable_Dict(Tcl_Interp *interp, Tcl_DString *ds_ptr, const char *
 
 
 //         fprintf(stderr, "dict: %s\n", Tcl_GetString(__dict1__));
-        Tcl_DStringAppend(ds_ptr, "\nfprintf(stderr, \"dict: %s\\n\", Tcl_GetString(__dict_", -1);
-        Tcl_DStringAppend(ds_ptr, count_var_dict_subst_str, -1);
-        Tcl_DStringAppend(ds_ptr, "__));\n", -1);
+//        Tcl_DStringAppend(ds_ptr, "\nfprintf(stderr, \"dict: %s\\n\", Tcl_GetString(__dict_", -1);
+//        Tcl_DStringAppend(ds_ptr, count_var_dict_subst_str, -1);
+//        Tcl_DStringAppend(ds_ptr, "__));\n", -1);
 
         Tcl_DStringAppend(ds_ptr, "\n", -1);
         Tcl_DStringAppend(ds_ptr, varname, -1);
@@ -592,9 +602,9 @@ thtml_CAppendVariable_Dict(Tcl_Interp *interp, Tcl_DString *ds_ptr, const char *
         Tcl_DStringAppend(ds_ptr, "__), -1);\n", -1);
 
         // fprintf(stderr, "%s\n", Tcl_GetString(__dict1__));
-        Tcl_DStringAppend(ds_ptr, "\nfprintf(stderr, \"%s\\n\", Tcl_GetString(__dict_", -1);
-        Tcl_DStringAppend(ds_ptr, count_var_dict_subst_str, -1);
-        Tcl_DStringAppend(ds_ptr, "__));\n", -1);
+//        Tcl_DStringAppend(ds_ptr, "\nfprintf(stderr, \"%s\\n\", Tcl_GetString(__dict_", -1);
+//        Tcl_DStringAppend(ds_ptr, count_var_dict_subst_str, -1);
+//        Tcl_DStringAppend(ds_ptr, "__));\n", -1);
 
     } else {
         Tcl_DStringAppend(expr_ds_ptr, "__dict_", -1);
