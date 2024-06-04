@@ -12,6 +12,21 @@ proc escape {str} {
     return [string map {\r {\r} \n {\n}} $str]
 }
 
+test nested-foreach-2-indexvar {} -body {
+    set rootdir [file normalize [file dirname [info script]]]
+    set cachedir /tmp/cache/thtml
+    set target_lang c
+    ::thtml::init [dict create cache 1 rootdir $rootdir cachedir $cachedir target_lang $target_lang debug 1]
+    ::thtml::load_compiled_templates
+    set data {
+        title "Hello, World!"
+        items {{1 2} {3 4} {5 6}}
+    }
+    set html [::thtml::renderfile nested_foreach_2_indexvar.thtml $data]
+} -result {<html><head><title>Hello, World!</title></head><body><h1>Hello, World!</h1><p>element 0,0 = 1 --> 1 is odd</p><p>element 0,1 = 2 --> 2 is even</p><p>element 1,0 = 3 --> 3 is odd</p><p>element 1,1 = 4 --> 4 is even</p><p>element 2,0 = 5 --> 5 is odd</p><p>element 2,1 = 6 --> 6 is even</p></body></html>}
+
+exit
+
 test nested-foreach-1 {} -body {
     set data {
         title "Hello, World!"

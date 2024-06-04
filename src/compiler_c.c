@@ -18,6 +18,7 @@ static int template_cmd_count = 0;
 static int foreach_cmd_count = 0;
 static int subcmd_count = 0;
 static int op_count = 0;
+static int check_count = 0;
 
 int thtml_CCompileQuotedString(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DString *ds_ptr, Tcl_Parse *parse_ptr,
                                const char *name);
@@ -404,6 +405,12 @@ static int thtml_CAppendCheck_Bool(Tcl_DString *ds_ptr, const char *varname) {
 }
 
 static int thtml_CAppendCheck_Number(Tcl_DString *ds_ptr, const char *varname) {
+
+    check_count++;
+
+    char check_count_str[12];
+    snprintf(check_count_str, 12, "%d", check_count);
+
     Tcl_DStringAppend(ds_ptr, "\n// check number: ", -1);
     Tcl_DStringAppend(ds_ptr, varname, -1);
 
@@ -411,12 +418,14 @@ static int thtml_CAppendCheck_Number(Tcl_DString *ds_ptr, const char *varname) {
     Tcl_DStringAppend(ds_ptr, "\nvoid *__", -1);
     Tcl_DStringAppend(ds_ptr, varname, -1);
     Tcl_DStringAppend(ds_ptr, "_val", -1);
+    Tcl_DStringAppend(ds_ptr, check_count_str, -1);
     Tcl_DStringAppend(ds_ptr, "__ = NULL;", -1);
 
     // int __a_type__ = TCL_NUMBER_NAN;
     Tcl_DStringAppend(ds_ptr, "\nint __", -1);
     Tcl_DStringAppend(ds_ptr, varname, -1);
     Tcl_DStringAppend(ds_ptr, "_type", -1);
+    Tcl_DStringAppend(ds_ptr, check_count_str, -1);
     Tcl_DStringAppend(ds_ptr, "__ = TCL_NUMBER_NAN;", -1);
 
     // if (TCL_OK != Tcl_GetNumberFromObj(__interp__, a, &__a_val__, &__a_type__) || __a_type__ == TCL_NUMBER_NAN) { return TCL_ERROR; }
@@ -425,13 +434,16 @@ static int thtml_CAppendCheck_Number(Tcl_DString *ds_ptr, const char *varname) {
     Tcl_DStringAppend(ds_ptr, ", &__", -1);
     Tcl_DStringAppend(ds_ptr, varname, -1);
     Tcl_DStringAppend(ds_ptr, "_val", -1);
+    Tcl_DStringAppend(ds_ptr, check_count_str, -1);
     Tcl_DStringAppend(ds_ptr, "__, &__", -1);
     Tcl_DStringAppend(ds_ptr, varname, -1);
-    Tcl_DStringAppend(ds_ptr, "_type__", -1);
-    Tcl_DStringAppend(ds_ptr, ") || __", -1);
+    Tcl_DStringAppend(ds_ptr, "_type", -1);
+    Tcl_DStringAppend(ds_ptr, check_count_str, -1);
+    Tcl_DStringAppend(ds_ptr, "__) || __", -1);
     Tcl_DStringAppend(ds_ptr, varname, -1);
-    Tcl_DStringAppend(ds_ptr, "_type__", -1);
-    Tcl_DStringAppend(ds_ptr, " == TCL_NUMBER_NAN) { SetResult(\"invalid in number check\");  return TCL_ERROR; }", -1);
+    Tcl_DStringAppend(ds_ptr, "_type", -1);
+    Tcl_DStringAppend(ds_ptr, check_count_str, -1);
+    Tcl_DStringAppend(ds_ptr, "__ == TCL_NUMBER_NAN) { SetResult(\"invalid in number check\");  return TCL_ERROR; }", -1);
     return TCL_OK;
 }
 
@@ -1466,11 +1478,11 @@ thtml_CAppendCommand_Token(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DSt
         } else {
 
             // Tcl_DStringAppend(__ds_val3__, Tcl_GetString(__val3_subcmd1__), -1);
-            Tcl_DStringAppend(ds_ptr, "\nTcl_DStringAppendElement(__ds_", -1);
+            Tcl_DStringAppend(ds_ptr, "\nTcl_DStringAppend(__ds_", -1);
             Tcl_DStringAppend(ds_ptr, name, -1);
             Tcl_DStringAppend(ds_ptr, "__, Tcl_GetString(__", -1);
             Tcl_DStringAppend(ds_ptr, subcmd_name, -1);
-            Tcl_DStringAppend(ds_ptr, "_res__));", -1);
+            Tcl_DStringAppend(ds_ptr, "_res__), -1);", -1);
         }
 
     } else if (token->type == TCL_TOKEN_EXPAND_WORD) {

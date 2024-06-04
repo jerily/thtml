@@ -927,8 +927,8 @@ static int thtml_TclAppendCommand_Token(Tcl_Interp *interp, Tcl_Obj *blocks_list
             Tcl_DStringAppend(cmd_ds_ptr, subcmd_name, -1);
             Tcl_DStringAppend(cmd_ds_ptr, "__]", -1);
         } else {
-            // lappend __ds_val3__ [::thtml::runtime::tcl::evaluate_script $__val3_subcmd1__]
-            Tcl_DStringAppend(ds_ptr, "\nlappend __ds_", -1);
+            // append __ds_val3__ [::thtml::runtime::tcl::evaluate_script $__val3_subcmd1__]
+            Tcl_DStringAppend(ds_ptr, "\nappend __ds_", -1);
             Tcl_DStringAppend(ds_ptr, name, -1);
             Tcl_DStringAppend(ds_ptr, "__ [::thtml::runtime::tcl::evaluate_script $__", -1);
             Tcl_DStringAppend(ds_ptr, subcmd_name, -1);
@@ -968,12 +968,21 @@ static int thtml_TclAppendCommand_Token(Tcl_Interp *interp, Tcl_Obj *blocks_list
             j = i;
         }
 
+        // puts $__ds_wt1__
+//        Tcl_DStringAppend(ds_ptr, "\nputs $__ds_", -1);
+//        Tcl_DStringAppend(ds_ptr, word_token_name, -1);
+//        Tcl_DStringAppend(ds_ptr, "__", -1);
+
         // lappend __ds_val1__ $__ds_wt1__
         Tcl_DStringAppend(ds_ptr, "\nappend __ds_", -1);
         Tcl_DStringAppend(ds_ptr, name, -1);
         Tcl_DStringAppend(ds_ptr, "__ \\{$__ds_", -1);
         Tcl_DStringAppend(ds_ptr, word_token_name, -1);
         Tcl_DStringAppend(ds_ptr, "__\\}", -1);
+
+        Tcl_DStringAppend(ds_ptr, "\nputs $__ds_", -1);
+        Tcl_DStringAppend(ds_ptr, name, -1);
+        Tcl_DStringAppend(ds_ptr, "__", -1);
 
         // unset __ds_wt1__
         Tcl_DStringAppend(ds_ptr, "\nunset __ds_", -1);

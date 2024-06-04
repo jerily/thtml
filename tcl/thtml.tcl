@@ -227,7 +227,7 @@ proc ::thtml::render {template __data__} {
         return [$proc_name $__data__]
     }
     set compiled_template [compile codearr $template tcl]
-    #puts compiled_template=$compiled_template
+    puts compiled_template=$compiled_template
     eval $codearr(defs)
     return "<!doctype html>[eval $compiled_template]"
 }
