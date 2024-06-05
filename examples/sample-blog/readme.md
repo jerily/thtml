@@ -6,7 +6,7 @@ and you have to have it installed in order to run this example.
 
 To run the example:
 ```bash
-tclsh8.6 app.tcl
+tclsh9.0 app.tcl
 ```
 
 Then open [http://localhost:8080](http://localhost:8080) in your browser.
