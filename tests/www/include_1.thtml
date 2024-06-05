@@ -1,0 +1,13 @@
+<html>
+<head>
+    <title>${title}</title>
+</head>
+<body>
+<h1>${title}</h1>
+<tpl include="name_and_age.inc" name="${name}" age_text="${age} ye\[a\]rs">
+    <tpl if="${age} > 21">
+        You are an adult.
+    </tpl>
+</tpl>
+</body>
+</html>

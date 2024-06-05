@@ -1,0 +1,1 @@
+<tpl foreach="w" in='hi [lrange $b 0 1] wow'><div>this is a test: $w</div></tpl>

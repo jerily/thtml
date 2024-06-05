@@ -18,18 +18,7 @@ test text-1-subst-vars-and-command {} -body {
         title "Hello, World!"
         age 47
     }
-    set template {
-        <html>
-            <head>
-                <title>${title}</title>
-            </head>
-            <body>
-                <h1>${title}</h1>
-                <p>You are [string length $age] digits years old.</p>
-            </body>
-        </html>
-    }
-    set html [::thtml::render $template $data]
+    set html [::thtml::renderfile text_1_subst_vars_and_command.thtml $data]
     escape $html
 } -result {<html><head><title>Hello, World!</title></head><body><h1>Hello, World!</h1><p>You are 2 digits years old.</p></body></html>}
 
@@ -38,18 +27,7 @@ test text-2-doublequotes {} -body {
         title "Hello, World!"
         age 47
     }
-    set template {
-        <html>
-            <head>
-                <title>${title}</title>
-            </head>
-            <body>
-                <h1>${title}</h1>
-                <p>You are "[string length $age]" digits years old.</p>
-            </body>
-        </html>
-    }
-    set html [::thtml::render $template $data]
+    set html [::thtml::renderfile text_2_doublequotes.thtml $data]
     escape $html
 } -result {<html><head><title>Hello, World!</title></head><body><h1>Hello, World!</h1><p>You are "2" digits years old.</p></body></html>}
 
@@ -58,18 +36,7 @@ test text-3-escaped-doublequotes {} -body {
         title "Hello, World!"
         age 47
     }
-    set template {
-        <html>
-            <head>
-                <title>${title}</title>
-            </head>
-            <body>
-                <h1>${title}</h1>
-                <p>You are \"[string length $age]\" digits years old.</p>
-            </body>
-        </html>
-    }
-    set html [::thtml::render $template $data]
+    set html [::thtml::renderfile text_3_escaped_doublequotes.thtml $data]
     escape $html
 } -result {<html><head><title>Hello, World!</title></head><body><h1>Hello, World!</h1><p>You are "2" digits years old.</p></body></html>}
 
@@ -79,18 +46,7 @@ test text-4-escaped-brackets {} -body {
         title "Hello, World!"
         age 47
     }
-    set template {
-        <html>
-            <head>
-                <title>${title}</title>
-            </head>
-            <body>
-                <h1>${title}</h1>
-                <p>You are [string length $age] digits \[years\] old.</p>
-            </body>
-        </html>
-    }
-    set html [::thtml::render $template $data]
+    set html [::thtml::renderfile text_4_escaped_brackets.thtml $data]
     escape $html
 } -result {<html><head><title>Hello, World!</title></head><body><h1>Hello, World!</h1><p>You are 2 digits [years] old.</p></body></html>}
 
@@ -99,17 +55,6 @@ test text-5-escaped-backslash {} -body {
         title "Hello, World!"
         age 47
     }
-    set template {
-        <html>
-            <head>
-                <title>${title}</title>
-            </head>
-            <body>
-                <h1>${title}</h1>
-                <p>You are \\[string length $age]\\ digits \[years\] old.</p>
-            </body>
-        </html>
-    }
-    set html [::thtml::render $template $data]
+    set html [::thtml::renderfile text_5_escaped_backslash.thtml $data]
     escape $html
 } -result {<html><head><title>Hello, World!</title></head><body><h1>Hello, World!</h1><p>You are \2\ digits [years] old.</p></body></html>}

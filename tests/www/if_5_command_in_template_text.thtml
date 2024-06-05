@@ -1,0 +1,11 @@
+<html>
+<head>
+    <title>${title}</title>
+</head>
+<body>
+<h1>${title}</h1>
+<tpl if="$age > 21">
+    <p>You are an adult. You are [string length $age] digits \[years\] old.</p>
+</tpl>
+</body>
+</html>

@@ -1,0 +1,11 @@
+<html>
+<head>
+    <title>${title}</title>
+</head>
+<body>
+<h1>${title}</h1>
+<tpl if="$age > 21 && $name eq {John Smith}">
+    <p>You are an adult.</p>
+</tpl>
+</body>
+</html>

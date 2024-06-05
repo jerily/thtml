@@ -1,0 +1,13 @@
+<html>
+<head>
+    <title>${title}</title>
+</head>
+<body>
+<h1>${title}</h1>
+<tpl foreach="item" in="${items}">
+    <tpl foreach="subitem" in="${item}">
+        <p>${subitem} is <tpl if="${subitem} % 2 == 0">even</tpl><tpl if="${subitem} % 2 == 1">odd</tpl></p>
+    </tpl>
+</tpl>
+</body>
+</html>

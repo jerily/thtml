@@ -1,0 +1,14 @@
+<html>
+<head>
+    <title>${title}</title>
+</head>
+<body>
+<h1>${title}</h1>
+<tpl if='$age > 21 && [lindex $name 0] eq "John"'>
+    <p>You are an adult.</p>
+</tpl>
+<tpl if='$age > 21 && [lindex $name 1] ne "Smith"'>
+    <p>You are NOT Mr. Smith.</p>
+</tpl>
+</body>
+</html>

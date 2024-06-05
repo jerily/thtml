@@ -980,9 +980,9 @@ static int thtml_TclAppendCommand_Token(Tcl_Interp *interp, Tcl_Obj *blocks_list
         Tcl_DStringAppend(ds_ptr, word_token_name, -1);
         Tcl_DStringAppend(ds_ptr, "__\\}", -1);
 
-        Tcl_DStringAppend(ds_ptr, "\nputs $__ds_", -1);
-        Tcl_DStringAppend(ds_ptr, name, -1);
-        Tcl_DStringAppend(ds_ptr, "__", -1);
+//        Tcl_DStringAppend(ds_ptr, "\nputs $__ds_", -1);
+//        Tcl_DStringAppend(ds_ptr, name, -1);
+//        Tcl_DStringAppend(ds_ptr, "__", -1);
 
         // unset __ds_wt1__
         Tcl_DStringAppend(ds_ptr, "\nunset __ds_", -1);

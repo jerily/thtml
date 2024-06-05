@@ -1,0 +1,1 @@
+<tpl if='[lindex $b 1] eq {world}'><div>this is a test</div></tpl>

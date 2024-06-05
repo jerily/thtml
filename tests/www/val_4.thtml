@@ -1,0 +1,12 @@
+<html>
+<tpl val="x">return {a b c}</tpl>
+<tpl val="y">return 2</tpl>
+<tpl val="z">return [lindex $x $y]</tpl>
+<head>
+    <title>${title}</title>
+</head>
+<body>
+<h1>${title}</h1>
+<p>${z} must be equal to [lindex $x $y]</p>
+</body>
+</html>

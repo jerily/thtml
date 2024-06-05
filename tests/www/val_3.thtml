@@ -1,0 +1,12 @@
+<html>
+<tpl val="x">return ${loggedin}</tpl>
+<tpl val="y">return 2</tpl>
+<tpl val="z">return [expr ${x} + ${y}]</tpl>
+<head>
+    <title>${title}</title>
+</head>
+<body>
+<h1>${title}</h1>
+<p>${z}</p>
+</body>
+</html>

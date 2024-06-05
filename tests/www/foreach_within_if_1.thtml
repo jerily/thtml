@@ -1,0 +1,14 @@
+<html>
+<head>
+    <title>${title}</title>
+</head>
+<body>
+<h1>${title}</h1>
+<tpl if="${age} > 21">
+    <p>You are an adult.</p>
+    <tpl foreach="item" in="a b ${items} f g h i">
+        <p>${item}: ${age}</p>
+    </tpl>
+</tpl>
+</body>
+</html>

@@ -13,29 +13,29 @@ proc escape {str} {
 }
 
 test command-in-template-text-1 {} -body {
-    ::thtml::render {<div>[lindex $b 1]</div>} {a 12345 b "hello world" c "test"}
+    ::thtml::renderfile command_in_template_text_1.thtml {a 12345 b "hello world" c "test"}
 } -result {<div>world</div>}
 
 test command-in-template-text-2 {} -body {
-    ::thtml::render {<div>[string index $a 2]</div>} {a 12345 b "hello world" c "test"}
+    ::thtml::renderfile command_in_template_text_2.thtml {a 12345 b "hello world" c "test"}
 } -result {<div>3</div>}
 
 test command-in-attribute-1 {} -body {
-    ::thtml::render {<div class="hi [lindex $b 1]">this is a test</div>} {a 12345 b "hello world" c "test"}
+    ::thtml::renderfile command_in_attribute_1.thtml {a 12345 b "hello world" c "test"}
 } -result {<div class="hi world">this is a test</div>}
 
 test command-in-attribute-2 {} -body {
-    ::thtml::render {<div class="just [string index $a 4] wow">this is a test</div>} {a 12345 b "hello world" c "test"}
+    ::thtml::renderfile command_in_attribute_2.thtml {a 12345 b "hello world" c "test"}
 } -result {<div class="just 5 wow">this is a test</div>}
 
 test command-in-if-1 {} -body {
-    ::thtml::render {<tpl if='[lindex $b 1] eq {world}'><div>this is a test</div></tpl>} {a 12345 b "hello world" c "test"}
+    ::thtml::renderfile command_in_if_1.thtml {a 12345 b "hello world" c "test"}
 } -result {<div>this is a test</div>}
 
 test command-in-foreach-list-1 {} -body {
-    ::thtml::render {<tpl foreach="w" in='hi [lindex $b 1] wow'><div>this is a test: $w</div></tpl>} {a 12345 b "hello world" c "test"}
+    ::thtml::renderfile command_in_foreach_list_1.thtml {a 12345 b "hello world" c "test"}
 } -result {<div>this is a test: hi</div><div>this is a test: world</div><div>this is a test: wow</div>}
 
 test command-in-foreach-list-2 {} -body {
-    ::thtml::render {<tpl foreach="w" in='hi [lrange $b 0 1] wow'><div>this is a test: $w</div></tpl>} {a 12345 b "hello world" c "test"}
+    ::thtml::renderfile command_in_foreach_list_2.thtml {a 12345 b "hello world" c "test"}
 } -result {<div>this is a test: hi</div><div>this is a test: hello world</div><div>this is a test: wow</div>}

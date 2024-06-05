@@ -15,139 +15,139 @@ proc escape {str} {
 # integer comparison
 
 test expr-lt-true {} -body {
-    ::thtml::render {<div>[expr {1 < 2}]</div>} {}
+    ::thtml::renderfile expr_lt_true.thtml {}
 } -result {<div>1</div>}
 
 test expr-lt-false {} -body {
-    ::thtml::render {<div>[expr {1 < 0}]</div>} {}
+    ::thtml::renderfile expr_lt_false.thtml {}
 } -result {<div>0</div>}
 
 test expr-gt-true {} -body {
-    ::thtml::render {<div>[expr {1 > 0}]</div>} {}
+    ::thtml::renderfile expr_gt_true.thtml {}
 } -result {<div>1</div>}
 
 test expr-gt-false {} -body {
-    ::thtml::render {<div>[expr {1 > 2}]</div>} {}
+    ::thtml::renderfile expr_gt_false.thtml {}
 } -result {<div>0</div>}
 
 test expr-lte-true-lt {} -body {
-    ::thtml::render {<div>[expr {1 <= 2}]</div>} {}
+    ::thtml::renderfile expr_lte_true_lt.thtml {}
 } -result {<div>1</div>}
 
 test expr-lte-true-eq {} -body {
-    ::thtml::render {<div>[expr {2 <= 2}]</div>} {}
+    ::thtml::renderfile expr_lte_true_eq.thtml {}
 } -result {<div>1</div>}
 
 test expr-lte-false {} -body {
-    ::thtml::render {<div>[expr {1 <= 0}]</div>} {}
+    ::thtml::renderfile expr_lte_false.thtml {}
 } -result {<div>0</div>}
 
 test expr-gte-true-gt {} -body {
-    ::thtml::render {<div>[expr {1 >= 0}]</div>} {}
+    ::thtml::renderfile expr_gte_true_gt.thtml {}
 } -result {<div>1</div>}
 
 test expr-gte-true-eq {} -body {
-    ::thtml::render {<div>[expr {0 >= 0}]</div>} {}
+    ::thtml::renderfile expr_gte_true_eq.thtml {}
 } -result {<div>1</div>}
 
 test expr-gte-false {} -body {
-    ::thtml::render {<div>[expr {1 >= 2}]</div>} {}
+    ::thtml::renderfile expr_gte_false.thtml {}
 } -result {<div>0</div>}
 
 test expr-eq-true {} -body {
-    ::thtml::render {<div>[expr {1 == 1}]</div>} {}
+    ::thtml::renderfile expr_eq_true.thtml {}
 } -result {<div>1</div>}
 
 test expr-eq-false {} -body {
-    ::thtml::render {<div>[expr {1 == 2}]</div>} {}
+    ::thtml::renderfile expr_eq_false.thtml {}
 } -result {<div>0</div>}
 
 test expr-ne-true {} -body {
-    ::thtml::render {<div>[expr {0 != 1}]</div>} {}
+    ::thtml::renderfile expr_ne_true.thtml {}
 } -result {<div>1</div>}
 
 test expr-ne-false {} -body {
-    ::thtml::render {<div>[expr {1 != 1}]</div>} {}
+    ::thtml::renderfile expr_ne_false.thtml {}
 } -result {<div>0</div>}
 
 # string comparison
 
 test expr-streq-true {} -body {
-    ::thtml::render {<div>[expr {"abc" eq "abc"}]</div>} {}
+    ::thtml::renderfile expr_streq_true.thtml {}
 } -result {<div>1</div>}
 
 test expr-streq-false {} -body {
-    ::thtml::render {<div>[expr {"abc" eq "qwe"}]</div>} {}
+    ::thtml::renderfile expr_streq_false.thtml {}
 } -result {<div>0</div>}
 
 test expr-strneq-true {} -body {
-    ::thtml::render {<div>[expr {"abc" ne "qwe"}]</div>} {}
+    ::thtml::renderfile expr_strneq_true.thtml {}
 } -result {<div>1</div>}
 
 test expr-strneq-false {} -body {
-    ::thtml::render {<div>[expr {"abc" ne "abc"}]</div>} {}
+    ::thtml::renderfile expr_strneq_false.thtml {}
 } -result {<div>0</div>}
 
 # logical operators
 
 test expr-and-true {} -body {
-    ::thtml::render {<div>[expr {1 && 1}]</div>} {}
+    ::thtml::renderfile expr_and_true.thtml {}
 } -result {<div>1</div>}
 
 test expr-and-false {} -body {
-    ::thtml::render {<div>[expr {1 && 0}]</div>} {}
+    ::thtml::renderfile expr_and_false.thtml {}
 } -result {<div>0</div>}
 
 test expr-or-true {} -body {
-    ::thtml::render {<div>[expr {1 || 0}]</div>} {}
+    ::thtml::renderfile expr_or_true.thtml {}
 } -result {<div>1</div>}
 
 test expr-or-false {} -body {
-    ::thtml::render {<div>[expr {0 || 0}]</div>} {}
+    ::thtml::renderfile expr_or_false.thtml {}
 } -result {<div>0</div>}
 
 test expr-not-true {} -body {
-    ::thtml::render {<div>[expr {!0}]</div>} {}
+    ::thtml::renderfile expr_not_true.thtml {}
 } -result {<div>1</div>}
 
 test expr-not-false {} -body {
-    ::thtml::render {<div>[expr {!1}]</div>} {}
+    ::thtml::renderfile expr_not_false.thtml {}
 } -result {<div>0</div>}
 
 # ternary operator
 
 test expr-ternary-true {} -body {
-    ::thtml::render {<div>[expr {1 ? 1 : 0}]</div>} {}
+    ::thtml::renderfile expr_ternary_true.thtml {}
 } -result {<div>1</div>}
 
 test expr-ternary-false {} -body {
-    ::thtml::render {<div>[expr {0 ? 1 : 0}]</div>} {}
+    ::thtml::renderfile expr_ternary_false.thtml {}
 } -result {<div>0</div>}
 
 # math operators
 
 test expr-add {} -body {
-    ::thtml::render {<div>[expr {1 + 2}]</div>} {}
+    ::thtml::renderfile expr_add.thtml {}
 } -result {<div>3</div>}
 
 test expr-sub {} -body {
-    ::thtml::render {<div>[expr {1 - 2}]</div>} {}
+    ::thtml::renderfile expr_sub.thtml {}
 } -result {<div>-1</div>}
 
 test expr-mult {} -body {
-    ::thtml::render {<div>[expr {2 * 3}]</div>} {}
+    ::thtml::renderfile expr_mult.thtml {}
 } -result {<div>6</div>}
 
 test expr-div {} -body {
-    ::thtml::render {<div>[expr {6 / 2}]</div>} {}
+    ::thtml::renderfile expr_div.thtml {}
 } -result {<div>3</div>}
 
 test expr-expon {} -body {
-    ::thtml::render {<div>[expr {2 ** 3}]</div>} {}
+    ::thtml::renderfile expr_expon.thtml {}
 } -result {<div>8</div>}
 
 # more complex expressions
 
 test expr-complex-1 {} -body {
-    ::thtml::render {<div>[expr {$a < $b && $c == 3}]</div>} {a 1 b 2 c 3}
+    ::thtml::renderfile expr_complex_1.thtml {a 1 b 2 c 3}
 } -result {<div>1</div>}

@@ -1,0 +1,12 @@
+<html>
+<head>
+    <title>${title}</title>
+</head>
+<body>
+<h1>${title}</h1>
+<tpl foreach="item" in="${items}">
+    <tpl if="${item} % 2 == 0"><p>${item} is even</p></tpl>
+    <tpl if="${item} % 2 == 1"><p>${item} is odd</p></tpl>
+</tpl>
+</body>
+</html>

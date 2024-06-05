@@ -18,24 +18,9 @@ test include-1 {} -body {
         name "John Smith"
         age 47
     }
-    set template {
-        <html>
-            <head>
-                <title>${title}</title>
-            </head>
-            <body>
-                <h1>${title}</h1>
-                <tpl include="name_and_age.inc" name="${name}" age_text="${age} ye\[a\]rs">
-                    <tpl if="${age} > 21">
-                        You are an adult.
-                    </tpl>
-                </tpl>
-            </body>
-        </html>
-    }
-    set html [::thtml::render $template $data]
+    set html [::thtml::renderfile include_1.thtml $data]
     escape $html
-} -result {<html><head><title>Hello, World!</title></head><body><h1>Hello, World!</h1><div><h2>Name and age</h2>\n    John Smith is 47 ye[a]rs old.\n    \n                        You are an adult.\n                    <div>This is the footer</div>.\n</div></body></html>}
+} -result {<html><head><title>Hello, World!</title></head><body><h1>Hello, World!</h1><div><h2>Name and age</h2>\n    John Smith is 47 ye[a]rs old.\n    \n        You are an adult.\n    <div>This is the footer</div>.\n</div></body></html>}
 
 test include-2-circular-dependency {} -body {
     set data {
@@ -43,22 +28,6 @@ test include-2-circular-dependency {} -body {
         name "John Smith"
         age 47
     }
-    set template {
-        <html>
-            <head>
-                <title>${title}</title>
-            </head>
-            <body>
-                <h1>${title}</h1>
-                <tpl include="name_and_age.inc" name="${name}" age="${age} ye\[a\]rs">
-                    <tpl if="${age} > 21">
-                        You are an adult.
-                        <tpl include="name_and_age.inc" name="${name}" age="${age} ye\[a\]rs" />
-                    </tpl>
-                </tpl>
-            </body>
-        </html>
-    }
-    set html [::thtml::render $template $data]
+    set html [::thtml::renderfile include_2_circular_dependency.thtml $data]
     escape $html
 } -returnCodes error -result {circular dependency detected}
