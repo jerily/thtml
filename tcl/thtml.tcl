@@ -97,7 +97,7 @@ proc ::thtml::c_compiledir {dir} {
     append c_code "\n" "return TCL_OK;"
     append c_code "\n" "}"
 
-    puts c_code=$c_code
+    if { $debug } { puts c_code=$c_code }
 
     return [c_build $dirmd5 $c_code]
 }
