@@ -1,4 +1,5 @@
 package require tcltest
+package require thtml
 namespace import -force ::tcltest::test
 
 if { [llength $argv] != 1 } {

@@ -783,7 +783,7 @@ const char *thtml_GetOperandType(Tcl_Token *token) {
             return "word";
         case TCL_TOKEN_BS:
             return "bs";
-        case TCL_TOKEN_SUB_EXPR:
+        case TCL_TOKEN_SUB_EXPR: {
             // check if it is a simple expression e.g. text or variable
             Tcl_Token *sub_token = &token[1];
             switch (sub_token->type) {
@@ -794,6 +794,7 @@ const char *thtml_GetOperandType(Tcl_Token *token) {
                 default:
                     return "subexpr";
             }
+        }
         case TCL_TOKEN_OPERATOR:
             return "operator";
         default:
