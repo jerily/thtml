@@ -179,7 +179,7 @@ proc ::thtml::load_compiled_templates {} {
 
     if { $target_lang eq {c} } {
         set libdir [file normalize [file join $cachedir "build"]]
-        set files [glob -nocomplain -directory $libdir libthtml-*.so]
+        set files [glob -nocomplain -directory $libdir libthtml-*[info sharedlibextension]]
     } else {
         set libdir [file normalize $cachedir]
         set files [glob -nocomplain -directory $libdir dir-*.tcl]
