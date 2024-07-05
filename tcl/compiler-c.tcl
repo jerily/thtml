@@ -160,7 +160,7 @@ proc ::thtml::compiler::c_compile_statement_include {codearrVar node} {
     close $fp
 
     set escaped_template [::thtml::escape_template $template]
-    dom parse -paramentityparsing never -- <root>$escaped_template</root> doc
+    dom parse -ignorexmlns -paramentityparsing never -- <root>$escaped_template</root> doc
     set root [$doc documentElement]
     ::thtml::rewrite $root
 

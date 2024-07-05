@@ -261,7 +261,7 @@ proc ::thtml::compile {codearrVar template target_lang} {
     upvar $codearrVar codearr
 
     set escaped_template [escape_template $template]
-    dom parse -paramentityparsing never -- <root>$escaped_template</root> doc
+    dom parse -ignorexmlns -paramentityparsing never -- <root>$escaped_template</root> doc
     set root [$doc documentElement]
 
     rewrite $root
