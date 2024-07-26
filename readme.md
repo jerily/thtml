@@ -7,7 +7,7 @@ HTML Templating Engine for TCL and [twebserver](https://github.com/jerily/twebse
 ## Prerequisites
 
 * [tcl](https://www.tcl.tk/) (version 9.0) - TCL
-* [tdom](http://www.tdom.org/) (version 0.9.3) - Tcl XML parser
+* [tdom](http://www.tdom.org/) (version [0.9.4](http://tdom.org/downloads/tdom-0.9.4-src.tar.gz)) - Tcl XML parser
 
 ## Installation
 
