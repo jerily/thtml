@@ -40,7 +40,7 @@ static void thtml_ExitHandler(ClientData unused) {
 
 void thtml_InitModule() {
     if (!thtml_ModuleInitialized) {
-        Tcl_CreateThreadExitHandler(thtml_ExitHandler, NULL);
+        Tcl_CreateExitHandler(thtml_ExitHandler, NULL);
         thtml_ModuleInitialized = 1;
     }
 }
