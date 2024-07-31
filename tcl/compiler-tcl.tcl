@@ -115,6 +115,14 @@ proc ::thtml::compiler::tcl_compile_statement_include {codearrVar node} {
     set filepath_from_rootdir [string range $filepath [string length [::thtml::get_rootdir]] end]
     set filepath_md5 [::thtml::util::md5 $filepath_from_rootdir]
 
+    set tcl_code ""
+    set tcl_filepath "[file rootname $filepath].tcl"
+    if { [file exists $tcl_filepath] } {
+        set fp [open $tcl_filepath]
+        set tcl_code [read $fp]
+        close $fp
+    }
+
     # check that we do not have circular dependencies
     foreach block $codearr(blocks) {
         if { [dict exists $block include] && [dict get $block include filepath_md5] eq $filepath_md5 } {
@@ -147,22 +155,25 @@ proc ::thtml::compiler::tcl_compile_statement_include {codearrVar node} {
 
     set proc_name ::thtml::cache::__include_${filepath_md5}_${slave_md5}__
 
+    set tcl_proc_name ""
+    if { $tcl_code ne {} } {
+        set tcl_proc_name ::thtml::cache::__include_${filepath_md5}__
+    }
+
     set compiled_include "\x03"
 
-    set varnames [list]
+#    set varnames [list]
     set argnames [list]
-    lappend argnames __data__
     foreach attname [$node attributes] {
         if { $attname eq {include} } { continue }
         lappend argnames $attname
-        lappend varnames $attname
+#        lappend varnames $attname
     }
 
     append compiled_include "\n" "\# " $filepath_from_rootdir
 
     set arg_num 0
     set argvalues [list]
-    lappend argvalues "\$__data__"
     foreach attname [$node attributes] {
         if { $attname eq {include} } { continue }
         append compiled_include "\n" [tcl_compile_quoted_string codearr \"[$node @$attname]\" include${include_num}_arg${arg_num}]
@@ -170,11 +181,19 @@ proc ::thtml::compiler::tcl_compile_statement_include {codearrVar node} {
         incr arg_num
     }
 
-    push_block codearr [list varnames $varnames stop 1 include [list filepath $filepath_from_rootdir filepath_md5 $filepath_md5]]
+    #push_block codearr [list varnames $varnames stop 1 include [list filepath $filepath_from_rootdir filepath_md5 $filepath_md5]]
+    push_block codearr [list varnames {} stop 1 include [list filepath $filepath_from_rootdir filepath_md5 $filepath_md5]]
 
     set seen [get_seen codearr $proc_name]
     if { !$seen } {
-        append compiled_include_proc "\n" "proc ${proc_name} {${argnames}} \{"
+
+        if { $tcl_code ne {} } {
+            append compiled_include_proc "\n" "proc ${tcl_proc_name} {__data__} \{"
+            append compiled_include_proc "\n" $tcl_code
+            append compiled_include_proc "\n" "\}"
+        }
+
+        append compiled_include_proc "\n" "proc ${proc_name} {__data__} \{"
         append compiled_include_proc "\n" "set __ds_default__ \"\"" "\n"
         foreach child [$root childNodes] {
             append compiled_include_proc [tcl_transform \x02[compile_helper codearr $child]\x03]
@@ -184,8 +203,19 @@ proc ::thtml::compiler::tcl_compile_statement_include {codearrVar node} {
         append codearr(defs) $compiled_include_proc
     }
 
-    #puts argvalues=$argvalues
-    append compiled_include "\n" "append __ds_default__ \[eval ${proc_name} ${argvalues}\]" "\n"
+    #puts argnames=$argnames,argvalueVars=$argvalueVars
+
+    append compiled_include "\n" "set __list_include${include_num}__ \[list\]"
+    foreach argname $argnames argvalue $argvalues {
+        append compiled_include "\n" "lappend __list_include${include_num}__ $argname $argvalue"
+    }
+    set argdata_code "\$__data__"
+    if { $tcl_code ne {} } {
+        set argdata_code "\[${tcl_proc_name} \$__data__\]"
+    }
+    append compiled_include "\n" "set __data_include${include_num}__ \[dict merge $argdata_code \$__list_include${include_num}__\]"
+    #append compiled_include "\n" "puts \$__data_include${include_num}__"
+    append compiled_include "\n" "append __ds_default__ \[${proc_name} \$__data_include${include_num}__\]" "\n"
     append compiled_include "\x02"
 
     pop_block codearr

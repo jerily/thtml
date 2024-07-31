@@ -252,7 +252,7 @@ proc ::thtml::renderfile {filename __data__} {
     }
 
     set compiled_template [compile codearr $template tcl]
-    #puts compiled_template=$compiled_template
+    #puts $codearr(defs)\ncompiled_template=$compiled_template
     eval $codearr(defs)
     return "<!doctype html>[eval $compiled_template]"
 }
