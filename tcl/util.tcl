@@ -17,7 +17,30 @@ proc ::thtml::util::doublequote_and_escape_newlines {str {lengthVar ""}} {
     return [doublequote [string map {"\n" {\n} "\r" {\r} "\\" {\\}} ${str}]]
 }
 
+proc ::thtml::util::get_namespace_dir {nsp} {
+    if { ![info exists ::${nsp}::__thtml__] } {
+        error "Variable ::${nsp}::__thtml__ not found"
+    }
+    return [set ::${nsp}::__thtml__]
+}
+
 proc ::thtml::util::resolve_filepath {filepath} {
+
+    if { $filepath eq {} } {
+        error "Empty filepath"
+    }
+
+    set first_char [string index $filepath 0]
+    if { $first_char eq {@}} {
+        set index [string first / $filepath]
+        if { $index eq -1 } {
+            error "Invalid filepath: $filepath"
+        }
+        set nsp [string range $filepath 1 [expr { $index - 1}]]
+        set dir [get_namespace_dir $nsp]
+        set filepath [string range $filepath [expr { 1 + $index }] end]
+        return [file normalize [file join $dir $filepath]]
+    }
 
     set rootdir [::thtml::get_rootdir]
     return [file normalize [file join $rootdir www $filepath]]
