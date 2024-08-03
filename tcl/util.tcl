@@ -75,7 +75,7 @@ proc ::thtml::util::find_files { basedir pattern } {
     return $fileList
 }
 
-proc ::thtml::util::bundle_js {entryfile} {
+proc ::thtml::util::bundle_js {entryfile {name "THTML"}} {
 
     writeFile rollup.config.cjs [subst -nocommands -nobackslashes {
         module.exports = {
@@ -83,7 +83,7 @@ proc ::thtml::util::bundle_js {entryfile} {
             output: {
                 // file: 'mybundle.js',
                 format: 'umd',
-                name: 'mybundle',
+                name: '${name}',
                 globals: {
 //                    react: 'React',
 //                    'react-dom': 'ReactDOM',

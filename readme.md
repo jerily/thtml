@@ -167,3 +167,37 @@ TCL:
 ```tcl
 ::thtml::render $template {title "Hello World!"}
 ```
+
+## Working with JavaScript
+
+### Plain old script tags
+
+Template:
+```html
+set template {
+    <script>
+        console.log("Hello World!");
+    </script>
+}
+```
+
+### Node modules
+
+Template:
+```html
+set template {
+  <import_node_module name="lodash" src="lodash" />
+
+  <html>
+    <head>
+      <bundle url_prefix="/js/" />
+    </head>
+    <body>
+      <div id="version"></div>
+      <js>
+        var el = document.getElementById("version");
+        el.innerText = "lodash version: " + lodash.VERSION;
+      </js>
+    </body>
+  </html>
+}

@@ -6,6 +6,7 @@ package require tdom
 
 namespace eval ::thtml {
     variable rootdir
+    variable bundle_outdir
     variable cachedir /tmp/cache/thtml
     variable cmakedir [file normalize [file join [file dirname [info script]] "../cmake"]]
     variable cache 0
@@ -16,6 +17,7 @@ namespace eval ::thtml::cache {}
 
 proc ::thtml::init {option_dict} {
     variable rootdir
+    variable bundle_outdir
     variable cachedir
     variable cache
     variable target_lang
@@ -23,6 +25,10 @@ proc ::thtml::init {option_dict} {
 
     if { [dict exists $option_dict rootdir] } {
         set rootdir [dict get $option_dict rootdir]
+    }
+
+    if { [dict exists $option_dict bundle_outdir] } {
+        set bundle_outdir [dict get $option_dict bundle_outdir]
     }
 
     if { [dict exists $option_dict cachedir] } {
@@ -55,6 +61,11 @@ proc ::thtml::init {option_dict} {
 proc ::thtml::get_cachedir {} {
     variable cachedir
     return $cachedir
+}
+
+proc ::thtml::get_bundle_outdir {} {
+    variable bundle_outdir
+    return $bundle_outdir
 }
 
 proc ::thtml::compiledir {dir target_lang} {
@@ -261,17 +272,17 @@ proc ::thtml::renderfile {filename __data__} {
     }
 
     set compiled_template [compile codearr $template tcl]
-    #puts $codearr(defs)\ncompiled_template=$compiled_template
+    puts $codearr(defs)\ncompiled_template=$compiled_template
     eval $codearr(defs)
-    set html "<!doctype html>[eval $compiled_template]"
-    return [process_bundle_js codearr $html]
+    process_bundle_js codearr
+    return "<!doctype html>[eval $compiled_template]"
 }
 
-proc ::thtml::process_bundle_js {codearrVar html} {
+proc ::thtml::process_bundle_js {codearrVar} {
     upvar $codearrVar codearr
 
     # replace @bundle_js@ with rollup bundle of codearr(bundle_js)
-    if { [info exists codearr(bundle_js_names)] } {
+    if { [info exists codearr(bundle_metadata)] && [info exists codearr(bundle_js_names)] } {
         set cachedir .
         set files_to_delete [list]
         set bundle_js_imports ""
@@ -309,17 +320,21 @@ proc ::thtml::process_bundle_js {codearrVar html} {
         set entryfilename [file join $cachedir "entry.js"]
         lappend files_to_delete $entryfilename
         writeFile $entryfilename "${bundle_js_imports}\nexport default \{ [join ${bundle_js_exports} {,}] \};"
-        set bundle_js [::thtml::util::bundle_js $entryfilename]
+        if {[catch {
+            set bundle_js [::thtml::util::bundle_js $entryfilename]
+        }]} {
+            puts stderr "error in generating javascript bundle"
+        }
         foreach filename $files_to_delete {
             file delete $filename
         }
-    } else {
-        set bundle_js ""
+        set bundle_metadata $codearr(bundle_metadata)
+        set bundle_outdir [::thtml::get_bundle_outdir]
+        set bundle_suffix [dict get $bundle_metadata suffix]
+        set bundle_filename [file join $bundle_outdir "bundle_${bundle_suffix}.js"]
+        puts bundle_filename=$bundle_filename
+        writeFile $bundle_filename $bundle_js
     }
-    writeFile /tmp/bundle.js $bundle_js
-    set html [string map [list @bundle_js@ "<script>${bundle_js}</script>"] $html]
-
-    return $html
 }
 
 proc ::thtml::compile {codearrVar template target_lang} {

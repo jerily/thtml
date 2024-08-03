@@ -19,6 +19,23 @@ proc ::thtml::compiler::tcl_compile_root {codearrVar root} {
     return $compiled_template
 }
 
+proc ::thtml::compiler::tcl_compile_statement_bundle {codearrVar node} {
+    upvar $codearrVar codearr
+
+    set top_component [::thtml::compiler::top_component codearr]
+    set md5 [dict get $top_component md5]
+
+    set suffix $md5
+    lappend codearr(bundle_metadata) suffix $suffix
+
+    set filename "bundle_${suffix}.js"
+
+    append compiled_script "<script src=\\\""
+    append compiled_script "\x03" [tcl_compile_quoted_string codearr "\"[$node @url_prefix]\""] "\x02"
+    append compiled_script "${filename}\\\"></script>"
+    return $compiled_script
+}
+
 proc ::thtml::compiler::tcl_compile_statement_js {codearrVar node} {
     upvar $codearrVar codearr
 
@@ -47,9 +64,10 @@ proc ::thtml::compiler::tcl_compile_statement_js {codearrVar node} {
     lappend codearr(bundle_js,$md5) $js_num $js_args $js
     lappend codearr(bundle_js_names) $md5
 
-    append compiled_script "\x02" "<script>mybundle.js_${md5}.js_${md5}_${js_num}(" "\x03"
-    append compiled_script [tcl_compile_quoted_string codearr "\"$js_vals\""]
-    append compiled_script "\x02" ");</script>" "\x03"
+    append compiled_script "<script>THTML.js_${md5}.js_${md5}_${js_num}("
+    append compiled_script "\x03" [tcl_compile_quoted_string codearr "\"$js_vals\""] "\x02"
+    append compiled_script ");</script>"
+    return $compiled_script
 }
 
 proc ::thtml::compiler::tcl_compile_statement_val {codearrVar node} {
