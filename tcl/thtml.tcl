@@ -52,6 +52,11 @@ proc ::thtml::init {option_dict} {
 
 }
 
+proc ::thtml::get_cachedir {} {
+    variable cachedir
+    return $cachedir
+}
+
 proc ::thtml::compiledir {dir target_lang} {
 
     if { $target_lang ni {c tcl} } {
@@ -65,7 +70,7 @@ proc ::thtml::c_compiledir {dir} {
     variable debug
 
     set target_lang "c"
-    array set codearr [list blocks {} target_lang $target_lang defs {} seen {}]
+    array set codearr [list blocks {} components {} target_lang $target_lang defs {} seen {}]
 
     set files [::thtml::util::find_files $dir "*.thtml"]
     if { $debug } { puts files=$files }
@@ -126,7 +131,7 @@ proc ::thtml::tcl_compiledir {dir} {
     variable debug
 
     set target_lang "tcl"
-    array set codearr [list blocks {} target_lang $target_lang defs {} seen {}]
+    array set codearr [list blocks {} components {} target_lang $target_lang defs {} seen {}]
 
     set files [::thtml::util::find_files $dir "*.thtml"]
     if { $debug } { puts files=$files }
@@ -219,10 +224,12 @@ proc ::thtml::render {template __data__} {
     variable debug
 
     if { $debug } { puts target_lang=$target_lang }
-    array set codearr [list blocks {} target_lang $target_lang defs {} seen {}]
+    array set codearr [list blocks {} components {} target_lang $target_lang defs {} seen {}]
+
+    set md5 [::thtml::util::md5 $template]
+    ::thtml::compiler::push_component codearr [list md5 $md5]
 
     if { $cache } {
-        set md5 [::thtml::util::md5 $template]
         set proc_name ::thtml::cache::__template__$md5
         return [$proc_name $__data__]
     }
@@ -237,7 +244,7 @@ proc ::thtml::renderfile {filename __data__} {
     variable rootdir
     variable target_lang
 
-    array set codearr [list blocks {} target_lang $target_lang defs {} seen {}]
+    array set codearr [list blocks {} components {} target_lang $target_lang defs {} seen {}]
 
     set filepath [::thtml::util::resolve_filepath $filename]
 
@@ -245,16 +252,74 @@ proc ::thtml::renderfile {filename __data__} {
     set template [read $fp]
     close $fp
 
+    set md5 [::thtml::util::md5 $filepath]
+    ::thtml::compiler::push_component codearr [list md5 $md5]
+
     if { $cache } {
-        set md5 [::thtml::util::md5 $filepath]
         set proc_name ::thtml::cache::__file__$md5
         return [$proc_name $__data__]
     }
 
     set compiled_template [compile codearr $template tcl]
-    #puts $codearr(defs)\ncompiled_template=$compiled_template
+    puts $codearr(defs)\ncompiled_template=$compiled_template
     eval $codearr(defs)
-    return "<!doctype html>[eval $compiled_template]"
+    set html "<!doctype html>[eval $compiled_template]"
+    return [process_bundle_js codearr $html]
+}
+
+proc ::thtml::process_bundle_js {codearrVar html} {
+    upvar $codearrVar codearr
+
+    # replace @bundle_js@ with rollup bundle of codearr(bundle_js)
+    if { [info exists codearr(bundle_js_names)] } {
+        set cachedir .
+        set files_to_delete [list]
+        set bundle_js_imports ""
+        set bundle_js_exports ""
+        foreach bundle_js_name $codearr(bundle_js_names) {
+            set component_js ""
+            if { [info exists codearr(import_js,$bundle_js_name)] } {
+                append component_js $codearr(import_js,$bundle_js_name)
+            }
+            if { [info exists codearr(bundle_js,$bundle_js_name)] } {
+                set component_exports [list]
+                foreach {js_num js_args js} $codearr(bundle_js,$bundle_js_name) {
+                    append component_js "\n" "function js_${bundle_js_name}_${js_num}(${js_args}) { ${js} }"
+                    lappend component_exports "js_${bundle_js_name}_${js_num}"
+                }
+                append component_js "\n" "export default \{"
+                set first 1
+                foreach component_export $component_exports {
+                    puts $component_export
+                    if { $first } {
+                        set first 0
+                    } else {
+                        append component_js ","
+                    }
+                    append component_js "\n" "${component_export}"
+                }
+                append component_js "\};"
+            }
+            set component_filename [file join $cachedir ${bundle_js_name}.js]
+            lappend files_to_delete $component_filename
+            writeFile $component_filename $component_js
+            append bundle_js_imports "\n" "import js_${bundle_js_name} from '${component_filename}';"
+            lappend bundle_js_exports "js_${bundle_js_name}"
+        }
+        set entryfilename [file join $cachedir "entry.js"]
+        lappend files_to_delete $entryfilename
+        writeFile $entryfilename "${bundle_js_imports}\nexport default \{ [join ${bundle_js_exports} {,}] \};"
+        set bundle_js [::thtml::util::bundle_js $entryfilename]
+        foreach filename $files_to_delete {
+            # file delete $filename
+        }
+    } else {
+        set bundle_js ""
+    }
+    writeFile /tmp/bundle.js $bundle_js
+    set html [string map [list @bundle_js@ "<script>${bundle_js}</script>"] $html]
+
+    return $html
 }
 
 proc ::thtml::compile {codearrVar template target_lang} {
@@ -264,12 +329,32 @@ proc ::thtml::compile {codearrVar template target_lang} {
     dom parse -ignorexmlns -paramentityparsing never -- <root>$escaped_template</root> doc
     set root [$doc documentElement]
 
-    rewrite $root
+    rewrite_template_imports $root
+    process_node_module_imports codearr $root
 
     return [::thtml::compiler::${target_lang}_compile_root codearr $root]
 }
 
-proc ::thtml::rewrite {root} {
+proc ::thtml::process_node_module_imports {codearrVar root} {
+    upvar $codearrVar codearr
+
+    set top_component [::thtml::compiler::top_component codearr]
+    set md5 [dict get $top_component md5]
+
+    set imports [$root getElementsByTagName import_node_module]
+    set js_imports ""
+    foreach import $imports {
+        set src [$import getAttribute src]
+        set name [$import getAttribute name]
+        append js_imports "\n" "import $name from '$src';"
+        $import delete
+    }
+
+    append codearr(import_js,$md5) ${js_imports}
+
+}
+
+proc ::thtml::rewrite_template_imports {root} {
     set imports [$root getElementsByTagName import]
     foreach import $imports {
         set src [$import getAttribute src]

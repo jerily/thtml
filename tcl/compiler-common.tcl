@@ -18,7 +18,7 @@ proc ::thtml::compiler::compile_helper {codearrVar node} {
         return [${target_lang}_compile_template_text codearr \"[$node nodeValue]\"]
     } elseif { $node_type eq {ELEMENT_NODE} } {
         set tag [$node tagName]
-        if { $tag eq {tpl} } {
+        if { $tag eq {tpl} || $tag eq {js} } {
             return [compile_statement codearr $node]
         } else {
             return [compile_element codearr $node]
@@ -65,6 +65,8 @@ proc ::thtml::compiler::compile_statement {codearrVar node} {
         return [${target_lang}_compile_statement_include codearr $node]
     } elseif { [$node hasAttribute "val"] } {
         return [${target_lang}_compile_statement_val codearr $node]
+    } elseif { [$node tagName] eq {js} } {
+        return [${target_lang}_compile_statement_js codearr $node]
     } else {
         return [compile_children codearr $node]
     }
@@ -106,4 +108,19 @@ proc ::thtml::compiler::get_seen {codearrVar what} {
 proc ::thtml::compiler::set_seen {codearrVar what} {
     upvar $codearrVar codearr
     set codearr(seen) [dict set codearr(seen) $what 1]
+}
+
+proc ::thtml::compiler::push_component {codearrVar component} {
+    upvar $codearrVar codearr
+    set codearr(components) [linsert $codearr(components) 0 $component]
+}
+
+proc ::thtml::compiler::pop_component {codearrVar} {
+    upvar $codearrVar codearr
+    set codearr(components) [lrange $codearr(components) 1 end]
+}
+
+proc ::thtml::compiler::top_component {codearrVar} {
+    upvar $codearrVar codearr
+    return [lindex $codearr(components) 0]
 }

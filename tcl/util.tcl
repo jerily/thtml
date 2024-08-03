@@ -73,4 +73,56 @@ proc ::thtml::util::find_files { basedir pattern } {
         }
     }
     return $fileList
+}
+
+proc ::thtml::util::bundle_js {entryfile} {
+
+    writeFile rollup.config.cjs [subst -nocommands -nobackslashes {
+        module.exports = {
+            input: '${entryfile}',
+            output: {
+                // file: 'mybundle.js',
+                format: 'umd',
+                name: 'mybundle',
+                globals: {
+//                    react: 'React',
+//                    'react-dom': 'ReactDOM',
+//                    redux: 'Redux',
+//                    'react-redux': 'ReactRedux',
+                },
+            },
+            plugins: [
+                // require('rollup-plugin-peer-deps-external')(),
+                require('@rollup/plugin-node-resolve')(),
+                // commonjs plugin must be placed before babel plugin for the two to work together properly
+                require('@rollup/plugin-commonjs')(),
+                require('@rollup/plugin-babel')({
+//                    exclude: 'node_modules/**',
+                    babelHelpers: 'bundled',
+                    // plugins: ['@babel/plugin-transform-runtime'],
+                }),
+                require('rollup-plugin-postcss')({
+                    minimize: true,
+                    // extract: true,
+                    plugins: [
+                        require('cssnano')(),
+                    ],
+                }),
+                // require('@rollup/plugin-terser')(),
+            ],
+            external: [
+                //'react',
+                //'react-dom',
+                //'redux',
+                //'react-redux',
+                 // /@babel\/runtime/,
+            ],
+        };
+    }]
+
+    if { [catch {set bundle_js [exec -ignorestderr -- npx --no-install rollup -c rollup.config.cjs]} errmsg] } {
+        error "rollup error: $errmsg"
     }
+
+    return $bundle_js
+}

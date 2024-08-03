@@ -15,8 +15,41 @@ proc ::thtml::compiler::tcl_compile_root {codearrVar root} {
     foreach child [$root childNodes] {
         append compiled_template [tcl_transform \x02[compile_helper codearr $child]\x03]
     }
-    append compiled_template "\n" "return \$__ds_default__" "\n"
+    append compiled_template "\n" "set __ds_default__" "\n"
     return $compiled_template
+}
+
+proc ::thtml::compiler::tcl_compile_statement_js {codearrVar node} {
+    upvar $codearrVar codearr
+
+    set js_num [incr codearr(js_count)]
+
+    set top_component [::thtml::compiler::top_component codearr]
+    set md5 [dict get $top_component md5]
+
+    set js [$node asText]
+    set js_args ""
+    set js_vals ""
+    if [$node hasAttribute "args"] {
+        set first 1
+        foreach {name value} [$node @args] {
+            if { $first } {
+                set first 0
+            } else {
+                append js_args ", "
+                append js_vals ", "
+            }
+            append js_args $name
+            append js_vals $value
+        }
+    }
+
+    lappend codearr(bundle_js,$md5) $js_num $js_args $js
+    lappend codearr(bundle_js_names) $md5
+
+    append compiled_script "\x02" "<script>mybundle.js_${md5}.js_${md5}_${js_num}(" "\x03"
+    append compiled_script [tcl_compile_quoted_string codearr "\"$js_vals\""]
+    append compiled_script "\x02" ");</script>" "\x03"
 }
 
 proc ::thtml::compiler::tcl_compile_statement_val {codearrVar node} {
@@ -115,6 +148,8 @@ proc ::thtml::compiler::tcl_compile_statement_include {codearrVar node} {
     set filepath_from_rootdir [string range $filepath [string length [::thtml::get_rootdir]] end]
     set filepath_md5 [::thtml::util::md5 $filepath_from_rootdir]
 
+    push_component codearr [list md5 $filepath_md5]
+
     set tcl_code ""
     set tcl_filepath "[file rootname $filepath].tcl"
     if { [file exists $tcl_filepath] } {
@@ -137,7 +172,7 @@ proc ::thtml::compiler::tcl_compile_statement_include {codearrVar node} {
     set escaped_template [::thtml::escape_template $template]
     dom parse -ignorexmlns -paramentityparsing never -- <root>$escaped_template</root> doc
     set root [$doc documentElement]
-    ::thtml::rewrite $root
+    ::thtml::rewrite_template_imports $root
 
     # replace the slave node with the children of the include node
     set slave_md5 "noslave"
@@ -150,6 +185,8 @@ proc ::thtml::compiler::tcl_compile_statement_include {codearrVar node} {
         }
         $slave delete
     }
+
+    ::thtml::process_node_module_imports codearr $root
 
     # compile the include template into a procedure and call it
 
@@ -219,6 +256,7 @@ proc ::thtml::compiler::tcl_compile_statement_include {codearrVar node} {
     append compiled_include "\x02"
 
     pop_block codearr
+    pop_component codearr
 
     return $compiled_include
 }

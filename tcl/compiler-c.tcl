@@ -162,7 +162,8 @@ proc ::thtml::compiler::c_compile_statement_include {codearrVar node} {
     set escaped_template [::thtml::escape_template $template]
     dom parse -ignorexmlns -paramentityparsing never -- <root>$escaped_template</root> doc
     set root [$doc documentElement]
-    ::thtml::rewrite $root
+    ::thtml::rewrite_template_imports $root
+    ::thtml::process_node_module_imports codearr $root
 
     # replace the slave node with the children of the include node
     set slave_md5 "noslave"
