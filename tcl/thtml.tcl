@@ -7,7 +7,7 @@ package require tdom
 namespace eval ::thtml {
     variable rootdir
     variable bundle_outdir
-    variable cachedir /tmp/cache/thtml
+    variable cachedir
     variable cmakedir [file normalize [file join [file dirname [info script]] "../cmake"]]
     variable cache 0
     variable target_lang tcl
@@ -24,15 +24,14 @@ proc ::thtml::init {option_dict} {
     variable debug
 
     if { [dict exists $option_dict rootdir] } {
-        set rootdir [dict get $option_dict rootdir]
+        set rootdir [file normalize [dict get $option_dict rootdir]]
+        set cachedir [file normalize [file join $rootdir cache]]
+    } else {
+        error "rootdir is a required thtml config option"
     }
 
     if { [dict exists $option_dict bundle_outdir] } {
         set bundle_outdir [dict get $option_dict bundle_outdir]
-    }
-
-    if { [dict exists $option_dict cachedir] } {
-        set cachedir [dict get $option_dict cachedir]
     }
 
     if { [dict exists $option_dict cache] } {
@@ -283,7 +282,11 @@ proc ::thtml::build_bundle_js {codearrVar bundle_filename} {
     upvar $codearrVar codearr
 
     if { [info exists codearr(bundle_js_names)] } {
-        set cachedir .
+
+        set rootdir [get_rootdir]
+        set cachedir [get_cachedir]
+        set node_modules_dir [file normalize [file join $rootdir node_modules]]
+
         set files_to_delete [list]
         set bundle_js_imports ""
         set bundle_js_exports ""
@@ -301,7 +304,7 @@ proc ::thtml::build_bundle_js {codearrVar bundle_filename} {
                 append component_js "\n" "export default \{"
                 set first 1
                 foreach component_export $component_exports {
-                    puts $component_export
+                    #puts $component_export
                     if { $first } {
                         set first 0
                     } else {
@@ -311,19 +314,19 @@ proc ::thtml::build_bundle_js {codearrVar bundle_filename} {
                 }
                 append component_js "\};"
             }
-            set component_filename [file join $cachedir ${bundle_js_name}.js]
-            lappend files_to_delete $component_filename
-            writeFile $component_filename $component_js
-            append bundle_js_imports "\n" "import js_${bundle_js_name} from '${component_filename}';"
+            set component_filename ${bundle_js_name}.js
+            lappend files_to_delete [file join $cachedir $component_filename]
+            writeFile [file join $cachedir $component_filename] $component_js
+            append bundle_js_imports "\n" "import js_${bundle_js_name} from './${component_filename}';"
             lappend bundle_js_exports "js_${bundle_js_name}"
         }
-        set entryfilename [file join $cachedir "entry.js"]
+        set entryfilename [file normalize [file join $cachedir "entry.js"]]
         lappend files_to_delete $entryfilename
         writeFile $entryfilename "${bundle_js_imports}\nexport default \{ [join ${bundle_js_exports} {,}] \};"
         if {[catch {
-            set bundle_js [::thtml::util::bundle_js $entryfilename]
-        }]} {
-            puts stderr "error in generating javascript bundle"
+            set bundle_js [::thtml::util::bundle_js $node_modules_dir $entryfilename]
+        } errmsg]} {
+            puts stderr "error in generating javascript bundle: $errmsg"
         }
         foreach filename $files_to_delete {
             file delete $filename

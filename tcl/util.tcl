@@ -75,7 +75,7 @@ proc ::thtml::util::find_files { basedir pattern } {
     return $fileList
 }
 
-proc ::thtml::util::bundle_js {entryfile {name "THTML"}} {
+proc ::thtml::util::bundle_js {node_modules_dir entryfile {name "THTML"}} {
 
     writeFile rollup.config.cjs [subst -nocommands -nobackslashes {
         module.exports = {
@@ -93,7 +93,9 @@ proc ::thtml::util::bundle_js {entryfile {name "THTML"}} {
             },
             plugins: [
                 // require('rollup-plugin-peer-deps-external')(),
-                require('@rollup/plugin-node-resolve')(),
+                require('@rollup/plugin-node-resolve')({
+                    modulePaths: ['${node_modules_dir}'],
+                }),
                 // commonjs plugin must be placed before babel plugin for the two to work together properly
                 require('@rollup/plugin-commonjs')(),
                 require('@rollup/plugin-babel')({
