@@ -61,7 +61,7 @@ proc ::thtml::compiler::tcl_compile_statement_js {codearrVar node} {
         }
     }
 
-    lappend codearr(bundle_js,$md5) $js_num $js_args $js
+    lappend codearr(js_code,$md5) $js_num $js_args $js
     lappend codearr(bundle_js_names) $md5
 
     append compiled_script "<script>THTML.js_${md5}.js_${md5}_${js_num}("

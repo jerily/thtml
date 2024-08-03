@@ -279,37 +279,22 @@ proc ::thtml::renderfile {filename __data__} {
     return "<!doctype html>[eval $compiled_template]"
 }
 
-proc ::thtml::process_bundle_js {codearrVar template_file_mtime} {
+proc ::thtml::build_bundle_js {codearrVar bundle_filename} {
     upvar $codearrVar codearr
 
-    # replace @bundle_js@ with rollup bundle of codearr(bundle_js)
-    if { [info exists codearr(bundle_metadata)] && [info exists codearr(bundle_js_names)] } {
-
-        set bundle_metadata $codearr(bundle_metadata)
-        set bundle_outdir [::thtml::get_bundle_outdir]
-        set bundle_suffix [dict get $bundle_metadata suffix]
-        set bundle_filename [file join $bundle_outdir "bundle_${bundle_suffix}.js"]
-        if { [file exists $bundle_filename] } {
-            set bundle_mtime [file mtime $bundle_filename]
-            puts bundle_mtime=$bundle_mtime,template_file_mtime=$template_file_mtime
-            if { $bundle_mtime > $template_file_mtime } {
-                return
-            }
-        }
-        #puts bundle_filename=$bundle_filename
-
+    if { [info exists codearr(bundle_js_names)] } {
         set cachedir .
         set files_to_delete [list]
         set bundle_js_imports ""
         set bundle_js_exports ""
         foreach bundle_js_name $codearr(bundle_js_names) {
             set component_js ""
-            if { [info exists codearr(import_js,$bundle_js_name)] } {
-                append component_js $codearr(import_js,$bundle_js_name)
+            if { [info exists codearr(js_import,$bundle_js_name)] } {
+                append component_js $codearr(js_import,$bundle_js_name)
             }
-            if { [info exists codearr(bundle_js,$bundle_js_name)] } {
+            if { [info exists codearr(js_code,$bundle_js_name)] } {
                 set component_exports [list]
-                foreach {js_num js_args js} $codearr(bundle_js,$bundle_js_name) {
+                foreach {js_num js_args js} $codearr(js_code,$bundle_js_name) {
                     append component_js "\n" "function js_${bundle_js_name}_${js_num}(${js_args}) { ${js} }"
                     lappend component_exports "js_${bundle_js_name}_${js_num}"
                 }
@@ -348,6 +333,27 @@ proc ::thtml::process_bundle_js {codearrVar template_file_mtime} {
     }
 }
 
+proc ::thtml::process_bundle_js {codearrVar template_file_mtime} {
+    upvar $codearrVar codearr
+
+    if { [info exists codearr(bundle_metadata)] } {
+        set bundle_metadata $codearr(bundle_metadata)
+        set bundle_outdir [::thtml::get_bundle_outdir]
+        set bundle_suffix [dict get $bundle_metadata suffix]
+        set bundle_filename [file join $bundle_outdir "bundle_${bundle_suffix}.js"]
+        if { [file exists $bundle_filename] } {
+            set bundle_mtime [file mtime $bundle_filename]
+            puts bundle_mtime=$bundle_mtime,template_file_mtime=$template_file_mtime
+            if { $bundle_mtime > $template_file_mtime } {
+                return
+            }
+        }
+        #puts bundle_filename=$bundle_filename
+
+        build_bundle_js codearr $bundle_filename
+    }
+}
+
 proc ::thtml::compile {codearrVar template target_lang} {
     upvar $codearrVar codearr
 
@@ -376,7 +382,7 @@ proc ::thtml::process_node_module_imports {codearrVar root} {
         $import delete
     }
 
-    append codearr(import_js,$md5) ${js_imports}
+    append codearr(js_import,$md5) ${js_imports}
 
 }
 
