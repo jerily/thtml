@@ -261,7 +261,7 @@ proc ::thtml::renderfile {filename __data__} {
     }
 
     set compiled_template [compile codearr $template tcl]
-    puts $codearr(defs)\ncompiled_template=$compiled_template
+    #puts $codearr(defs)\ncompiled_template=$compiled_template
     eval $codearr(defs)
     set html "<!doctype html>[eval $compiled_template]"
     return [process_bundle_js codearr $html]
@@ -311,7 +311,7 @@ proc ::thtml::process_bundle_js {codearrVar html} {
         writeFile $entryfilename "${bundle_js_imports}\nexport default \{ [join ${bundle_js_exports} {,}] \};"
         set bundle_js [::thtml::util::bundle_js $entryfilename]
         foreach filename $files_to_delete {
-            # file delete $filename
+            file delete $filename
         }
     } else {
         set bundle_js ""
