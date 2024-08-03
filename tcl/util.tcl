@@ -120,7 +120,7 @@ proc ::thtml::util::bundle_js {entryfile} {
         };
     }]
 
-    if { [catch {set bundle_js [exec -ignorestderr -- npx --no-install rollup -c rollup.config.cjs]} errmsg] } {
+    if { [catch {set bundle_js [exec -ignorestderr -- npx -g --no-install rollup -c rollup.config.cjs]} errmsg] } {
         error "rollup error: $errmsg"
     }
     file delete rollup.config.cjs
