@@ -13,7 +13,7 @@ HTML Templating Engine for TCL and [twebserver](https://github.com/jerily/twebse
     * [npm](https://www.npmjs.com/) - Node.js package manager
     * In your project directory, run:
     ```bash
-      npm i rollup \
+      npm i --save-dev rollup \
         @rollup/plugin-node-resolve \
         @rollup/plugin-commonjs \
         @rollup/plugin-babel \
