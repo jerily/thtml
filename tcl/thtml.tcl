@@ -258,6 +258,7 @@ proc ::thtml::renderfile {filename __data__} {
     array set codearr [list blocks {} components {} target_lang $target_lang defs {} seen {}]
 
     set filepath [::thtml::util::resolve_filepath $filename]
+    set mtime [file mtime $filepath]
 
     set fp [open $filepath]
     set template [read $fp]
@@ -272,17 +273,31 @@ proc ::thtml::renderfile {filename __data__} {
     }
 
     set compiled_template [compile codearr $template tcl]
-    puts $codearr(defs)\ncompiled_template=$compiled_template
+    #puts $codearr(defs)\ncompiled_template=$compiled_template
     eval $codearr(defs)
-    process_bundle_js codearr
+    process_bundle_js codearr $mtime
     return "<!doctype html>[eval $compiled_template]"
 }
 
-proc ::thtml::process_bundle_js {codearrVar} {
+proc ::thtml::process_bundle_js {codearrVar template_file_mtime} {
     upvar $codearrVar codearr
 
     # replace @bundle_js@ with rollup bundle of codearr(bundle_js)
     if { [info exists codearr(bundle_metadata)] && [info exists codearr(bundle_js_names)] } {
+
+        set bundle_metadata $codearr(bundle_metadata)
+        set bundle_outdir [::thtml::get_bundle_outdir]
+        set bundle_suffix [dict get $bundle_metadata suffix]
+        set bundle_filename [file join $bundle_outdir "bundle_${bundle_suffix}.js"]
+        if { [file exists $bundle_filename] } {
+            set bundle_mtime [file mtime $bundle_filename]
+            puts bundle_mtime=$bundle_mtime,template_file_mtime=$template_file_mtime
+            if { $bundle_mtime > $template_file_mtime } {
+                return
+            }
+        }
+        #puts bundle_filename=$bundle_filename
+
         set cachedir .
         set files_to_delete [list]
         set bundle_js_imports ""
@@ -328,11 +343,7 @@ proc ::thtml::process_bundle_js {codearrVar} {
         foreach filename $files_to_delete {
             file delete $filename
         }
-        set bundle_metadata $codearr(bundle_metadata)
-        set bundle_outdir [::thtml::get_bundle_outdir]
-        set bundle_suffix [dict get $bundle_metadata suffix]
-        set bundle_filename [file join $bundle_outdir "bundle_${bundle_suffix}.js"]
-        puts bundle_filename=$bundle_filename
+
         writeFile $bundle_filename $bundle_js
     }
 }
