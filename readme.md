@@ -17,6 +17,7 @@ HTML Templating Engine for TCL and [twebserver](https://github.com/jerily/twebse
         @rollup/plugin-node-resolve \
         @rollup/plugin-commonjs \
         @rollup/plugin-babel \
+        rollup-plugin-import-css \
         rollup-plugin-postcss \
         rollup-plugin-terser \
         cssnano
@@ -187,6 +188,7 @@ Template:
 ```html
 set template {
   <import_node_module name="lodash" src="lodash" />
+  <import_node_module src="purecss/build/pure-min.css" />
 
   <html>
     <head>
