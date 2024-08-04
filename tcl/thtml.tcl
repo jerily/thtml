@@ -244,7 +244,7 @@ proc ::thtml::render {template __data__} {
     array set codearr [list blocks {} components {} target_lang $target_lang defs {} seen {}]
 
     set md5 [::thtml::util::md5 $template]
-    ::thtml::compiler::push_component codearr [list md5 $md5 dir {}]
+    ::thtml::compiler::push_component codearr [list md5 $md5 dir {} component_num [incr codearr(component_count)]]
 
     if { $cache } {
         set proc_name ::thtml::cache::__template__$md5
@@ -271,7 +271,7 @@ proc ::thtml::renderfile {filename __data__} {
     close $fp
 
     set md5 [::thtml::util::md5 $filepath]
-    ::thtml::compiler::push_component codearr [list md5 $md5 dir [file dirname $filepath]]
+    ::thtml::compiler::push_component codearr [list md5 $md5 dir [file dirname $filepath] component_num [incr codearr(component_count)]]
 
     if { $cache } {
         set proc_name ::thtml::cache::__file__$md5
@@ -302,7 +302,7 @@ proc ::thtml::process_node_module_imports {codearrVar root} {
     upvar $codearrVar codearr
 
     set top_component [::thtml::compiler::top_component codearr]
-    set md5 [dict get $top_component md5]
+    set component_num [dict get $top_component component_num]
 
     set imports [$root getElementsByTagName import_node_module]
     set js_imports [list]
@@ -322,8 +322,8 @@ proc ::thtml::process_node_module_imports {codearrVar root} {
         $import delete
     }
 
-    lappend codearr(bundle_js_names) $md5
-    lappend codearr(js_import,$md5) {*}${js_imports}
+    lappend codearr(bundle_js_names) $component_num
+    lappend codearr(js_import,$component_num) {*}${js_imports}
 
 }
 

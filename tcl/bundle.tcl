@@ -37,7 +37,7 @@ proc ::thtml::bundle::build_bundle_js {codearrVar bundle_filename} {
         set bundle_js_names $codearr(bundle_js_names)
         array set seen {}
         foreach bundle_js_name $bundle_js_names {
-            # import_node_module adds md5 to codearr(bundle_js_names)
+            # import_node_module adds component_num to codearr(bundle_js_names)
             # but also every js tag that uses the same bundle_js_name
             # we need to make sure we only process each bundle_js_name once
             if { [info exists seen($bundle_js_name)] } {
@@ -48,7 +48,7 @@ proc ::thtml::bundle::build_bundle_js {codearrVar bundle_filename} {
             if { [info exists codearr(js_import,$bundle_js_name)] } {
                 set js_imports ""
                 foreach {name src} $codearr(js_import,$bundle_js_name) {
-                    #puts md5=$bundle_js_name,name=$name,src=$src
+                    #puts component_num=$bundle_js_name,name=$name,src=$src
                     if { $name eq {} } {
                         append js_imports "\n" "import '$src';"
                     } else {
@@ -58,10 +58,10 @@ proc ::thtml::bundle::build_bundle_js {codearrVar bundle_filename} {
                 append component_js $js_imports
             }
             set component_exports [list]
-            if { [info exists codearr(js_code,$bundle_js_name)] } {
-                foreach {js_num js_args js} $codearr(js_code,$bundle_js_name) {
-                    append component_js "\n" "function js_${bundle_js_name}_${js_num}(${js_args}) { ${js} }"
-                    lappend component_exports "js_${bundle_js_name}_${js_num}"
+            if { [info exists codearr(js_function,$bundle_js_name)] } {
+                foreach {js_num js_args js} $codearr(js_function,$bundle_js_name) {
+                    append component_js "\n" "function js_${js_num}(${js_args}) { ${js} }"
+                    lappend component_exports "js_${js_num}"
                 }
             }
             append component_js "\n" "export default \{"
@@ -79,8 +79,9 @@ proc ::thtml::bundle::build_bundle_js {codearrVar bundle_filename} {
             set component_filename ${bundle_js_name}.js
             lappend files_to_delete [file join $cachedir $component_filename]
             writeFile [file join $cachedir $component_filename] $component_js
-            append bundle_js_imports "\n" "import js_${bundle_js_name} from './${component_filename}';"
-            lappend bundle_js_exports "js_${bundle_js_name}"
+            set component_name "com_${bundle_js_name}"
+            append bundle_js_imports "\n" "import ${component_name} from './${component_filename}';"
+            lappend bundle_js_exports "${component_name}"
         }
         set entryfilename [file normalize [file join $cachedir "entry.js"]]
         lappend files_to_delete $entryfilename

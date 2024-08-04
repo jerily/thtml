@@ -42,7 +42,7 @@ proc ::thtml::compiler::tcl_compile_statement_js {codearrVar node} {
     set js_num [incr codearr(js_count)]
 
     set top_component [::thtml::compiler::top_component codearr]
-    set md5 [dict get $top_component md5]
+    set component_num [dict get $top_component component_num]
 
     set js [$node asText]
     set js_args ""
@@ -61,10 +61,10 @@ proc ::thtml::compiler::tcl_compile_statement_js {codearrVar node} {
         }
     }
 
-    lappend codearr(js_code,$md5) $js_num $js_args $js
-    lappend codearr(bundle_js_names) $md5
+    lappend codearr(js_function,$component_num) $js_num $js_args $js
+    lappend codearr(bundle_js_names) $component_num
 
-    append compiled_script "<script>THTML.js_${md5}.js_${md5}_${js_num}("
+    append compiled_script "<script>THTML.com_${component_num}.js_${js_num}("
     append compiled_script "\x03" [tcl_compile_quoted_string codearr "\"$js_vals\""] "\x02"
     append compiled_script ");</script>"
     return $compiled_script
@@ -168,7 +168,7 @@ proc ::thtml::compiler::tcl_compile_statement_include {codearrVar node} {
     set filepath_from_rootdir [string range $filepath [string length [::thtml::get_rootdir]] end]
     set filepath_md5 [::thtml::util::md5 $filepath_from_rootdir]
 
-    push_component codearr [list md5 $filepath_md5 dir [file dirname $filepath]]
+    push_component codearr [list md5 $filepath_md5 dir [file dirname $filepath] component_num [incr codearr(component_count)]]
 
     set tcl_code ""
     set tcl_filepath "[file rootname $filepath].tcl"
