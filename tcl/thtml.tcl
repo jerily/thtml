@@ -274,30 +274,8 @@ proc ::thtml::renderfile {filename __data__} {
     set compiled_template [compile codearr $template tcl]
     #puts $codearr(defs)\ncompiled_template=$compiled_template
     eval $codearr(defs)
-    process_bundle_js codearr $mtime
+    ::thtml::bundle::process_bundle_js codearr $mtime
     return "<!doctype html>[eval $compiled_template]"
-}
-
-proc ::thtml::process_bundle_js {codearrVar template_file_mtime} {
-    variable debug
-    upvar $codearrVar codearr
-
-    if { [info exists codearr(bundle_metadata)] } {
-        set bundle_metadata $codearr(bundle_metadata)
-        set bundle_outdir [::thtml::get_bundle_outdir]
-        set bundle_suffix [dict get $bundle_metadata suffix]
-        set bundle_filename [file join $bundle_outdir "bundle_${bundle_suffix}.js"]
-        if { !$debug && [file exists $bundle_filename] } {
-            set bundle_mtime [file mtime $bundle_filename]
-            puts bundle_mtime=$bundle_mtime,template_file_mtime=$template_file_mtime
-            if { $bundle_mtime > $template_file_mtime } {
-                return
-            }
-        }
-        #puts bundle_filename=$bundle_filename
-
-        ::thtml::bundle::build_bundle_js codearr $bundle_filename
-    }
 }
 
 proc ::thtml::compile {codearrVar template target_lang} {
@@ -307,8 +285,8 @@ proc ::thtml::compile {codearrVar template target_lang} {
     dom parse -ignorexmlns -paramentityparsing never -- <root>$escaped_template</root> doc
     set root [$doc documentElement]
 
-    rewrite_template_imports $root
     process_node_module_imports codearr $root
+    rewrite_template_imports $root
 
     return [::thtml::compiler::${target_lang}_compile_root codearr $root]
 }
@@ -320,19 +298,25 @@ proc ::thtml::process_node_module_imports {codearrVar root} {
     set md5 [dict get $top_component md5]
 
     set imports [$root getElementsByTagName import_node_module]
-    set js_imports ""
+    set js_imports [list]
     foreach import $imports {
-        set src [$import getAttribute src]
         set name [$import @name ""]
-        if { $name eq {} } {
-            append js_imports "\n" "import '$src';"
-        } else {
-            append js_imports "\n" "import $name from '$src';"
+        set src [$import getAttribute src]
+
+        set sep [file separator]
+        set first_char [string index $src 0]
+        if { $first_char eq $sep } {
+            set rootdir [::thtml::get_rootdir]
+            set src [file normalize ${rootdir}${src}]
+            #puts src=$src
         }
+
+        lappend js_imports $name $src
         $import delete
     }
 
-    append codearr(js_import,$md5) ${js_imports}
+    lappend codearr(bundle_js_names) $md5
+    lappend codearr(js_import,$md5) {*}${js_imports}
 
 }
 
