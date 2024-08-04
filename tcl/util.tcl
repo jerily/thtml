@@ -30,6 +30,7 @@ proc ::thtml::util::resolve_filepath {filepath} {
         error "Empty filepath"
     }
 
+    set sep [file separator]
     set first_char [string index $filepath 0]
     if { $first_char eq {@}} {
         set index [string first / $filepath]
@@ -40,6 +41,10 @@ proc ::thtml::util::resolve_filepath {filepath} {
         set dir [get_namespace_dir $nsp]
         set filepath [string range $filepath [expr { 1 + $index }] end]
         return [file normalize [file join $dir $filepath]]
+    } elseif { $first_char eq $sep } {
+        #puts $filepath
+        set rootdir [::thtml::get_rootdir]
+        return [file normalize ${rootdir}${filepath}]
     }
 
     set rootdir [::thtml::get_rootdir]

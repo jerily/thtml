@@ -351,7 +351,7 @@ proc ::thtml::rewrite_template_imports {root} {
             # create include node
             set doc [$root ownerDocument]
             set include_node [$doc createElement tpl]
-            $include_node setAttribute include $filepath
+            $include_node setAttribute include $src
 
             # copy attributes and children
             foreach attname [$component attributes] {
