@@ -48,7 +48,7 @@ proc ::thtml::bundle::build_bundle_js {codearrVar bundle_filename} {
             if { [info exists codearr(js_import,$bundle_js_name)] } {
                 set js_imports ""
                 foreach {name src} $codearr(js_import,$bundle_js_name) {
-                    puts md5=$bundle_js_name,name=$name,src=$src
+                    #puts md5=$bundle_js_name,name=$name,src=$src
                     if { $name eq {} } {
                         append js_imports "\n" "import '$src';"
                     } else {
