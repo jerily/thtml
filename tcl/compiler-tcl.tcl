@@ -162,11 +162,13 @@ proc ::thtml::compiler::tcl_compile_statement_include {codearrVar node} {
 
     set include_num [incr codearr(include_count)]
 
-    set filepath [::thtml::util::resolve_filepath [$node @include]]
+    set currentdir [::thtml::get_currentdir codearr]
+
+    set filepath [::thtml::util::resolve_filepath [$node @include] $currentdir]
     set filepath_from_rootdir [string range $filepath [string length [::thtml::get_rootdir]] end]
     set filepath_md5 [::thtml::util::md5 $filepath_from_rootdir]
 
-    push_component codearr [list md5 $filepath_md5]
+    push_component codearr [list md5 $filepath_md5 dir [file dirname $filepath]]
 
     set tcl_code ""
     set tcl_filepath "[file rootname $filepath].tcl"

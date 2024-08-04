@@ -67,6 +67,13 @@ proc ::thtml::get_bundle_outdir {} {
     return $bundle_outdir
 }
 
+proc ::thtml::get_currentdir {codearrVar} {
+    upvar $codearrVar codearr
+    set top_component [::thtml::compiler::top_component codearr]
+    set dir [dict get $top_component dir]
+    return $dir
+}
+
 proc ::thtml::compiledir {dir target_lang} {
 
     if { $target_lang ni {c tcl} } {
@@ -237,7 +244,7 @@ proc ::thtml::render {template __data__} {
     array set codearr [list blocks {} components {} target_lang $target_lang defs {} seen {}]
 
     set md5 [::thtml::util::md5 $template]
-    ::thtml::compiler::push_component codearr [list md5 $md5]
+    ::thtml::compiler::push_component codearr [list md5 $md5 dir {}]
 
     if { $cache } {
         set proc_name ::thtml::cache::__template__$md5
@@ -264,7 +271,7 @@ proc ::thtml::renderfile {filename __data__} {
     close $fp
 
     set md5 [::thtml::util::md5 $filepath]
-    ::thtml::compiler::push_component codearr [list md5 $md5]
+    ::thtml::compiler::push_component codearr [list md5 $md5 dir [file dirname $filepath]]
 
     if { $cache } {
         set proc_name ::thtml::cache::__file__$md5

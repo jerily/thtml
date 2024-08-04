@@ -24,7 +24,7 @@ proc ::thtml::util::get_namespace_dir {nsp} {
     return [set ::${nsp}::__thtml__]
 }
 
-proc ::thtml::util::resolve_filepath {filepath} {
+proc ::thtml::util::resolve_filepath {filepath {currentdir ""}} {
 
     if { $filepath eq {} } {
         error "Empty filepath"
@@ -47,8 +47,10 @@ proc ::thtml::util::resolve_filepath {filepath} {
         return [file normalize ${rootdir}${filepath}]
     }
 
-    set rootdir [::thtml::get_rootdir]
-    return [file normalize [file join $rootdir www $filepath]]
+    if { $currentdir eq {} } {
+        set currentdir [file join [::thtml::get_rootdir] www]
+    }
+    return [file normalize [file join $currentdir $filepath]]
 }
 
 # https://stackoverflow.com/questions/429386/tcl-recursively-search-subdirectories-to-source-all-tcl-files
