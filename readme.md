@@ -192,7 +192,7 @@ set template {
 
   <html>
     <head>
-      <bundle url_prefix="/js/" />
+      <bundle_css url_prefix="/bundle/" />
     </head>
     <body>
       <div id="version"></div>
@@ -200,6 +200,7 @@ set template {
         var el = document.getElementById("version");
         el.innerText = "lodash version: " + lodash.VERSION;
       </js>
+      <bundle_js url_prefix="/bundle/" />
     </body>
   </html>
 }
