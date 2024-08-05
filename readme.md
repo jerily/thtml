@@ -8,7 +8,6 @@ HTML Templating Engine for TCL and [twebserver](https://github.com/jerily/twebse
 
 * [tcl](https://www.tcl.tk/) (version 9.0) - TCL
 * [tdom](http://www.tdom.org/) (version [0.9.4](http://tdom.org/downloads/tdom-0.9.4-src.tar.gz)) - Tcl XML parser
-* [tjson](https://github.com/jerily/tjson) (version 1.0.24 and above) - JSON parser for TCL
 
 * If you are planning to use ```import_node_module``` and ```js``` tags, you will need:
     * [npm](https://www.npmjs.com/) - Node.js package manager
