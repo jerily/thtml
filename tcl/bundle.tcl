@@ -1,28 +1,28 @@
 namespace eval ::thtml::bundle {}
 
-proc ::thtml::bundle::process_bundle_js {codearrVar template_file_mtime} {
+proc ::thtml::bundle::process_bundle {codearrVar template_file_mtime} {
     variable ::thtml::debug
     upvar $codearrVar codearr
 
     if { [info exists codearr(bundle_metadata)] } {
         set bundle_metadata $codearr(bundle_metadata)
         set bundle_outdir [::thtml::get_bundle_outdir]
-        set bundle_suffix [dict get $bundle_metadata suffix]
-        set bundle_filename [file join $bundle_outdir "bundle_${bundle_suffix}.js"]
-        if { !$debug && [file exists $bundle_filename] } {
-            set bundle_mtime [file mtime $bundle_filename]
-            puts bundle_mtime=$bundle_mtime,template_file_mtime=$template_file_mtime
-            if { $bundle_mtime > $template_file_mtime } {
+        set bundle_md5 [dict get $bundle_metadata md5]
+        set bundle_js_filepath [file normalize [file join $bundle_outdir $bundle_md5 "bundle_${bundle_md5}.js"]]
+        set bundle_css_filepath [file normalize [file join $bundle_outdir $bundle_md5 "bundle_${bundle_md5}.css"]]
+        if { !$debug && [file exists $bundle_js_filepath] && [file exists $bundle_css_filepath] } {
+            set bundle_js_mtime [file mtime $bundle_js_filepath]
+            set bundle_css_mtime [file mtime $bundle_css_filepath]
+            if { $bundle_js_mtime > $template_file_mtime && $bundle_css_mtime > $template_file_mtime } {
                 return
             }
         }
-        #puts bundle_filename=$bundle_filename
 
-        ::thtml::bundle::build_bundle_js codearr $bundle_filename
+        ::thtml::bundle::make_bundle codearr $bundle_outdir $bundle_md5
     }
 }
 
-proc ::thtml::bundle::build_bundle_js {codearrVar bundle_filename} {
+proc ::thtml::bundle::make_bundle {codearrVar bundle_outdir bundle_md5} {
     upvar $codearrVar codearr
 
     if { [info exists codearr(bundle_js_names)] } {
@@ -33,7 +33,8 @@ proc ::thtml::bundle::build_bundle_js {codearrVar bundle_filename} {
 
         set files_to_delete [list]
         set bundle_js_imports ""
-        set bundle_js_exports ""
+        set bundle_js_code ""
+#        set bundle_js_exports ""
         set bundle_js_names $codearr(bundle_js_names)
         array set seen {}
         foreach bundle_js_name $bundle_js_names {
@@ -60,9 +61,12 @@ proc ::thtml::bundle::build_bundle_js {codearrVar bundle_filename} {
             set component_exports [list]
             if { [info exists codearr(js_function,$bundle_js_name)] } {
                 foreach {js_num js_args js} $codearr(js_function,$bundle_js_name) {
-                    append component_js "\n" "function js_${js_num}(${js_args}) { ${js} }"
+                    append component_js "\n" "function js_${js_num}([join ${js_args} {,}]) { ${js} }"
                     lappend component_exports "js_${js_num}"
                 }
+            }
+            if { [info exists codearr(js_code,$bundle_js_name)] } {
+                append bundle_js_code "\n" $codearr(js_code,$bundle_js_name)
             }
             append component_js "\n" "export default \{"
             set first 1
@@ -81,13 +85,14 @@ proc ::thtml::bundle::build_bundle_js {codearrVar bundle_filename} {
             writeFile [file join $cachedir $component_filename] $component_js
             set component_name "com_${bundle_js_name}"
             append bundle_js_imports "\n" "import ${component_name} from './${component_filename}';"
-            lappend bundle_js_exports "${component_name}"
+#            lappend bundle_js_exports "${component_name}"
         }
         set entryfilename [file normalize [file join $cachedir "entry.js"]]
         lappend files_to_delete $entryfilename
-        writeFile $entryfilename "${bundle_js_imports}\nexport default \{ [join ${bundle_js_exports} {,}] \};"
+#        writeFile $entryfilename "${bundle_js_imports}\n${bundle_js_code}\nexport default \{ [join ${bundle_js_exports} {,}] \};"
+        writeFile $entryfilename "${bundle_js_imports}\n${bundle_js_code}"
         if {[catch {
-            set bundle_js [bundle_js $node_modules_dir $entryfilename]
+            set bundle_js [invoke_rollup $node_modules_dir $entryfilename $bundle_outdir $bundle_md5]
         } errmsg]} {
             foreach filename $files_to_delete {
                 file delete $filename
@@ -97,18 +102,21 @@ proc ::thtml::bundle::build_bundle_js {codearrVar bundle_filename} {
         foreach filename $files_to_delete {
             file delete $filename
         }
-
-        writeFile $bundle_filename $bundle_js
     }
 }
 
-proc ::thtml::bundle::bundle_js {node_modules_dir entryfile {name "THTML"}} {
+proc ::thtml::bundle::invoke_rollup {node_modules_dir entryfile bundle_outdir bundle_md5 {name "THTML"}} {
 
-    writeFile rollup.config.cjs [subst -nocommands -nobackslashes {
+    set rollup_outdir [file join $bundle_outdir $bundle_md5]
+#    set bundle_js_filename "bundle_${bundle_md5}.js"
+    set bundle_css_filename "bundle_${bundle_md5}.css"
+    set config_filepath [file normalize [file join [::thtml::get_cachedir] rollup.config.cjs]]
+
+    writeFile $config_filepath [subst -nocommands -nobackslashes {
         module.exports = {
             input: '${entryfile}',
             output: {
-                // file: 'mybundle.js',
+                dir: '${rollup_outdir}',
                 format: 'umd',
                 name: '${name}',
                 globals: {
@@ -120,7 +128,9 @@ proc ::thtml::bundle::bundle_js {node_modules_dir entryfile {name "THTML"}} {
             },
             plugins: [
                 require('rollup-plugin-import-css')({
-                    inject: true,
+                    output: '${bundle_css_filename}',
+                    alwaysOutput: true,
+                    minify: true,
                 }),
                 // require('rollup-plugin-peer-deps-external')(),
                 require('@rollup/plugin-node-resolve')({
@@ -152,9 +162,10 @@ proc ::thtml::bundle::bundle_js {node_modules_dir entryfile {name "THTML"}} {
         };
     }]
 
-    if { [catch {set bundle_js [exec -ignorestderr -- npx --no-install rollup -c rollup.config.cjs]} errmsg] } {
+    if { [catch {set bundle_js [exec -ignorestderr -- npx --no-install rollup -c ${config_filepath}]} errmsg] } {
+        file delete $config_filepath
         error "rollup error: $errmsg"
     }
-    file delete rollup.config.cjs
-    return $bundle_js
+    file delete $config_filepath
+    #return $bundle_js
 }

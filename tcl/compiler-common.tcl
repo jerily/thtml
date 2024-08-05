@@ -18,7 +18,7 @@ proc ::thtml::compiler::compile_helper {codearrVar node} {
         return [${target_lang}_compile_template_text codearr \"[$node nodeValue]\"]
     } elseif { $node_type eq {ELEMENT_NODE} } {
         set tag [$node tagName]
-        if { $tag in {tpl js css bundle} } {
+        if { $tag in {tpl js css bundle_js bundle_css} } {
             return [compile_statement codearr $node]
         } else {
             return [compile_element codearr $node]
@@ -67,8 +67,10 @@ proc ::thtml::compiler::compile_statement {codearrVar node} {
         return [${target_lang}_compile_statement_val codearr $node]
     } elseif { [$node tagName] eq {js} } {
         return [${target_lang}_compile_statement_js codearr $node]
-    } elseif { [$node tagName] eq {bundle} } {
-        return [${target_lang}_compile_statement_bundle codearr $node]
+    } elseif { [$node tagName] eq {bundle_js} } {
+        return [${target_lang}_compile_statement_bundle_js codearr $node]
+    } elseif { [$node tagName] eq {bundle_css} } {
+        return [${target_lang}_compile_statement_bundle_css codearr $node]
     } else {
         return [compile_children codearr $node]
     }

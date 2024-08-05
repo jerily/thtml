@@ -7,6 +7,7 @@ package require tdom
 namespace eval ::thtml {
     variable rootdir
     variable bundle_outdir
+    variable bundle_css_outdir
     variable cachedir
     variable cmakedir [file normalize [file join [file dirname [info script]] "../cmake"]]
     variable cache 0
@@ -26,6 +27,7 @@ proc ::thtml::init {option_dict} {
     if { [dict exists $option_dict rootdir] } {
         set rootdir [file normalize [dict get $option_dict rootdir]]
         set cachedir [file normalize [file join $rootdir cache]]
+        set bundle_outdir [file normalize [file join $rootdir public bundle]]
     } else {
         error "rootdir is a required thtml config option"
     }
@@ -50,6 +52,10 @@ proc ::thtml::init {option_dict} {
         file mkdir $cachedir
     }
 
+    if { ![file isdirectory $bundle_outdir] } {
+        file mkdir $bundle_outdir
+    }
+
     set builddir [file join $cachedir "build"]
     if { ![file isdirectory $builddir] } {
         file mkdir $builddir
@@ -65,6 +71,11 @@ proc ::thtml::get_cachedir {} {
 proc ::thtml::get_bundle_outdir {} {
     variable bundle_outdir
     return $bundle_outdir
+}
+
+proc ::thtml::get_bundle_css_outdir {} {
+    variable bundle_css_outdir
+    return $bundle_css_outdir
 }
 
 proc ::thtml::get_currentdir {codearrVar} {
@@ -281,7 +292,7 @@ proc ::thtml::renderfile {filename __data__} {
     set compiled_template [compile codearr $template tcl]
     #puts $codearr(defs)\ncompiled_template=$compiled_template
     eval $codearr(defs)
-    ::thtml::bundle::process_bundle_js codearr $mtime
+    ::thtml::bundle::process_bundle codearr $mtime
     return "<!doctype html>[eval $compiled_template]"
 }
 
