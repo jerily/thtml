@@ -8,7 +8,7 @@ proc ::thtml::bundle::process_bundle {codearrVar template_file_mtime} {
         set bundle_metadata $codearr(bundle_metadata)
         set bundle_outdir [::thtml::get_bundle_outdir]
         set bundle_md5 [dict get $bundle_metadata md5]
-        set bundle_js_filepath [file normalize [file join $bundle_outdir $bundle_md5 "bundle_${bundle_md5}.js"]]
+        set bundle_js_filepath [file normalize [file join $bundle_outdir $bundle_md5 "entry.js"]]
         set bundle_css_filepath [file normalize [file join $bundle_outdir $bundle_md5 "bundle_${bundle_md5}.css"]]
         if { !$debug && [file exists $bundle_js_filepath] && [file exists $bundle_css_filepath] } {
             set bundle_js_mtime [file mtime $bundle_js_filepath]
