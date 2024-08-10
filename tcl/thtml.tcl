@@ -26,7 +26,7 @@ proc ::thtml::init {option_dict} {
 
     if { [dict exists $option_dict rootdir] } {
         set rootdir [file normalize [dict get $option_dict rootdir]]
-        set cachedir [file normalize [file join $rootdir cache]]
+        set cachedir [file normalize [file join $rootdir cache thtml]]
         set bundle_outdir [file normalize [file join $rootdir public bundle]]
     } else {
         error "rootdir is a required thtml config option"
