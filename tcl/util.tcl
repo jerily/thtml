@@ -24,6 +24,15 @@ proc ::thtml::util::get_namespace_dir {nsp} {
     return [set ::${nsp}::__thtml__]
 }
 
+proc ::thtml::util::starts_with {str prefix} {
+    if { [string length $str] >= [string length $prefix] } {
+        if { [string range $str 0 [expr { [string length $prefix] - 1 }]] eq $prefix } {
+            return 1
+        }
+    }
+    return 0
+}
+
 proc ::thtml::util::resolve_filepath {filepath {currentdir ""}} {
 
     if { $filepath eq {} } {
@@ -43,8 +52,12 @@ proc ::thtml::util::resolve_filepath {filepath {currentdir ""}} {
         return [file normalize [file join $dir $filepath]]
     } elseif { $first_char eq $sep } {
         #puts $filepath
-        set rootdir [::thtml::get_rootdir]
-        return [file normalize ${rootdir}${filepath}]
+        set rootdir [file normalize [::thtml::get_rootdir]]
+        if { [starts_with $filepath $rootdir] } {
+            return [file normalize $filepath]
+        } else {
+            return [file normalize ${rootdir}${filepath}]
+        }
     }
 
     if { $currentdir eq {} } {
