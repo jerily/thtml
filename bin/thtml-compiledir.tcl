@@ -15,6 +15,6 @@ if { $target_lang ni {c tcl}} {
 set rootdir [lindex $argv 1]
 set dir [lindex $argv 2]
 
-::thtml::init [dict create cache 1 rootdir $rootdir target_lang $target_lang debug 1]
+::thtml::init [dict create build 1 cache 1 rootdir $rootdir target_lang $target_lang debug 1]
 
 puts [::thtml::build::compiledir $dir $target_lang]

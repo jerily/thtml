@@ -13,6 +13,7 @@ namespace eval ::thtml {
     variable cache 0
     variable target_lang tcl
     variable debug 0
+    variable build 0
 }
 namespace eval ::thtml::cache {}
 
@@ -23,6 +24,7 @@ proc ::thtml::init {option_dict} {
     variable cache
     variable target_lang
     variable debug
+    variable build
 
     if { [dict exists $option_dict rootdir] } {
         set rootdir [file normalize [dict get $option_dict rootdir]]
@@ -48,6 +50,10 @@ proc ::thtml::init {option_dict} {
         set debug [dict get $option_dict debug]
     }
 
+    if { [dict exists $option_dict build] } {
+        set build [dict get $option_dict build]
+    }
+
     if { ![file isdirectory $cachedir] } {
         file mkdir $cachedir
     }
@@ -59,6 +65,10 @@ proc ::thtml::init {option_dict} {
     set builddir [file join $cachedir "build"]
     if { ![file isdirectory $builddir] } {
         file mkdir $builddir
+    }
+
+    if { !$build && $cache } {
+        load_compiled_templates
     }
 
 }
