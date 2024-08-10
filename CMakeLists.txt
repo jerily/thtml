@@ -6,14 +6,26 @@ set(CMAKE_C_STANDARD   11)
 set(CMAKE_C_STANDARD_REQUIRED true)
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 
-set(CMAKE_VERBOSE_MAKEFILE ON)
-set(CMAKE_C_FLAGS "-g -DTCL_THREADS -DPROJECT_VERSION=${PROJECT_VERSION} ${CMAKE_C_FLAGS}")
+#set(CMAKE_VERBOSE_MAKEFILE ON)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 find_package(TCL 8.6.13 REQUIRED)  # TCL_INCLUDE_PATH TCL_LIBRARY
 
 message(STATUS "TCL_INCLUDE_PATH: ${TCL_INCLUDE_PATH}")
 message(STATUS "TCL_LIBRARY: ${TCL_LIBRARY}")
+
+add_compile_options(-Wall -Wextra -Wpedantic)
+add_compile_definitions(TCL_THREADS PROJECT_VERSION=${PROJECT_VERSION})
+
+if ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
+    add_compile_options(-fPIC -g -fsanitize=undefined -fsanitize=address)
+    add_link_options(-fsanitize=undefined -fsanitize=address)
+    set(CMAKE_C_FLAGS "-DDEBUG ${CMAKE_C_FLAGS}")
+else()
+    # NDEBUG to not generate code for assert
+    add_compile_definitions(NDEBUG)
+endif ()
+
 
 add_library(${PROJECT_NAME} SHARED src/library.c src/compiler_tcl.c src/compiler_c.c src/md5.c
         src/common.c)

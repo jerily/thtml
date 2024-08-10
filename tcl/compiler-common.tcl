@@ -66,11 +66,11 @@ proc ::thtml::compiler::compile_statement {codearrVar node} {
     } elseif { [$node hasAttribute "val"] } {
         return [${target_lang}_compile_statement_val codearr $node]
     } elseif { [$node tagName] eq {js} } {
-        return [${target_lang}_compile_statement_js codearr $node]
+        return [compile_statement_js codearr $node]
     } elseif { [$node tagName] eq {bundle_js} } {
-        return [${target_lang}_compile_statement_bundle_js codearr $node]
+        return [compile_statement_bundle_js codearr $node]
     } elseif { [$node tagName] eq {bundle_css} } {
-        return [${target_lang}_compile_statement_bundle_css codearr $node]
+        return [compile_statement_bundle_css codearr $node]
     } else {
         return [compile_children codearr $node]
     }
@@ -85,6 +85,90 @@ proc ::thtml::compiler::compile_children {codearrVar node} {
         append compiled_children [compile_helper codearr $child]
     }
     return $compiled_children
+}
+
+### js/css
+
+
+proc ::thtml::compiler::compile_statement_bundle_css {codearrVar node} {
+    upvar $codearrVar codearr
+    set target_lang $codearr(target_lang)
+
+    set top_component [::thtml::compiler::top_component codearr]
+    set md5 [dict get $top_component md5]
+
+    lappend codearr(bundle_metadata) md5 $md5
+
+    set urlpath "${md5}/bundle_${md5}.css"
+
+    append compiled_script "<link rel=\\\"stylesheet\\\" href=\\\""
+    append compiled_script "\x03" [${target_lang}_compile_quoted_string codearr "\"[$node @url_prefix]\""] "\x02"
+    append compiled_script "/${urlpath}\\\" />"
+    return $compiled_script
+}
+
+proc ::thtml::compiler::compile_statement_bundle_js {codearrVar node} {
+    upvar $codearrVar codearr
+    set target_lang $codearr(target_lang)
+
+    set top_component [::thtml::compiler::top_component codearr]
+    set md5 [dict get $top_component md5]
+
+    lappend codearr(bundle_metadata) md5 $md5
+
+    set urlpath "${md5}/entry.js"
+
+    append compiled_script "<script src=\\\""
+    append compiled_script "\x03" [${target_lang}_compile_quoted_string codearr "\"[$node @url_prefix]\""] "\x02"
+    append compiled_script "/${urlpath}\\\"></script>"
+    return $compiled_script
+}
+
+proc ::thtml::compiler::compile_statement_js {codearrVar node} {
+    upvar $codearrVar codearr
+    set target_lang $codearr(target_lang)
+
+    set js_num [incr codearr(js_count)]
+
+    set top_component [::thtml::compiler::top_component codearr]
+    set component_num [dict get $top_component component_num]
+
+    set js [$node asText]
+    set js_args [list]
+    if [$node hasAttribute "args"] {
+        foreach {name value} [$node @args {}] {
+            lappend js_args $name
+        }
+    }
+
+    lappend codearr(js_function,$component_num) $js_num $js_args $js
+    lappend codearr(bundle_js_names) $component_num
+
+#    append compiled_script "<script>THTML.com_${component_num}.js_${js_num}("
+#    append compiled_script "\x03" [tcl_compile_quoted_string codearr "\"$js_vals\""] "\x02"
+#    append compiled_script ");</script>"
+#    return $compiled_script
+
+    append codearr(js_code,$component_num) "\n" "com_${component_num}.js_${js_num}("
+    append compiled_script "<script>"
+    set first 1
+    foreach {name value} [$node @args {}] {
+        if { $first } {
+            set first 0
+        } else {
+            append codearr(js_code,$component_num) ","
+        }
+        set argvar "js_${js_num}_arg_$name"
+        append compiled_script "var ${argvar} = "
+        append compiled_script "\x03" [${target_lang}_compile_quoted_string codearr "\"$value\""] "\x02"
+        append compiled_script ";"
+        append codearr(js_code,$component_num) "${argvar}"
+    }
+    append compiled_script "</script>"
+    append codearr(js_code,$component_num) ");"
+
+    return $compiled_script
+
 }
 
 ### codearr manipulation
