@@ -121,7 +121,7 @@ proc ::thtml::render {template __data__} {
     variable debug
 
     if { $debug } { puts target_lang=$target_lang }
-    array set codearr [list blocks {} components {} target_lang $target_lang defs {} seen {}]
+    array set codearr [list blocks {} components {} target_lang $target_lang defs {} seen {} load_packages 0]
 
     set md5 [::thtml::util::md5 $template]
     ::thtml::compiler::push_component codearr [list md5 $md5 dir {} component_num [incr codearr(component_count)]]
@@ -141,9 +141,9 @@ proc ::thtml::renderfile {filename __data__} {
     variable rootdir
     variable target_lang
 
-    array set codearr [list blocks {} components {} target_lang $target_lang defs {} seen {}]
+    array set codearr [list blocks {} components {} target_lang $target_lang defs {} seen {} load_packages 0]
 
-    set filepath [::thtml::util::resolve_filepath $filename]
+    set filepath [::thtml::resolve_filepath codearr $filename]
     set mtime [file mtime $filepath]
 
     set fp [open $filepath]
@@ -173,7 +173,7 @@ proc ::thtml::compile {codearrVar template target_lang} {
     set root [$doc documentElement]
 
     process_node_module_imports codearr $root
-    rewrite_template_imports $root
+    rewrite_template_imports codearr $root
 
     return [::thtml::compiler::${target_lang}_compile_root codearr $root]
 }
@@ -207,12 +207,14 @@ proc ::thtml::process_node_module_imports {codearrVar root} {
 
 }
 
-proc ::thtml::rewrite_template_imports {root} {
+proc ::thtml::rewrite_template_imports {codearrVar root} {
+    upvar $codearrVar codearr
+
     set imports [$root getElementsByTagName import]
     foreach import $imports {
         set src [$import getAttribute src]
         set name [$import getAttribute name]
-        set filepath [::thtml::util::resolve_filepath $src]
+        set filepath [::thtml::resolve_filepath codearr $src]
 
         # replace all occurrences of the imported name with include nodes
         set components [$root getElementsByTagName $name]
@@ -252,3 +254,48 @@ proc ::thtml::get_rootdir {} {
     return [file normalize $rootdir]
 }
 
+proc ::thtml::resolve_filepath {codearrVar filepath {currentdir ""}} {
+    upvar $codearrVar codearr
+
+    if { $filepath eq {} } {
+        error "Empty filepath"
+    }
+
+    set sep [file separator]
+    set first_char [string index $filepath 0]
+    if { $first_char eq {@}} {
+        set index [string first / $filepath]
+        if { $index eq -1 } {
+            error "Invalid filepath: $filepath"
+        }
+        set package_name [string range $filepath 1 [expr { $index - 1}]]
+
+        if { $codearr(load_packages) } {
+            package require $package_name
+        }
+
+        set dir [get_namespace_dir $package_name]
+        set filepath [string range $filepath [expr { 1 + $index }] end]
+        return [file normalize [file join $dir $filepath]]
+    } elseif { $first_char eq $sep } {
+        #puts $filepath
+        set rootdir [file normalize [::thtml::get_rootdir]]
+        if { [::thtml::util::starts_with $filepath $rootdir] } {
+            return [file normalize $filepath]
+        } else {
+            return [file normalize ${rootdir}${filepath}]
+        }
+    }
+
+    if { $currentdir eq {} } {
+        set currentdir [file join [::thtml::get_rootdir] www]
+    }
+    return [file normalize [file join $currentdir $filepath]]
+}
+
+proc ::thtml::get_namespace_dir {nsp} {
+    if { ![info exists ::${nsp}::__thtml__] } {
+        error "Variable ::${nsp}::__thtml__ not found"
+    }
+    return [set ::${nsp}::__thtml__]
+}

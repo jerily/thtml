@@ -17,13 +17,6 @@ proc ::thtml::util::doublequote_and_escape_newlines {str {lengthVar ""}} {
     return [doublequote [string map {"\n" {\n} "\r" {\r} "\\" {\\}} ${str}]]
 }
 
-proc ::thtml::util::get_namespace_dir {nsp} {
-    if { ![info exists ::${nsp}::__thtml__] } {
-        error "Variable ::${nsp}::__thtml__ not found"
-    }
-    return [set ::${nsp}::__thtml__]
-}
-
 proc ::thtml::util::starts_with {str prefix} {
     if { [string length $str] >= [string length $prefix] } {
         if { [string range $str 0 [expr { [string length $prefix] - 1 }]] eq $prefix } {
@@ -31,39 +24,6 @@ proc ::thtml::util::starts_with {str prefix} {
         }
     }
     return 0
-}
-
-proc ::thtml::util::resolve_filepath {filepath {currentdir ""}} {
-
-    if { $filepath eq {} } {
-        error "Empty filepath"
-    }
-
-    set sep [file separator]
-    set first_char [string index $filepath 0]
-    if { $first_char eq {@}} {
-        set index [string first / $filepath]
-        if { $index eq -1 } {
-            error "Invalid filepath: $filepath"
-        }
-        set nsp [string range $filepath 1 [expr { $index - 1}]]
-        set dir [get_namespace_dir $nsp]
-        set filepath [string range $filepath [expr { 1 + $index }] end]
-        return [file normalize [file join $dir $filepath]]
-    } elseif { $first_char eq $sep } {
-        #puts $filepath
-        set rootdir [file normalize [::thtml::get_rootdir]]
-        if { [starts_with $filepath $rootdir] } {
-            return [file normalize $filepath]
-        } else {
-            return [file normalize ${rootdir}${filepath}]
-        }
-    }
-
-    if { $currentdir eq {} } {
-        set currentdir [file join [::thtml::get_rootdir] www]
-    }
-    return [file normalize [file join $currentdir $filepath]]
 }
 
 # https://stackoverflow.com/questions/429386/tcl-recursively-search-subdirectories-to-source-all-tcl-files

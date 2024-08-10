@@ -1,7 +1,7 @@
 package require thtml
 
-if { [llength $argv] != 4 } {
-    puts "Usage: [file tail [info script]] <targetlang> <rootdir> <dir> <packages>"
+if { [llength $argv] != 3 } {
+    puts "Usage: [file tail [info script]] <targetlang> <rootdir> <dir>"
     exit 1
 }
 
@@ -10,11 +10,6 @@ set target_lang [lindex $argv 0]
 if { $target_lang ni {c tcl}} {
     puts "Invalid target language: must be either 'c' or 'tcl'"
     exit 1
-}
-
-set packages [lindex $argv 3]
-foreach package_name $packages {
-    package require $package_name
 }
 
 set rootdir [lindex $argv 1]

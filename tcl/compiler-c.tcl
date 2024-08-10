@@ -143,7 +143,7 @@ proc ::thtml::compiler::c_compile_statement_include {codearrVar node} {
 
     set include_num [incr codearr(include_count)]
 
-    set filepath [::thtml::util::resolve_filepath [$node @include]]
+    set filepath [::thtml::resolve_filepath codearr [$node @include]]
     puts filepath=$filepath,rootdir=[::thtml::get_rootdir]
     set filepath_from_rootdir [string range $filepath [string length [::thtml::get_rootdir]] end]
     set filepath_md5 [::thtml::util::md5 $filepath_from_rootdir]
@@ -163,7 +163,7 @@ proc ::thtml::compiler::c_compile_statement_include {codearrVar node} {
     dom parse -ignorexmlns -paramentityparsing never -- <root>$escaped_template</root> doc
     set root [$doc documentElement]
     ::thtml::process_node_module_imports codearr $root
-    ::thtml::rewrite_template_imports $root
+    ::thtml::rewrite_template_imports codearr $root
 
     # replace the slave node with the children of the include node
     set slave_md5 "noslave"

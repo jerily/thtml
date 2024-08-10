@@ -4,7 +4,7 @@ proc ::thtml::build::tcl_compiledir {dir} {
     variable ::thtml::debug
 
     set target_lang "tcl"
-    array set codearr [list blocks {} components {} target_lang $target_lang defs {} seen {}]
+    array set codearr [list blocks {} components {} target_lang $target_lang defs {} seen {} load_packages 1]
 
     if { $debug } { puts dir=$dir }
     set files [::thtml::util::find_files $dir "*.thtml"]
@@ -13,7 +13,7 @@ proc ::thtml::build::tcl_compiledir {dir} {
     set compiled_cmds {}
     set compiled_code {}
     foreach file $files {
-        set filepath [::thtml::util::resolve_filepath $file]
+        set filepath [::thtml::resolve_filepath codearr $file]
         set filemd5 [::thtml::util::md5 $filepath]
         set proc_name ::thtml::cache::__file__$filemd5
 
@@ -26,7 +26,7 @@ proc ::thtml::build::tcl_compiledir {dir} {
 
     set tcl_code "$codearr(defs)\n$compiled_code"
 
-    set dirpath [::thtml::util::resolve_filepath $dir]
+    set dirpath [::thtml::resolve_filepath codearr $dir]
     set dirmd5 [::thtml::util::md5 $dirpath]
 
     return [tcl_build $dirmd5 $tcl_code]

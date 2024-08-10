@@ -17,7 +17,7 @@ proc ::thtml::build::compilefile {codearrVar filename target_lang} {
 
     upvar $codearrVar codearr
 
-    set filepath [::thtml::util::resolve_filepath $filename]
+    set filepath [::thtml::resolve_filepath codearr $filename]
     set md5 [::thtml::util::md5 $filepath]
 
     ::thtml::compiler::push_component codearr [list md5 $md5 dir [file dirname $filepath] component_num [incr codearr(component_count)]]
