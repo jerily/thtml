@@ -56,7 +56,10 @@ proc ::thtml::build::c_build {dirmd5 c_code} {
     puts $fp $c_code
     close $fp
 
-    set builddir [file join $cachedir "build"]
+    set builddir [::thtml::get_builddir]
+    if { ![file isdirectory $builddir] } {
+        file mkdir $builddir
+    }
     cd $builddir
     set msgs [exec -ignorestderr -- cmake $cmakedir -DTHTML_CMAKE_DIR=$cmakedir -DTHTML_PROJECT_NAME=$dirmd5 -DTHTML_PROJECT_CODE=$outfile]
     if { $debug } { puts $msgs }

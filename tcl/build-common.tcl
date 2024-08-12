@@ -19,16 +19,6 @@ proc ::thtml::build::compilefile {codearrVar filename target_lang} {
 
     set filepath [::thtml::resolve_filepath codearr $filename]
     set md5 [::thtml::util::md5 $filepath]
-
-    ::thtml::compiler::push_component codearr [list md5 $md5 dir [file dirname $filepath] component_num [incr codearr(component_count)]]
-
-    set fp [open $filepath]
-    set template [read $fp]
-    close $fp
-
-    set compiled_template [::thtml::compile codearr $template $target_lang]
-
-    ::thtml::compiler::pop_component codearr
-
+    set compiled_template [::thtml::compilefile codearr $md5 $filepath $target_lang]
     return $compiled_template
 }

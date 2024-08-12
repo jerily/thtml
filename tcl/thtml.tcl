@@ -9,6 +9,7 @@ namespace eval ::thtml {
     variable bundle_outdir
     variable bundle_css_outdir
     variable cachedir
+    variable builddir
     variable cmakedir [file normalize [file join [file dirname [info script]] "../cmake"]]
     variable cache 0
     variable target_lang tcl
@@ -21,6 +22,7 @@ proc ::thtml::init {option_dict} {
     variable rootdir
     variable bundle_outdir
     variable cachedir
+    variable builddir
     variable cache
     variable target_lang
     variable debug
@@ -63,9 +65,6 @@ proc ::thtml::init {option_dict} {
     }
 
     set builddir [file join $cachedir "build"]
-    if { ![file isdirectory $builddir] } {
-        file mkdir $builddir
-    }
 
     if { !$build && $cache } {
         load_compiled_templates
@@ -76,6 +75,11 @@ proc ::thtml::init {option_dict} {
 proc ::thtml::get_cachedir {} {
     variable cachedir
     return $cachedir
+}
+
+proc ::thtml::get_builddir {} {
+    variable builddir
+    return $builddir
 }
 
 proc ::thtml::get_bundle_outdir {} {
@@ -135,7 +139,6 @@ proc ::thtml::render {template __data__} {
     array set codearr [list blocks {} components {} target_lang $target_lang tcl_defs {} c_defs {} seen {} load_packages 0]
 
     set md5 [::thtml::util::md5 $template]
-    ::thtml::compiler::push_component codearr [list md5 $md5 dir {} component_num [incr codearr(component_count)]]
 
     if { $cache } {
         set proc_name ::thtml::cache::__template__$md5
@@ -155,24 +158,17 @@ proc ::thtml::renderfile {filename __data__} {
     array set codearr [list blocks {} components {} target_lang $target_lang tcl_defs {} c_defs {} seen {} load_packages 0]
 
     set filepath [::thtml::resolve_filepath codearr $filename]
-    set mtime [file mtime $filepath]
-
-    set fp [open $filepath]
-    set template [read $fp]
-    close $fp
 
     set md5 [::thtml::util::md5 $filepath]
-    ::thtml::compiler::push_component codearr [list md5 $md5 dir [file dirname $filepath] component_num [incr codearr(component_count)]]
 
     if { $cache } {
         set proc_name ::thtml::cache::__file__$md5
         return [$proc_name $__data__]
     }
 
-    set compiled_template [compile codearr $template tcl]
+    set compiled_template [compilefile codearr $md5 $filepath tcl]
     #puts $codearr(tcl_defs)\ncompiled_template=$compiled_template
     eval $codearr(tcl_defs)
-    ::thtml::bundle::process_bundle codearr $mtime
     return "<!doctype html>[eval $compiled_template]"
 }
 
@@ -187,6 +183,25 @@ proc ::thtml::compile {codearrVar template target_lang} {
     rewrite_template_imports codearr $root
 
     return [::thtml::compiler::${target_lang}_compile_root codearr $root]
+}
+
+proc ::thtml::compilefile {codearrVar md5 filepath target_lang} {
+    upvar $codearrVar codearr
+
+    set mtime [file mtime $filepath]
+
+    set fp [open $filepath]
+    set template [read $fp]
+    close $fp
+
+    ::thtml::compiler::push_component codearr [list md5 $md5 dir [file dirname $filepath] component_num [incr codearr(component_count)]]
+
+    set result [compile codearr $template $target_lang]
+    ::thtml::bundle::process_bundle codearr $mtime
+
+    ::thtml::compiler::pop_component codearr
+
+    return $result
 }
 
 proc ::thtml::process_node_module_imports {codearrVar root} {

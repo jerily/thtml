@@ -34,8 +34,8 @@ proc ::thtml::build::tcl_compiledir {dir} {
 
 proc ::thtml::build::tcl_build {dirmd5 tcl_code} {
     variable ::thtml::debug
-    variable ::thtml::cachedir
 
+    set cachedir [::thtml::get_cachedir]
     if { $debug } { puts cachedir=$cachedir }
 
     set outfile [file normalize [file join $cachedir "dir-$dirmd5.tcl"]]
