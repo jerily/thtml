@@ -208,7 +208,6 @@ proc ::thtml::compiler::c_compile_statement_include {codearrVar node} {
 
     set argnum 1
     set argvalues [list]
-    lappend argvalues "__data__"
     foreach attname [$node attributes] {
         if { $attname eq {include} } { continue }
         append compiled_include "\n" [c_compile_quoted_arg codearr \"[$node @$attname]\" "include${include_num}_arg${argnum}_${attname}"]
