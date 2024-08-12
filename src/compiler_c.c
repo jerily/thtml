@@ -2146,12 +2146,9 @@ thtml_CCompileQuotedArg(Tcl_Interp *interp, Tcl_Obj *blocks_list_ptr, Tcl_DStrin
 
     Tcl_DStringAppend(ds_ptr, "\nTcl_Obj *__", -1);
     Tcl_DStringAppend(ds_ptr, name, -1);
-    Tcl_DStringAppend(ds_ptr, "__ = Tcl_NewStringObj(", -1);
-    Tcl_DStringAppend(ds_ptr, "Tcl_DStringValue(__ds_", -1);
+    Tcl_DStringAppend(ds_ptr, "__ = Tcl_DStringToObj(__ds_", -1);
     Tcl_DStringAppend(ds_ptr, name, -1);
-    Tcl_DStringAppend(ds_ptr, "__), Tcl_DStringLength(__ds_", -1);
-    Tcl_DStringAppend(ds_ptr, name, -1);
-    Tcl_DStringAppend(ds_ptr, "__));", -1);
+    Tcl_DStringAppend(ds_ptr, "__);", -1);
     Tcl_DStringAppend(ds_ptr, "\nTcl_DStringFree(__ds_", -1);
     Tcl_DStringAppend(ds_ptr, name, -1);
     Tcl_DStringAppend(ds_ptr, "__);\n", -1);
