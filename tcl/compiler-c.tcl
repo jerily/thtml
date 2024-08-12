@@ -11,6 +11,7 @@ proc ::thtml::compiler::c_compile_root {codearrVar root} {
     upvar $codearrVar codearr
 
     append compiled_template "\n" "Tcl_Obj *__data__ = Tcl_DuplicateObj(objv\[1\]);"
+    append compiled_template "\n" "Tcl_IncrRefCount(__data__);"
     append compiled_template "\n" "Tcl_DString __ds_default_base__;" "\n"
     append compiled_template "\n" "Tcl_DString *__ds_default__ = &__ds_default_base__;" "\n"
     append compiled_template "\n" "Tcl_DStringInit(__ds_default__);" "\n"
@@ -19,6 +20,7 @@ proc ::thtml::compiler::c_compile_root {codearrVar root} {
     }
     append compiled_template "\n" "Tcl_DStringResult(__interp__, __ds_default__);" "\n"
     append compiled_template "\n" "Tcl_DStringFree(__ds_default__);" "\n"
+    append compiled_template "\n" "Tcl_DecrRefCount(__data__);"
     append compiled_template "\n" "return TCL_OK;" "\n"
     return $compiled_template
 }
@@ -259,7 +261,7 @@ proc ::thtml::compiler::c_compile_statement_include {codearrVar node} {
         append compiled_include "\n" "Tcl_Obj *__tcl_proc${include_num}__ = Tcl_NewStringObj(\"${tcl_proc_name}\", -1);"
         append compiled_include "\n" "Tcl_IncrRefCount(__tcl_proc${include_num}__);"
         append compiled_include "\n" "Tcl_Obj *__eval_include${include_num}_objv__\[\] = \{ __tcl_proc${include_num}__, __data_include${include_num}__, NULL \};"
-        append compiled_include "\n" "if (TCL_OK != Tcl_EvalObjv(__interp__, 2, __eval_include${include_num}_objv__, TCL_EVAL_DIRECT)) { DBG2(\"here\"); return TCL_ERROR; }"
+        append compiled_include "\n" "if (TCL_OK != Tcl_EvalObjv(__interp__, 2, __eval_include${include_num}_objv__, TCL_EVAL_DIRECT)) { DBG2(\"here\"); Tcl_DecrRefCount(__tcl_proc${include_num}__); return TCL_ERROR; }"
         append compiled_include "\n" "Tcl_DecrRefCount(__tcl_proc${include_num}__);"
         append compiled_include "\n" "Tcl_Obj *__res_tcl${include_num}__ = Tcl_GetObjResult(__interp__);"
         append compiled_include "\n" "Tcl_IncrRefCount(__res_tcl${include_num}__);"
