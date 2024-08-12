@@ -143,7 +143,9 @@ proc ::thtml::compiler::c_compile_statement_include {codearrVar node} {
 
     set include_num [incr codearr(include_count)]
 
-    set filepath [::thtml::resolve_filepath codearr [$node @include]]
+    set currentdir [::thtml::get_currentdir codearr]
+
+    set filepath [::thtml::resolve_filepath codearr [$node @include] $currentdir]
     puts filepath=$filepath,rootdir=[::thtml::get_rootdir]
     set filepath_from_rootdir [string range $filepath [string length [::thtml::get_rootdir]] end]
     set filepath_md5 [::thtml::util::md5 $filepath_from_rootdir]
@@ -153,6 +155,16 @@ proc ::thtml::compiler::c_compile_statement_include {codearrVar node} {
         if { [dict exists $block include] && [dict get $block include filepath_md5] eq $filepath_md5 } {
             error "circular dependency detected"
         }
+    }
+
+    push_component codearr [list md5 $filepath_md5 dir [file dirname $filepath] component_num [incr codearr(component_count)]]
+
+    set tcl_code ""
+    set tcl_filepath "[file rootname $filepath].tcl"
+    if { [file exists $tcl_filepath] } {
+        set fp [open $tcl_filepath]
+        set tcl_code [read $fp]
+        close $fp
     }
 
     set fp [open $filepath]
@@ -181,15 +193,17 @@ proc ::thtml::compiler::c_compile_statement_include {codearrVar node} {
 
     set proc_name __include_${filepath_md5}_${slave_md5}__
 
+    set tcl_proc_name ""
+    if { $tcl_code ne {} } {
+        set tcl_proc_name __include_${filepath_md5}_tcl__
+    }
+
     set compiled_include "\x03"
 
-    set varnames [list]
     set argnames [list]
-    lappend argnames "Tcl_Obj *__data__"
     foreach attname [$node attributes] {
         if { $attname eq {include} } { continue }
-        lappend varnames $attname
-        lappend argnames "Tcl_Obj *$attname"
+        lappend argnames $attname
     }
 
     set argnum 1
@@ -204,32 +218,72 @@ proc ::thtml::compiler::c_compile_statement_include {codearrVar node} {
     }
 
 
-    push_block codearr [list varnames $varnames stop 1 include [list filepath $filepath_from_rootdir filepath_md5 $filepath_md5]]
+    push_block codearr [list varnames {} stop 1 include [list filepath $filepath_from_rootdir filepath_md5 $filepath_md5]]
 
     set seen [get_seen codearr $proc_name]
     if { !$seen } {
+
+        if { $tcl_code ne {} } {
+            append compiled_include_proc "\n" "proc ${tcl_proc_name} {__data__} \{"
+            append compiled_include_proc "\n" $tcl_code
+            append compiled_include_proc "\n" "\}"
+            append codearr(tcl_defs) $compiled_include_proc
+        }
+
         append compiled_include_func "\n" "// " $filepath_from_rootdir
-        append compiled_include_func "\n" "int ${proc_name} (Tcl_Interp *__interp__, Tcl_DString *__ds_default__, [join ${argnames} {, }]) \{"
+        append compiled_include_func "\n" "int ${proc_name} (Tcl_Interp *__interp__, Tcl_DString *__ds_default__, Tcl_Obj *__data__) \{"
         foreach child [$root childNodes] {
             append compiled_include_func [c_transform \x02[compile_helper codearr $child]\x03]
         }
         append compiled_include_func "\n" "return TCL_OK;"
         append compiled_include_func "\n" "\}"
-        append codearr(defs) $compiled_include_func
+        append codearr(c_defs) $compiled_include_func
     }
     set_seen codearr $proc_name
 
     #puts argvalues=$argvalues
-    append compiled_include "\n" "if (TCL_OK != ${proc_name}(__interp__, __ds_default__, [join ${argvalues} {, }])) {return TCL_ERROR;}" "\n"
+
+    append compiled_include "\n" "Tcl_Obj *__list_include${include_num}__ = Tcl_NewListObj(0, NULL);"
+    append compiled_include "\n" "Tcl_IncrRefCount(__list_include${include_num}__);"
+    foreach argname $argnames argvalue $argvalues {
+        append compiled_include "\n" "Tcl_ListObjAppendElement(__interp__, __list_include${include_num}__, Tcl_NewStringObj(\"$argname\", -1));"
+        append compiled_include "\n" "Tcl_ListObjAppendElement(__interp__, __list_include${include_num}__, $argvalue);"
+    }
+
+    append compiled_include "\n" "Tcl_Obj *__data_include${include_num}__ = Tcl_DuplicateObj(__data__);"
+    append compiled_include "\n" "Tcl_IncrRefCount(__data_include${include_num}__);"
+    append compiled_include "\n" "if (TCL_OK != __thtml_dict_merge__(__interp__, __data_include${include_num}__, __list_include${include_num}__)) { DBG2(\"here\"); return TCL_ERROR; }"
+    if { $tcl_code ne {} } {
+
+        # call the tcl code
+        append compiled_include "\n" "Tcl_Obj *__tcl_proc${include_num}__ = Tcl_NewStringObj(\"${tcl_proc_name}\", -1);"
+        append compiled_include "\n" "Tcl_IncrRefCount(__tcl_proc${include_num}__);"
+        append compiled_include "\n" "Tcl_Obj *__eval_include${include_num}_objv__\[\] = \{ __tcl_proc${include_num}__, __data_include${include_num}__, NULL \};"
+        append compiled_include "\n" "if (TCL_OK != Tcl_EvalObjv(__interp__, 2, __eval_include${include_num}_objv__, TCL_EVAL_DIRECT)) { DBG2(\"here\"); return TCL_ERROR; }"
+        append compiled_include "\n" "Tcl_DecrRefCount(__tcl_proc${include_num}__);"
+        append compiled_include "\n" "Tcl_Obj *__res_tcl${include_num}__ = Tcl_GetObjResult(__interp__);"
+        append compiled_include "\n" "Tcl_IncrRefCount(__res_tcl${include_num}__);"
+        append compiled_include "\n" "Tcl_ResetResult(__interp__);"
+
+        # merge the result of the tcl code with the include data
+
+        append compiled_include "\n" "if (TCL_OK != __thtml_dict_merge__(__interp__, __data_include${include_num}__, __res_tcl${include_num}__)) { DBG2(\"here\"); return TCL_ERROR; }"
+        append compiled_include "\n" "Tcl_DecrRefCount(__res_tcl${include_num}__);"
+    }
+
+    append compiled_include "\n" "if (TCL_OK != ${proc_name}(__interp__, __ds_default__, __data_include${include_num}__)) { DBG2(\"here\"); return TCL_ERROR; }" "\n"
     set argnum 1
     foreach attname [$node attributes] {
         if { $attname eq {include} } { continue }
         append compiled_include "\n" "Tcl_DecrRefCount(__include${include_num}_arg${argnum}_${attname}__);"
         incr argnum
     }
+    append compiled_include "\n" "Tcl_DecrRefCount(__list_include${include_num}__);" "\n"
+    append compiled_include "\n" "Tcl_DecrRefCount(__data_include${include_num}__);" "\n"
     append compiled_include "\x02"
 
     pop_block codearr
+    pop_component codearr
 
     return $compiled_include
 }

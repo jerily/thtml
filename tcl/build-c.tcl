@@ -4,7 +4,7 @@ proc ::thtml::build::c_compiledir {dir} {
     variable ::thtml::debug
 
     set target_lang "c"
-    array set codearr [list blocks {} components {} target_lang $target_lang defs {} seen {} load_packages 1]
+    array set codearr [list blocks {} components {} target_lang $target_lang tcl_defs {} c_defs {} seen {} load_packages 1]
 
     set files [::thtml::util::find_files $dir "*.thtml"]
     if { $debug } { puts dir=$dir,files=$files }
@@ -27,7 +27,10 @@ proc ::thtml::build::c_compiledir {dir} {
     set dirpath [::thtml::resolve_filepath codearr $dir]
     set dirmd5 [::thtml::util::md5 $dirpath]
 
-    set c_code "\#include \"thtml.h\"\n$codearr(defs)\n$compiled_code"
+    set tcl_code $codearr(tcl_defs)
+    tcl_build $dirmd5 $tcl_code
+
+    set c_code "\#include \"thtml.h\"\n$codearr(c_defs)\n$compiled_code"
 
     set MIN_VERSION "9.0"
     append c_code "\n" "int Thtml_Init(Tcl_Interp *interp) {"

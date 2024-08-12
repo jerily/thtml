@@ -106,20 +106,21 @@ proc ::thtml::load_compiled_templates {} {
         return
     }
 
-    if { $target_lang eq {c} } {
-        set libdir [file normalize [file join $cachedir "build"]]
-        set files [glob -nocomplain -directory $libdir libthtml-*[info sharedlibextension]]
-    } else {
-        set libdir [file normalize $cachedir]
-        set files [glob -nocomplain -directory $libdir dir-*.tcl]
-    }
+    set libdir [file normalize [file join $cachedir "build"]]
+    set files [glob -nocomplain -directory $libdir libthtml-*[info sharedlibextension]]
+
     foreach file $files {
         if { $debug } { puts "loading $file" }
-        if { $target_lang eq {c} } {
-            load $file
-        } else {
-            source $file
-        }
+        load $file
+        if { $debug } { puts "loaded $file" }
+    }
+
+    set libdir [file normalize $cachedir]
+    set files [glob -nocomplain -directory $libdir dir-*.tcl]
+
+    foreach file $files {
+        if { $debug } { puts "loading $file" }
+        source $file
         if { $debug } { puts "loaded $file" }
     }
 }
@@ -131,7 +132,7 @@ proc ::thtml::render {template __data__} {
     variable debug
 
     if { $debug } { puts target_lang=$target_lang }
-    array set codearr [list blocks {} components {} target_lang $target_lang defs {} seen {} load_packages 0]
+    array set codearr [list blocks {} components {} target_lang $target_lang tcl_defs {} c_defs {} seen {} load_packages 0]
 
     set md5 [::thtml::util::md5 $template]
     ::thtml::compiler::push_component codearr [list md5 $md5 dir {} component_num [incr codearr(component_count)]]
@@ -142,7 +143,7 @@ proc ::thtml::render {template __data__} {
     }
     set compiled_template [compile codearr $template tcl]
     #puts compiled_template=$compiled_template
-    eval $codearr(defs)
+    eval $codearr(tcl_defs)
     return "<!doctype html>[eval $compiled_template]"
 }
 
@@ -151,7 +152,7 @@ proc ::thtml::renderfile {filename __data__} {
     variable rootdir
     variable target_lang
 
-    array set codearr [list blocks {} components {} target_lang $target_lang defs {} seen {} load_packages 0]
+    array set codearr [list blocks {} components {} target_lang $target_lang tcl_defs {} c_defs {} seen {} load_packages 0]
 
     set filepath [::thtml::resolve_filepath codearr $filename]
     set mtime [file mtime $filepath]
@@ -169,8 +170,8 @@ proc ::thtml::renderfile {filename __data__} {
     }
 
     set compiled_template [compile codearr $template tcl]
-    #puts $codearr(defs)\ncompiled_template=$compiled_template
-    eval $codearr(defs)
+    #puts $codearr(tcl_defs)\ncompiled_template=$compiled_template
+    eval $codearr(tcl_defs)
     ::thtml::bundle::process_bundle codearr $mtime
     return "<!doctype html>[eval $compiled_template]"
 }

@@ -117,6 +117,13 @@ proc ::thtml::compiler::tcl_compile_statement_include {codearrVar node} {
     set filepath_from_rootdir [string range $filepath [string length [::thtml::get_rootdir]] end]
     set filepath_md5 [::thtml::util::md5 $filepath_from_rootdir]
 
+    # check that we do not have circular dependencies
+    foreach block $codearr(blocks) {
+        if { [dict exists $block include] && [dict get $block include filepath_md5] eq $filepath_md5 } {
+            error "circular dependency detected"
+        }
+    }
+
     push_component codearr [list md5 $filepath_md5 dir [file dirname $filepath] component_num [incr codearr(component_count)]]
 
     set tcl_code ""
@@ -125,13 +132,6 @@ proc ::thtml::compiler::tcl_compile_statement_include {codearrVar node} {
         set fp [open $tcl_filepath]
         set tcl_code [read $fp]
         close $fp
-    }
-
-    # check that we do not have circular dependencies
-    foreach block $codearr(blocks) {
-        if { [dict exists $block include] && [dict get $block include filepath_md5] eq $filepath_md5 } {
-            error "circular dependency detected"
-        }
     }
 
     set fp [open $filepath]
@@ -168,12 +168,10 @@ proc ::thtml::compiler::tcl_compile_statement_include {codearrVar node} {
 
     set compiled_include "\x03"
 
-#    set varnames [list]
     set argnames [list]
     foreach attname [$node attributes] {
         if { $attname eq {include} } { continue }
         lappend argnames $attname
-#        lappend varnames $attname
     }
 
     append compiled_include "\n" "\# " $filepath_from_rootdir
@@ -206,7 +204,7 @@ proc ::thtml::compiler::tcl_compile_statement_include {codearrVar node} {
         }
         append compiled_include_proc "\n" "return \$__ds_default__"
         append compiled_include_proc "\n" "\}"
-        append codearr(defs) $compiled_include_proc
+        append codearr(tcl_defs) $compiled_include_proc
     }
 
     #puts argnames=$argnames,argvalueVars=$argvalueVars
