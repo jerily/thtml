@@ -18,6 +18,7 @@ proc ::thtml::compiler::c_compile_root {codearrVar root} {
         append compiled_template [c_transform \x02[compile_helper codearr $child]\x03]
     }
     append compiled_template "\n" "Tcl_SetObjResult(__interp__, Tcl_NewStringObj(Tcl_DStringValue(__ds_default__), Tcl_DStringLength(__ds_default__)));" "\n"
+    append compiled_template "\n" "Tcl_DStringFree(__ds_default__);" "\n"
     append compiled_template "\n" "return TCL_OK;" "\n"
     return $compiled_template
 }
