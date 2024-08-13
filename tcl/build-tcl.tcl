@@ -4,7 +4,7 @@ proc ::thtml::build::tcl_compiledir {dir} {
     variable ::thtml::debug
 
     set target_lang "tcl"
-    array set codearr [list blocks {} components {} target_lang $target_lang tcl_defs {} c_defs {} seen {} load_packages 1]
+    array set codearr [list blocks {} components {} target_lang $target_lang gc_lists {} tcl_defs {} c_defs {} seen {} load_packages 1]
 
     if { $debug } { puts dir=$dir }
     set files [::thtml::util::find_files $dir "*.thtml"]

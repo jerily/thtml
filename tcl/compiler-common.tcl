@@ -212,3 +212,39 @@ proc ::thtml::compiler::top_component {codearrVar} {
     upvar $codearrVar codearr
     return [lindex $codearr(components) 0]
 }
+
+proc ::thtml::compiler::push_gc_list {codearrVar args} {
+    upvar $codearrVar codearr
+    set codearr(gc_lists) [linsert $codearr(gc_lists) 0 $args]
+}
+
+proc ::thtml::compiler::pop_gc_list {codearrVar} {
+    upvar $codearrVar codearr
+    set codearr(gc_lists) [lrange $codearr(gc_lists) 1 end]
+}
+
+proc ::thtml::compiler::top_gc_list {codearrVar} {
+    upvar $codearrVar codearr
+    return [lindex $codearr(gc_lists) 0]
+}
+
+proc ::thtml::compiler::lappend_gc_list {codearrVar args} {
+    upvar $codearrVar codearr
+    set top_gc_list [top_gc_list codearr]
+    lappend top_gc_list {*}$args
+    set codearr(gc_lists) [lreplace $codearr(gc_lists) 0 0 $top_gc_list]
+}
+
+proc ::thtml::compiler::lremove_gc_list {codearrVar what} {
+    upvar $codearrVar codearr
+    set top_gc_list [top_gc_list codearr]
+
+    set result [list]
+    foreach {type name} $top_gc_list {
+        if { $name ne $what } {
+            lappend result $type $name
+        }
+    }
+
+    set codearr(gc_lists) [lreplace $codearr(gc_lists) 0 0 $result]
+}

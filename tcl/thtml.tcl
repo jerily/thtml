@@ -136,7 +136,7 @@ proc ::thtml::render {template __data__} {
     variable debug
 
     if { $debug } { puts target_lang=$target_lang }
-    array set codearr [list blocks {} components {} target_lang $target_lang tcl_defs {} c_defs {} seen {} load_packages 0]
+    array set codearr [list blocks {} components {} target_lang $target_lang gc_lists {} tcl_defs {} c_defs {} seen {} load_packages 0]
 
     set md5 [::thtml::util::md5 $template]
 
@@ -155,7 +155,7 @@ proc ::thtml::renderfile {filename __data__} {
     variable rootdir
     variable target_lang
 
-    array set codearr [list blocks {} components {} target_lang $target_lang tcl_defs {} c_defs {} seen {} load_packages 0]
+    array set codearr [list blocks {} components {} target_lang $target_lang gc_lists {} tcl_defs {} c_defs {} seen {} load_packages 0]
 
     set filepath [::thtml::resolve_filepath codearr $filename]
 
