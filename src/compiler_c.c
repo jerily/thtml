@@ -74,6 +74,141 @@ void thtml_CGarbageCollection(Tcl_Interp *interp, Tcl_Obj *codearrVar_ptr, Tcl_D
     }
 }
 
+void thtml_CListAppendGC(Tcl_Interp *interp, Tcl_Obj *codearrVar_ptr, const char *varname, const char *type, const char *prefix) {
+    Tcl_Obj *gc_lists_ptr = Tcl_ObjGetVar2(interp, codearrVar_ptr, Tcl_NewStringObj("gc_lists", -1), TCL_LEAVE_ERR_MSG);
+    if (gc_lists_ptr == NULL) {
+        return;
+    }
+
+    // if empty return
+    Tcl_Size gc_lists_length;
+    if (TCL_OK != Tcl_ListObjLength(interp, gc_lists_ptr, &gc_lists_length)) {
+        return;
+    }
+
+    // get last element of gc_lists
+    Tcl_Obj *gc_list_ptr = NULL;
+    if (TCL_OK != Tcl_ListObjIndex(interp, gc_lists_ptr, gc_lists_length - 1, &gc_list_ptr)) {
+        return;
+    }
+
+    // get the list of variables to be garbage collected
+    // they are interleaved with their type e.g. type varname
+    Tcl_Size gc_list_length;
+    Tcl_Obj **gc_list;
+    if (TCL_OK != Tcl_ListObjGetElements(interp, gc_list_ptr, &gc_list_length, &gc_list)) {
+        return;
+    }
+
+    // append the new variable to the list
+    Tcl_Obj *new_gc_list_ptr = Tcl_NewListObj(0, NULL);
+    Tcl_IncrRefCount(new_gc_list_ptr);
+
+    for (int i = 0; i < gc_list_length; i++) {
+        if (TCL_OK != Tcl_ListObjAppendElement(interp, new_gc_list_ptr, gc_list[i])) {
+            Tcl_DecrRefCount(new_gc_list_ptr);
+            return;
+        }
+    }
+
+    if (TCL_OK != Tcl_ListObjAppendElement(interp, new_gc_list_ptr, Tcl_NewStringObj(type, -1))) {
+        Tcl_DecrRefCount(new_gc_list_ptr);
+        return;
+    }
+
+    const char *full_varname = varname;
+    if (prefix != NULL) {
+        char full_varname_buf[64];
+        snprintf(full_varname_buf, 64, "%s%s__", prefix, varname);
+        full_varname = full_varname_buf;
+    }
+    Tcl_Obj *varname_ptr = Tcl_NewStringObj(full_varname, -1);
+    Tcl_IncrRefCount(varname_ptr);
+    if (TCL_OK != Tcl_ListObjAppendElement(interp, new_gc_list_ptr, varname_ptr)) {
+        Tcl_DecrRefCount(varname_ptr);
+        Tcl_DecrRefCount(new_gc_list_ptr);
+        return;
+    }
+    Tcl_DecrRefCount(varname_ptr);
+
+    if (TCL_OK != Tcl_ListObjReplace(interp, gc_list_ptr, 0, gc_list_length, 1, &new_gc_list_ptr)) {
+        Tcl_DecrRefCount(new_gc_list_ptr);
+        return;
+    }
+
+    Tcl_DecrRefCount(new_gc_list_ptr);
+
+    // replace the last element of gc_lists_ptr
+    if (TCL_OK != Tcl_ListObjReplace(interp, gc_lists_ptr, gc_lists_length - 1, gc_lists_length - 1, 1, &new_gc_list_ptr)) {
+        return;
+    }
+
+    // update gc_lists_ptr
+    if (TCL_OK != Tcl_ObjSetVar2(interp, codearrVar_ptr, Tcl_NewStringObj("gc_lists", -1), gc_lists_ptr, TCL_LEAVE_ERR_MSG)) {
+        return;
+    }
+}
+
+void thtml_CListRemoveGC(Tcl_Interp *interp, Tcl_Obj *codearrVar_ptr, const char *varname, const char *prefix) {
+    Tcl_Obj *gc_lists_ptr = Tcl_ObjGetVar2(interp, codearrVar_ptr, Tcl_NewStringObj("gc_lists", -1), TCL_LEAVE_ERR_MSG);
+    if (gc_lists_ptr == NULL) {
+        return;
+    }
+
+    // if empty return
+    Tcl_Size gc_lists_length;
+    if (TCL_OK != Tcl_ListObjLength(interp, gc_lists_ptr, &gc_lists_length)) {
+        return;
+    }
+
+    // get first element of gc_lists
+    Tcl_Obj *gc_list_ptr = NULL;
+    if (TCL_OK != Tcl_ListObjIndex(interp, gc_lists_ptr, 0, &gc_list_ptr)) {
+        return;
+    }
+
+    // get the list of variables to be garbage collected
+    // they are interleaved with their type e.g. type varname
+    Tcl_Size gc_list_length;
+    Tcl_Obj **gc_list;
+    if (TCL_OK != Tcl_ListObjGetElements(interp, gc_list_ptr, &gc_list_length, &gc_list)) {
+        return;
+    }
+
+    const char *full_varname = varname;
+    if (prefix != NULL) {
+        char full_varname_buf[64];
+        snprintf(full_varname_buf, 64, "%s%s__", prefix, varname);
+        full_varname = full_varname_buf;
+    }
+
+    Tcl_Obj *new_gc_list_ptr = Tcl_NewListObj(0, NULL);
+    Tcl_IncrRefCount(new_gc_list_ptr);
+    for(int i = 0; i < gc_list_length; i += 2) {
+        if (strcmp(Tcl_GetString(gc_list[i + 1]), full_varname) == 0) {
+            continue;
+        }
+        if (TCL_OK != Tcl_ListObjAppendElement(interp, new_gc_list_ptr, gc_list[i])) {
+            Tcl_DecrRefCount(new_gc_list_ptr);
+            return;
+        }
+        if (TCL_OK != Tcl_ListObjAppendElement(interp, new_gc_list_ptr, gc_list[i + 1])) {
+            Tcl_DecrRefCount(new_gc_list_ptr);
+            return;
+        }
+    }
+
+    // replace the last element of gc_lists_ptr
+    if (TCL_OK != Tcl_ListObjReplace(interp, gc_lists_ptr, gc_lists_length - 1, gc_lists_length - 1, 1, &new_gc_list_ptr)) {
+        return;
+    }
+
+    // update gc_lists_ptr
+    if (TCL_OK != Tcl_ObjSetVar2(interp, codearrVar_ptr, Tcl_NewStringObj("gc_lists", -1), gc_lists_ptr, TCL_LEAVE_ERR_MSG)) {
+        return;
+    }
+}
+
 int thtml_CTransformCmd(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const objv[]) {
     DBG(fprintf(stderr, "TclTransformCmd\n"));
 
@@ -302,6 +437,8 @@ int thtml_CCompileScriptCmd(ClientData clientData, Tcl_Interp *interp, int objc,
     Tcl_DStringAppend(&ds, name, name_length);
     Tcl_DStringAppend(&ds, "__);", -1);
 
+    thtml_CListAppendGC(interp, objv[1], name, "dstring", "__ds_");
+
     Tcl_DString script_ds;
     Tcl_DStringInit(&script_ds);
 
@@ -344,6 +481,8 @@ int thtml_CCompileScriptCmd(ClientData clientData, Tcl_Interp *interp, int objc,
         Tcl_DStringAppend(&ds, name, name_length);
         Tcl_DStringAppend(&ds, "__);\n", -1);
 
+        thtml_CListAppendGC(interp, objv[1], name, "obj", "__");
+
         // fprintf(stderr, "%s\n", Tcl_GetString(__val${val_num}__));
 //        Tcl_DStringAppend(&ds, "\nfprintf(stderr, \"__val${val_num}__ = %s\\n\", Tcl_GetString(__", -1);
 //        Tcl_DStringAppend(&ds, name, name_length);
@@ -362,10 +501,14 @@ int thtml_CCompileScriptCmd(ClientData clientData, Tcl_Interp *interp, int objc,
         Tcl_DStringAppend(&ds, name, name_length);
         Tcl_DStringAppend(&ds, "__);\n", -1);
 
+        thtml_CListRemoveGC(interp, objv[1], name, "__");
+
         // Tcl_DStringFree(__ds_val1__);
         Tcl_DStringAppend(&ds, "\nTcl_DStringFree(__ds_", -1);
         Tcl_DStringAppend(&ds, name, name_length);
         Tcl_DStringAppend(&ds, "__);", -1);
+
+        thtml_CListRemoveGC(interp, objv[1], name, "__ds_");
 
 
     } else {
@@ -563,7 +706,6 @@ thtml_CAppendVariable_Dict(Tcl_Interp *interp, Tcl_Obj *codearrVar_ptr, Tcl_DStr
         Tcl_DStringAppend(ds_ptr, "\nTcl_Obj *", -1);
         Tcl_DStringAppend(ds_ptr, part, part_length);
         Tcl_DStringAppend(ds_ptr, count_var_dict_subst_str, -1);
-
         Tcl_DStringAppend(ds_ptr, ";", -1);
         Tcl_DStringAppend(ds_ptr, "\nTcl_Obj *__", -1);
         Tcl_DStringAppend(ds_ptr, part, part_length);
@@ -588,7 +730,14 @@ thtml_CAppendVariable_Dict(Tcl_Interp *interp, Tcl_Obj *codearrVar_ptr, Tcl_DStr
         Tcl_DStringAppend(ds_ptr, part, part_length);
         Tcl_DStringAppend(ds_ptr, count_var_dict_subst_str, -1);
         Tcl_DStringAppend(ds_ptr, ") {", -1);
+
         thtml_CGarbageCollection(interp, codearrVar_ptr, ds_ptr);
+
+        Tcl_DStringAppend(ds_ptr, "\nTcl_DecrRefCount(__", -1);
+        Tcl_DStringAppend(ds_ptr, part, part_length);
+        Tcl_DStringAppend(ds_ptr, count_var_dict_subst_str, -1);
+        Tcl_DStringAppend(ds_ptr, "_key_ptr__);", -1);
+
         Tcl_DStringAppend(ds_ptr, "\nSetResult(\"dict obj get failed: ", -1);
         Tcl_DStringAppend(ds_ptr, part, part_length);
         Tcl_DStringAppend(ds_ptr, "\");\nreturn TCL_ERROR;\n}", -1);
@@ -1490,6 +1639,8 @@ thtml_CAppendCommand_Token(Tcl_Interp *interp, Tcl_Obj *codearrVar_ptr, Tcl_DStr
             Tcl_DStringAppend(ds_ptr, subcmd_name, -1);
             Tcl_DStringAppend(ds_ptr, "__);", -1);
 
+            thtml_CListAppendGC(interp, codearrVar_ptr, subcmd_name, "obj", "__");
+
             // fprintf(stderr, "script: %s\n", Tcl_GetString(__val3_cmd1__));
 //            Tcl_DStringAppend(ds_ptr, "\nfprintf(stderr, \"script: %s\\n\", Tcl_GetString(__", -1);
 //            Tcl_DStringAppend(ds_ptr, subcmd_name, -1);
@@ -1507,6 +1658,8 @@ thtml_CAppendCommand_Token(Tcl_Interp *interp, Tcl_Obj *codearrVar_ptr, Tcl_DStr
             Tcl_DStringAppend(ds_ptr, "\nTcl_DecrRefCount(__", -1);
             Tcl_DStringAppend(ds_ptr, subcmd_name, -1);
             Tcl_DStringAppend(ds_ptr, "__);", -1);
+
+            thtml_CListRemoveGC(interp, codearrVar_ptr, subcmd_name, "__");
         }
 
         // Tcl_Obj *__val3_subcmd1__ = Tcl_GetObjResult(__interp__);
