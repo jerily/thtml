@@ -222,7 +222,7 @@ proc ::thtml::compiler::c_compile_statement_include {codearrVar node} {
     set escaped_template [::thtml::escape_template $template]
     dom parse -ignorexmlns -paramentityparsing never -- <root>$escaped_template</root> doc
     set root [$doc documentElement]
-    ::thtml::process_node_module_imports codearr $root
+
     ::thtml::rewrite_template_imports codearr $root
 
     # replace the slave node with the children of the include node
@@ -236,6 +236,8 @@ proc ::thtml::compiler::c_compile_statement_include {codearrVar node} {
         }
         $slave delete
     }
+
+    ::thtml::process_node_module_imports codearr $root
 
     # compile the include template into a procedure and call it
 

@@ -179,8 +179,8 @@ proc ::thtml::compile {codearrVar template target_lang} {
     dom parse -ignorexmlns -paramentityparsing never -- <root>$escaped_template</root> doc
     set root [$doc documentElement]
 
-    process_node_module_imports codearr $root
     rewrite_template_imports codearr $root
+    process_node_module_imports codearr $root
 
     return [::thtml::compiler::${target_lang}_compile_root codearr $root]
 }
@@ -210,7 +210,11 @@ proc ::thtml::process_node_module_imports {codearrVar root} {
     set top_component [::thtml::compiler::top_component codearr]
     set component_num [dict get $top_component component_num]
 
-    set imports [$root getElementsByTagName import_node_module]
+#    set imports [$root getElementsByTagName import_node_module]
+    set imports [$root selectNodes {//import_node_module[not(ancestor::tpl[@include])]}]
+    #puts codearr=[array get codearr]
+    #puts imports=$imports
+    #puts root=[$root asXML]
     set js_imports [list]
     foreach import $imports {
         set name [$import @name ""]
