@@ -133,7 +133,11 @@ proc ::thtml::compiler::compile_statement_js {codearrVar node} {
     set top_component [::thtml::compiler::top_component codearr]
     set component_num [dict get $top_component component_num]
 
-    set js [$node asText]
+    set js ""
+    foreach child [$node childNodes] {
+        append js [$child nodeValue]
+    }
+
     set js_args [list]
     if [$node hasAttribute "args"] {
         foreach {name value} [$node @args {}] {

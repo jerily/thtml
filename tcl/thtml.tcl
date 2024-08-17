@@ -218,11 +218,22 @@ proc ::thtml::process_node_module_imports {codearrVar root} {
 
         set sep [file separator]
         set first_char [string index $src 0]
+        set rootdir [::thtml::get_rootdir]
         if { $first_char eq $sep } {
-            set rootdir [::thtml::get_rootdir]
             set src [file normalize ${rootdir}${src}]
             #puts src=$src
+            if { ![::thtml::util::starts_with $src $rootdir] } {
+                error "Invalid src: $src"
+            }
+        } elseif { $first_char eq {.} } {
+            set currentdir [::thtml::get_currentdir codearr]
+            set src [file normalize [file join $currentdir $src]]
+            #puts src=$src
+            if { ![::thtml::util::starts_with $src $rootdir] } {
+                error "Invalid src: $src"
+            }
         }
+
 
         lappend js_imports $name $src
         $import delete

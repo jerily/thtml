@@ -135,12 +135,20 @@ proc ::thtml::bundle::invoke_rollup {node_modules_dir entryfile bundle_outdir bu
                 // require('rollup-plugin-peer-deps-external')(),
                 require('@rollup/plugin-node-resolve')({
                     modulePaths: ['${node_modules_dir}'],
+                    extensions: ['.js', '.jsx', '.ts', '.tsx'],
                 }),
                 // commonjs plugin must be placed before babel plugin for the two to work together properly
-                require('@rollup/plugin-commonjs')(),
+                require('@rollup/plugin-commonjs')({include: /node_modules/}),
+                require('rollup-plugin-inject-process-env')({
+                            NODE_ENV: 'development',
+                            SOME_OBJECT: { one: 1, two: [1,2], three: '3' },
+                            UNUSED: null
+                        }),
                 require('@rollup/plugin-babel')({
 //                    exclude: 'node_modules/**',
                     babelHelpers: 'bundled',
+                    presets: ['@babel/preset-react'],
+                    extensions: ['.js', '.jsx', '.ts', '.tsx'],
                     // plugins: ['@babel/plugin-transform-runtime'],
                 }),
                 //require('rollup-plugin-postcss')({
