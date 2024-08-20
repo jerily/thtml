@@ -153,23 +153,23 @@ proc ::thtml::compiler::compile_statement_js {codearrVar node} {
 #    append compiled_script ");</script>"
 #    return $compiled_script
 
-    append codearr(js_code,$component_num) "\n" "com_${component_num}.js_${js_num}("
     append compiled_script "<script>"
+    set argsvar "js_${js_num}_args"
+    append compiled_script "var ${argsvar} = (${argsvar} || \\\[\\\]);"
+    append compiled_script "${argsvar}.push(\\\["
+
     set first 1
     foreach {name value} [$node @args {}] {
         if { $first } {
             set first 0
         } else {
-            append codearr(js_code,$component_num) ","
+            append compiled_script ","
         }
-        set argvar "js_${js_num}_arg_$name"
-        append compiled_script "var ${argvar} = "
         append compiled_script "\x03" [${target_lang}_compile_quoted_string codearr "\"$value\""] "\x02"
-        append compiled_script ";"
-        append codearr(js_code,$component_num) "${argvar}"
     }
+    append compiled_script "\\\]);"
     append compiled_script "</script>"
-    append codearr(js_code,$component_num) ");"
+    append codearr(js_code,$component_num) "\n" "for (const x of $argsvar) com_${component_num}.js_${js_num}(...x);"
 
     return $compiled_script
 

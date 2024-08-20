@@ -207,6 +207,7 @@ proc ::thtml::compiler::tcl_compile_statement_include {codearrVar node} {
         append compiled_include_proc "\n" "\}"
         append codearr(tcl_defs) $compiled_include_proc
     }
+    set_seen codearr $proc_name
 
     #puts argnames=$argnames,argvalueVars=$argvalueVars
 
@@ -214,13 +215,14 @@ proc ::thtml::compiler::tcl_compile_statement_include {codearrVar node} {
     foreach argname $argnames argvalue $argvalues {
         append compiled_include "\n" "lappend __list_include${include_num}__ $argname $argvalue"
     }
-    set argdata_code "\$__data__"
+    set argdata_code "\[dict merge \$__data__ \$__list_include${include_num}__\]"
     if { $tcl_code ne {} } {
-        set argdata_code "\[${tcl_proc_name} \$__data__\]"
+        set argdata_code "\[${tcl_proc_name} \[dict merge \$__data__ \$__list_include${include_num}__\]\]"
     }
-    append compiled_include "\n" "set __data_include${include_num}__ \[dict merge $argdata_code \$__list_include${include_num}__\]"
+    #append compiled_include "\n" "set __data_include${include_num}__ \[dict merge $argdata_code \$__list_include${include_num}__\]"
     #append compiled_include "\n" "puts \$__data_include${include_num}__"
-    append compiled_include "\n" "append __ds_default__ \[${proc_name} \$__data_include${include_num}__\]" "\n"
+    append compiled_include "\n" "append __ds_default__ \[${proc_name} $argdata_code\]" "\n"
+    append compiled_include "\n" "unset __list_include${include_num}__"
     append compiled_include "\x02"
 
     pop_block codearr
