@@ -115,6 +115,11 @@ proc ::thtml::compiler::compile_statement_bundle_js {codearrVar node} {
     set md5 [dict get $top_component md5]
 
     lappend codearr(bundle_metadata) md5 $md5
+    set rollup_config ""
+    foreach child [$node childNodes] {
+        append rollup_config [$child nodeValue]
+    }
+    lappend codearr(bundle_metadata) rollup_config $rollup_config
 
     set urlpath "${md5}/entry.js"
 
