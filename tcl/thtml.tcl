@@ -142,7 +142,7 @@ proc ::thtml::render {template __data__} {
 
     if { $cache } {
         set proc_name ::thtml::cache::__template__$md5
-        return [$proc_name $__data__]
+        return "<!doctype html>[$proc_name $__data__]"
     }
     set compiled_template [compile codearr $template tcl]
     #puts compiled_template=$compiled_template
@@ -163,7 +163,7 @@ proc ::thtml::renderfile {filename __data__} {
 
     if { $cache } {
         set proc_name ::thtml::cache::__file__$md5
-        return [$proc_name $__data__]
+        return "<!doctype html>[$proc_name $__data__]"
     }
 
     set compiled_template [compilefile codearr $md5 $filepath tcl]

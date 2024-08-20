@@ -169,7 +169,7 @@ proc ::thtml::compiler::compile_statement_js {codearrVar node} {
     }
     append compiled_script "\\\]);"
     append compiled_script "</script>"
-    append codearr(js_code,$component_num) "\n" "for (const x of $argsvar) com_${component_num}.js_${js_num}(...x);"
+    append codearr(js_code,$component_num) "\n" "if (typeof $argsvar != 'undefined') { for (const x of $argsvar) com_${component_num}.js_${js_num}(...x); }"
 
     return $compiled_script
 
