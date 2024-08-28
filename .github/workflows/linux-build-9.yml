@@ -15,7 +15,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: tcltk/tcl
-          ref: core-9-0-b2-rc
+          ref: core-9-0-b3-rc
           path: tcl
       - name: Configure Tcl
         working-directory: tcl/unix
@@ -40,6 +40,25 @@ jobs:
             exit 1
           }
 
+      - name: Build tdom
+        shell: bash
+        run: |
+          curl -L http://tdom.org/downloads/tdom-0.9.4-src.tar.gz
+          tar -xzvf tdom-0.9.4-src.tar.gz
+          cd tdom-0.9.4/unix
+          ../configure --with-tcl=$HOME/tcl_install/lib --prefix=$HOME/tcl_install || {
+              cat config.log
+              echo "::error::Failure during Configure tdom"
+              exit 1
+          }
+          make -j || {
+              echo "::error::Failure during Build tdom"
+              exit 1
+          }
+          make install || {
+              echo "::error::Failure during Install tdom"
+              exit 1
+          }
 
       - name: Checkout
         uses: actions/checkout@v4
