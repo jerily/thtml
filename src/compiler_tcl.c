@@ -18,6 +18,7 @@ static int thtml_TclAppendCommand_Token(Tcl_Interp *interp, Tcl_Obj *codearrVar_
                                  Tcl_Size i, Tcl_Size *out_i, const char *name, Tcl_DString *cmd_ds_ptr, int in_eval_p);
 
 int thtml_TclTransformCmd(ClientData  clientData, Tcl_Interp *interp, int objc, Tcl_Obj * const objv[]) {
+    UNUSED(clientData);
     DBG(fprintf(stderr, "TclTransformCmd\n"));
 
     CheckArgs(2,2,1,"intermediate_code");
@@ -88,6 +89,7 @@ int thtml_TclTransformCmd(ClientData  clientData, Tcl_Interp *interp, int objc, 
 }
 
 int thtml_TclCompileExprCmd(ClientData  clientData, Tcl_Interp *interp, int objc, Tcl_Obj * const objv[]) {
+    UNUSED(clientData);
     DBG(fprintf(stderr, "TclCompileExprCmd\n"));
 
     CheckArgs(4, 4, 1, "codearrVar text name");
@@ -141,6 +143,7 @@ int thtml_TclCompileExprCmd(ClientData  clientData, Tcl_Interp *interp, int objc
 }
 
 int thtml_TclCompileQuotedStringCmd(ClientData  clientData, Tcl_Interp *interp, int objc, Tcl_Obj * const objv[]) {
+    UNUSED(clientData);
     DBG(fprintf(stderr, "TclCompileQuotedStringCmd\n"));
 
     CheckArgs(3, 4, 1, "codearrVar text ?name?");
@@ -175,6 +178,7 @@ int thtml_TclCompileQuotedStringCmd(ClientData  clientData, Tcl_Interp *interp, 
 }
 
 int thtml_TclCompileTemplateTextCmd(ClientData  clientData, Tcl_Interp *interp, int objc, Tcl_Obj * const objv[]) {
+    UNUSED(clientData);
     DBG(fprintf(stderr, "TclCompileTemplateTextCmd\n"));
 
     CheckArgs(3, 3, 1, "codearrVar text");
@@ -239,6 +243,7 @@ int thtml_TclCompileTemplateTextCmd(ClientData  clientData, Tcl_Interp *interp, 
 }
 
 int thtml_TclCompileScriptCmd(ClientData  clientData, Tcl_Interp *interp, int objc, Tcl_Obj * const objv[]) {
+    UNUSED(clientData);
     DBG(fprintf(stderr, "TclCompileScriptCmd\n"));
 
     CheckArgs(4, 4, 1, "codearrVar text name");
@@ -1135,6 +1140,7 @@ thtml_TclCompileForeachList(Tcl_Interp *interp, Tcl_Obj *codearrVar_ptr, Tcl_DSt
 }
 
 int thtml_TclCompileForeachListCmd(ClientData  clientData, Tcl_Interp *interp, int objc, Tcl_Obj * const objv[]) {
+    UNUSED(clientData);
     DBG(fprintf(stderr, "TclCompileForeachListCmd\n"));
 
     CheckArgs(4, 4, 1, "codearrVar text name");

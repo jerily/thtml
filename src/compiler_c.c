@@ -24,7 +24,7 @@ int thtml_CCompileQuotedString(Tcl_Interp *interp, Tcl_Obj *codearrVar_ptr, Tcl_
                                const char *name);
 
 int thtml_CCompileCommand(Tcl_Interp *interp, Tcl_Obj *codearrVar_ptr, Tcl_DString *ds_ptr, Tcl_Parse *parse_ptr,
-                          const char *name, int nested, int *compiled_cmd);
+                          const char *name, int nested, int *compiled_command);
 
 void thtml_CGarbageCollection(Tcl_Interp *interp, Tcl_Obj *codearrVar_ptr, Tcl_DString *ds_ptr) {
 
@@ -210,6 +210,8 @@ void thtml_CListRemoveGC(Tcl_Interp *interp, Tcl_Obj *codearrVar_ptr, const char
 }
 
 int thtml_CTransformCmd(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const objv[]) {
+    UNUSED(clientData);
+
     DBG(fprintf(stderr, "TclTransformCmd\n"));
 
     CheckArgs(2, 2, 1, "intermediate_code");
@@ -280,6 +282,7 @@ int thtml_CTransformCmd(ClientData clientData, Tcl_Interp *interp, int objc, Tcl
 }
 
 int thtml_CCompileExprCmd(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const objv[]) {
+    UNUSED(clientData);
     DBG(fprintf(stderr, "CCompileExprCmd\n"));
 
     CheckArgs(4, 4, 1, "codearrVar text name");
@@ -312,6 +315,7 @@ int thtml_CCompileExprCmd(ClientData clientData, Tcl_Interp *interp, int objc, T
 }
 
 int thtml_CCompileQuotedStringCmd(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const objv[]) {
+    UNUSED(clientData);
     DBG(fprintf(stderr, "CCompileQuotedStringCmd\n"));
 
     CheckArgs(3, 3, 1, "codearrVar text");
@@ -341,6 +345,7 @@ int thtml_CCompileQuotedStringCmd(ClientData clientData, Tcl_Interp *interp, int
 }
 
 int thtml_CCompileTemplateTextCmd(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const objv[]) {
+    UNUSED(clientData);
     DBG(fprintf(stderr, "CCompileTemplateTextCmd\n"));
 
     CheckArgs(3, 3, 1, "codearrVar text");
@@ -406,6 +411,7 @@ int thtml_CCompileTemplateTextCmd(ClientData clientData, Tcl_Interp *interp, int
 }
 
 int thtml_CCompileScriptCmd(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const objv[]) {
+    UNUSED(clientData);
     DBG(fprintf(stderr, "CCompileScriptCmd\n"));
 
     CheckArgs(4, 4, 1, "codearrVar text name");
@@ -2308,6 +2314,7 @@ thtml_CCompileForeachList(Tcl_Interp *interp, Tcl_Obj *codearrVar_ptr, Tcl_DStri
 }
 
 int thtml_CCompileForeachListCmd(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const objv[]) {
+    UNUSED(clientData);
     DBG(fprintf(stderr, "CCompileForeachListCmd\n"));
 
     CheckArgs(4, 4, 1, "codearrVar text name");
@@ -2394,6 +2401,7 @@ thtml_CCompileQuotedArg(Tcl_Interp *interp, Tcl_Obj *codearrVar_ptr, Tcl_DString
 }
 
 int thtml_CCompileQuotedArgCmd(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const objv[]) {
+    UNUSED(clientData);
     DBG(fprintf(stderr, "CCompileQuotedArgCmd\n"));
 
     CheckArgs(4, 4, 1, "codearrVar text name");
