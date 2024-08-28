@@ -22,7 +22,7 @@ test var-substitution-1 {} -body {
         title "Hello, World!"
     }
     set html [::thtml::renderfile var_substitution_1.thtml $data]
-} -result {<html><head><title>Hello, World!</title></head><body><h1>Hello, World!</h1></body></html>}
+} -result {<!doctype html><html><head><title>Hello, World!</title></head><body><h1>Hello, World!</h1></body></html>}
 
 
 test nested-if-in-foreach-1 {} -body {
@@ -31,7 +31,7 @@ test nested-if-in-foreach-1 {} -body {
         items {1 2 3 4 5}
     }
     set html [::thtml::renderfile nested_if_in_foreach_1.thtml $data]
-} -result {<html><head><title>Hello, World!</title></head><body><h1>Hello, World!</h1><p>1 is odd</p><p>2 is even</p><p>3 is odd</p><p>4 is even</p><p>5 is odd</p></body></html>}
+} -result {<!doctype html><html><head><title>Hello, World!</title></head><body><h1>Hello, World!</h1><p>1 is odd</p><p>2 is even</p><p>3 is odd</p><p>4 is even</p><p>5 is odd</p></body></html>}
 
 test nested-foreach-1 {} -body {
     set data {
@@ -39,5 +39,5 @@ test nested-foreach-1 {} -body {
         items {{1 2} {3 4} {5 6}}
     }
     set html [::thtml::renderfile nested_foreach_1.thtml $data]
-} -result {<html><head><title>Hello, World!</title></head><body><h1>Hello, World!</h1><p>1 is odd</p><p>2 is even</p><p>3 is odd</p><p>4 is even</p><p>5 is odd</p><p>6 is even</p></body></html>}
+} -result {<!doctype html><html><head><title>Hello, World!</title></head><body><h1>Hello, World!</h1><p>1 is odd</p><p>2 is even</p><p>3 is odd</p><p>4 is even</p><p>5 is odd</p><p>6 is even</p></body></html>}
 
