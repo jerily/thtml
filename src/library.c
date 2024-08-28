@@ -16,6 +16,7 @@
 static int           thtml_ModuleInitialized;
 
 static int thtml_Md5Cmd(ClientData  clientData, Tcl_Interp *interp, int objc, Tcl_Obj * const objv[]) {
+    UNUSED(clientData);
     DBG(fprintf(stderr,"Md5Cmd\n"));
 
     CheckArgs(2,2,1,"text");
@@ -46,6 +47,7 @@ void thtml_InitModule() {
 }
 
 int thtml_EscapeTemplateCmd(ClientData  clientData, Tcl_Interp *interp, int objc, Tcl_Obj * const objv[]) {
+    UNUSED(clientData);
     DBG(fprintf(stderr,"TclTransformCmd\n"));
 
     CheckArgs(2,2,1,"html");

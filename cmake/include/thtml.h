@@ -60,6 +60,22 @@ typedef int Tcl_Size;
 #define SetResult(str) Tcl_ResetResult(__interp__); \
                      Tcl_SetStringObj(Tcl_GetObjResult(__interp__), (str), -1)
 
+#ifdef DEBUG
+# define DBG(x) x
+#ifndef __FUNCTION_NAME__
+#ifdef _WIN32   // WINDOWS
+#define __FUNCTION_NAME__   __FUNCTION__
+#else          // GCC
+#define __FUNCTION_NAME__   __func__
+#endif
+#endif
+# define DBG2(x) {printf("%s: line %d: ", __FUNCTION_NAME__, __LINE__); printf(x); printf("\n"); fflush(stdout);}
+#else
+# define DBG(x)
+# define DBG2(x)
+#endif
+
+
 #define UWIDE_MAX ((Tcl_WideUInt)-1)
 #define WIDE_MAX ((Tcl_WideInt)(UWIDE_MAX >> 1))
 #define WIDE_MIN ((Tcl_WideInt)((Tcl_WideUInt)WIDE_MAX+1))
@@ -1160,6 +1176,22 @@ Tcl_Obj *__thtml_ternary__(Tcl_Interp *interp, Tcl_Obj *a, Tcl_Obj *b, Tcl_Obj *
         return GENERAL_ARITHMETIC_ERROR;
     }
     return a_val ? b : c;
+}
+
+int __thtml_dict_merge__(Tcl_Interp *interp, Tcl_Obj *target_obj, Tcl_Obj *source_obj) {
+    Tcl_Obj *key_obj = NULL, *value_obj = NULL;
+    int i, done;
+    Tcl_DictSearch search;
+    if (Tcl_DictObjFirst(interp, source_obj, &search, &key_obj, &value_obj,
+                         &done) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    while (!done) {
+        Tcl_DictObjPut(interp, target_obj, key_obj, value_obj);
+        Tcl_DictObjNext(&search, &key_obj, &value_obj, &done);
+    }
+    Tcl_DictObjDone(&search);
+    return TCL_OK;
 }
 
 #endif // THTML_H

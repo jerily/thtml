@@ -18,7 +18,7 @@ proc ::thtml::compiler::compile_helper {codearrVar node} {
         return [${target_lang}_compile_template_text codearr \"[$node nodeValue]\"]
     } elseif { $node_type eq {ELEMENT_NODE} } {
         set tag [$node tagName]
-        if { $tag eq {tpl} } {
+        if { $tag in {tpl js css bundle_js bundle_css} } {
             return [compile_statement codearr $node]
         } else {
             return [compile_element codearr $node]
@@ -65,6 +65,12 @@ proc ::thtml::compiler::compile_statement {codearrVar node} {
         return [${target_lang}_compile_statement_include codearr $node]
     } elseif { [$node hasAttribute "val"] } {
         return [${target_lang}_compile_statement_val codearr $node]
+    } elseif { [$node tagName] eq {js} } {
+        return [compile_statement_js codearr $node]
+    } elseif { [$node tagName] eq {bundle_js} } {
+        return [compile_statement_bundle_js codearr $node]
+    } elseif { [$node tagName] eq {bundle_css} } {
+        return [compile_statement_bundle_css codearr $node]
     } else {
         return [compile_children codearr $node]
     }
@@ -79,6 +85,99 @@ proc ::thtml::compiler::compile_children {codearrVar node} {
         append compiled_children [compile_helper codearr $child]
     }
     return $compiled_children
+}
+
+### js/css
+
+
+proc ::thtml::compiler::compile_statement_bundle_css {codearrVar node} {
+    upvar $codearrVar codearr
+    set target_lang $codearr(target_lang)
+
+    set top_component [::thtml::compiler::top_component codearr]
+    set md5 [dict get $top_component md5]
+
+    lappend codearr(bundle_metadata) md5 $md5
+
+    set urlpath "${md5}/bundle_${md5}.css"
+
+    append compiled_script "<link rel=\\\"stylesheet\\\" href=\\\""
+    append compiled_script "\x03" [${target_lang}_compile_quoted_string codearr "\"[$node @url_prefix]\""] "\x02"
+    append compiled_script "/${urlpath}\\\" />"
+    return $compiled_script
+}
+
+proc ::thtml::compiler::compile_statement_bundle_js {codearrVar node} {
+    upvar $codearrVar codearr
+    set target_lang $codearr(target_lang)
+
+    set top_component [::thtml::compiler::top_component codearr]
+    set md5 [dict get $top_component md5]
+
+    lappend codearr(bundle_metadata) md5 $md5
+    set rollup_config ""
+    foreach child [$node childNodes] {
+        append rollup_config [$child nodeValue]
+    }
+    lappend codearr(bundle_metadata) rollup_config $rollup_config
+
+    set urlpath "${md5}/entry.js"
+
+    append compiled_script "<script src=\\\""
+    append compiled_script "\x03" [${target_lang}_compile_quoted_string codearr "\"[$node @url_prefix]\""] "\x02"
+    append compiled_script "/${urlpath}\\\"></script>"
+    return $compiled_script
+}
+
+proc ::thtml::compiler::compile_statement_js {codearrVar node} {
+    upvar $codearrVar codearr
+    set target_lang $codearr(target_lang)
+
+    set js_num [incr codearr(js_count)]
+
+    set top_component [::thtml::compiler::top_component codearr]
+    set component_num [dict get $top_component component_num]
+
+    set js ""
+    foreach child [$node childNodes] {
+        append js [$child nodeValue]
+    }
+
+    set js_args [list]
+    if [$node hasAttribute "args"] {
+        foreach {name value} [$node @args {}] {
+            lappend js_args $name
+        }
+    }
+
+    lappend codearr(js_function,$component_num) $js_num $js_args $js
+    lappend codearr(bundle_js_names) $component_num
+
+#    append compiled_script "<script>THTML.com_${component_num}.js_${js_num}("
+#    append compiled_script "\x03" [tcl_compile_quoted_string codearr "\"$js_vals\""] "\x02"
+#    append compiled_script ");</script>"
+#    return $compiled_script
+
+    append compiled_script "<script>"
+    set argsvar "js_${js_num}_args"
+    append compiled_script "var ${argsvar} = (${argsvar} || \\\[\\\]);"
+    append compiled_script "${argsvar}.push(\\\["
+
+    set first 1
+    foreach {name value} [$node @args {}] {
+        if { $first } {
+            set first 0
+        } else {
+            append compiled_script ","
+        }
+        append compiled_script "\x03" [${target_lang}_compile_quoted_string codearr "\"$value\""] "\x02"
+    }
+    append compiled_script "\\\]);"
+    append compiled_script "</script>"
+    append codearr(js_code,$component_num) "\n" "if (typeof $argsvar != 'undefined') { for (const x of $argsvar) com_${component_num}.js_${js_num}(...x); }"
+
+    return $compiled_script
+
 }
 
 ### codearr manipulation
@@ -106,4 +205,55 @@ proc ::thtml::compiler::get_seen {codearrVar what} {
 proc ::thtml::compiler::set_seen {codearrVar what} {
     upvar $codearrVar codearr
     set codearr(seen) [dict set codearr(seen) $what 1]
+}
+
+proc ::thtml::compiler::push_component {codearrVar component} {
+    upvar $codearrVar codearr
+    set codearr(components) [linsert $codearr(components) 0 $component]
+}
+
+proc ::thtml::compiler::pop_component {codearrVar} {
+    upvar $codearrVar codearr
+    set codearr(components) [lrange $codearr(components) 1 end]
+}
+
+proc ::thtml::compiler::top_component {codearrVar} {
+    upvar $codearrVar codearr
+    return [lindex $codearr(components) 0]
+}
+
+proc ::thtml::compiler::push_gc_list {codearrVar args} {
+    upvar $codearrVar codearr
+    set codearr(gc_lists) [linsert $codearr(gc_lists) 0 $args]
+}
+
+proc ::thtml::compiler::pop_gc_list {codearrVar} {
+    upvar $codearrVar codearr
+    set codearr(gc_lists) [lrange $codearr(gc_lists) 1 end]
+}
+
+proc ::thtml::compiler::top_gc_list {codearrVar} {
+    upvar $codearrVar codearr
+    return [lindex $codearr(gc_lists) 0]
+}
+
+proc ::thtml::compiler::lappend_gc_list {codearrVar args} {
+    upvar $codearrVar codearr
+    set top_gc_list [top_gc_list codearr]
+    lappend top_gc_list {*}$args
+    set codearr(gc_lists) [lreplace $codearr(gc_lists) 0 0 $top_gc_list]
+}
+
+proc ::thtml::compiler::lremove_gc_list {codearrVar what} {
+    upvar $codearrVar codearr
+    set top_gc_list [top_gc_list codearr]
+
+    set result [list]
+    foreach {type name} $top_gc_list {
+        if { $name ne $what } {
+            lappend result $type $name
+        }
+    }
+
+    set codearr(gc_lists) [lreplace $codearr(gc_lists) 0 0 $result]
 }

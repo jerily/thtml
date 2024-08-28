@@ -17,33 +17,13 @@ proc ::thtml::util::doublequote_and_escape_newlines {str {lengthVar ""}} {
     return [doublequote [string map {"\n" {\n} "\r" {\r} "\\" {\\}} ${str}]]
 }
 
-proc ::thtml::util::get_namespace_dir {nsp} {
-    if { ![info exists ::${nsp}::__thtml__] } {
-        error "Variable ::${nsp}::__thtml__ not found"
-    }
-    return [set ::${nsp}::__thtml__]
-}
-
-proc ::thtml::util::resolve_filepath {filepath} {
-
-    if { $filepath eq {} } {
-        error "Empty filepath"
-    }
-
-    set first_char [string index $filepath 0]
-    if { $first_char eq {@}} {
-        set index [string first / $filepath]
-        if { $index eq -1 } {
-            error "Invalid filepath: $filepath"
+proc ::thtml::util::starts_with {str prefix} {
+    if { [string length $str] >= [string length $prefix] } {
+        if { [string range $str 0 [expr { [string length $prefix] - 1 }]] eq $prefix } {
+            return 1
         }
-        set nsp [string range $filepath 1 [expr { $index - 1}]]
-        set dir [get_namespace_dir $nsp]
-        set filepath [string range $filepath [expr { 1 + $index }] end]
-        return [file normalize [file join $dir $filepath]]
     }
-
-    set rootdir [::thtml::get_rootdir]
-    return [file normalize [file join $rootdir www $filepath]]
+    return 0
 }
 
 # https://stackoverflow.com/questions/429386/tcl-recursively-search-subdirectories-to-source-all-tcl-files
@@ -65,7 +45,7 @@ proc ::thtml::util::find_files { basedir pattern } {
     foreach dirName [glob -nocomplain -type {d  r} -path $basedir *] {
         # Recusively call the routine on the sub directory and append any
         # new files to the results
-        set subDirList [findFiles $dirName $pattern]
+        set subDirList [find_files $dirName $pattern]
         if { [llength $subDirList] > 0 } {
             foreach subDirFile $subDirList {
                 lappend fileList $subDirFile
@@ -73,4 +53,4 @@ proc ::thtml::util::find_files { basedir pattern } {
         }
     }
     return $fileList
-    }
+}

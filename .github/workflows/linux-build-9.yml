@@ -1,0 +1,92 @@
+name: Linux (with Tcl 9.0)
+on: [push]
+permissions:
+  contents: read
+defaults:
+  run:
+    shell: bash
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 7
+    steps:
+
+      - name: Checkout Tcl
+        uses: actions/checkout@v4
+        with:
+          repository: tcltk/tcl
+          ref: core-9-0-b3-rc
+          path: tcl
+      - name: Configure Tcl
+        working-directory: tcl/unix
+        run: |
+          ./configure --prefix=$HOME/tcl_install || {
+            cat config.log
+            echo "::error::Failure during Configure Tcl"
+            exit 1
+          }
+      - name: Build Tcl
+        working-directory: tcl/unix
+        run: |
+          make -j || {
+            echo "::error::Failure during Build Tcl"
+            exit 1
+          }
+      - name: Install Tcl
+        working-directory: tcl/unix
+        run: |
+          make install || {
+            echo "::error::Failure during Install Tcl"
+            exit 1
+          }
+
+      - name: Build tdom
+        shell: bash
+        run: |
+          curl -L -O http://tdom.org/downloads/tdom-0.9.4-src.tar.gz
+          tar -xzvf tdom-0.9.4-src.tar.gz
+          cd tdom-0.9.4-src/unix
+          ../configure --with-tcl=$HOME/tcl_install/lib --prefix=$HOME/tcl_install || {
+              cat config.log
+              echo "::error::Failure during Configure tdom"
+              exit 1
+          }
+          make -j || {
+              echo "::error::Failure during Build tdom"
+              exit 1
+          }
+          make install || {
+              echo "::error::Failure during Install tdom"
+              exit 1
+          }
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Configure
+        run: |
+          mkdir build
+          cd build
+          cmake .. -DCMAKE_INSTALL_PREFIX=$HOME/thtml_install -DCMAKE_PREFIX_PATH=$HOME/thtml_install -DTCL_INCLUDE_DIR=$HOME/tcl_install/include -DTCL_LIBRARY_DIR=$HOME/tcl_install/lib
+      - name: Build
+        working-directory: build
+        run: |
+          make -j || {
+            echo "::error::Failure during Build"
+            exit 1
+          }
+      - name: Run Tests
+        working-directory: build
+        run: |
+          PATH="$HOME/tcl_install/bin:$PATH" LD_LIBRARY_PATH="$HOME/tcl_install/lib" make test || {
+            echo "::error::Failure during Test"
+            exit 1
+          }
+      - name: Test-Drive Installation
+        working-directory: build
+        run: |
+          make install || {
+            echo "::error::Failure during Install"
+            exit 1
+          }

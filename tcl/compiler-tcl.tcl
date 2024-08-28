@@ -15,7 +15,7 @@ proc ::thtml::compiler::tcl_compile_root {codearrVar root} {
     foreach child [$root childNodes] {
         append compiled_template [tcl_transform \x02[compile_helper codearr $child]\x03]
     }
-    append compiled_template "\n" "return \$__ds_default__" "\n"
+    append compiled_template "\n" "set __ds_default__" "\n"
     return $compiled_template
 }
 
@@ -111,9 +111,20 @@ proc ::thtml::compiler::tcl_compile_statement_include {codearrVar node} {
 
     set include_num [incr codearr(include_count)]
 
-    set filepath [::thtml::util::resolve_filepath [$node @include]]
+    set currentdir [::thtml::get_currentdir codearr]
+
+    set filepath [::thtml::resolve_filepath codearr [$node @include] $currentdir]
     set filepath_from_rootdir [string range $filepath [string length [::thtml::get_rootdir]] end]
     set filepath_md5 [::thtml::util::md5 $filepath_from_rootdir]
+
+    # check that we do not have circular dependencies
+    foreach block $codearr(blocks) {
+        if { [dict exists $block include] && [dict get $block include filepath_md5] eq $filepath_md5 } {
+            error "circular dependency detected"
+        }
+    }
+
+    push_component codearr [list md5 $filepath_md5 dir [file dirname $filepath] component_num [incr codearr(component_count)]]
 
     set tcl_code ""
     set tcl_filepath "[file rootname $filepath].tcl"
@@ -123,13 +134,6 @@ proc ::thtml::compiler::tcl_compile_statement_include {codearrVar node} {
         close $fp
     }
 
-    # check that we do not have circular dependencies
-    foreach block $codearr(blocks) {
-        if { [dict exists $block include] && [dict get $block include filepath_md5] eq $filepath_md5 } {
-            error "circular dependency detected"
-        }
-    }
-
     set fp [open $filepath]
     set template [read $fp]
     close $fp
@@ -137,7 +141,8 @@ proc ::thtml::compiler::tcl_compile_statement_include {codearrVar node} {
     set escaped_template [::thtml::escape_template $template]
     dom parse -ignorexmlns -paramentityparsing never -- <root>$escaped_template</root> doc
     set root [$doc documentElement]
-    ::thtml::rewrite $root
+
+    ::thtml::rewrite_template_imports codearr $root
 
     # replace the slave node with the children of the include node
     set slave_md5 "noslave"
@@ -151,6 +156,8 @@ proc ::thtml::compiler::tcl_compile_statement_include {codearrVar node} {
         $slave delete
     }
 
+    ::thtml::process_node_module_imports codearr $root
+
     # compile the include template into a procedure and call it
 
     set proc_name ::thtml::cache::__include_${filepath_md5}_${slave_md5}__
@@ -162,12 +169,10 @@ proc ::thtml::compiler::tcl_compile_statement_include {codearrVar node} {
 
     set compiled_include "\x03"
 
-#    set varnames [list]
     set argnames [list]
     foreach attname [$node attributes] {
         if { $attname eq {include} } { continue }
         lappend argnames $attname
-#        lappend varnames $attname
     }
 
     append compiled_include "\n" "\# " $filepath_from_rootdir
@@ -200,8 +205,9 @@ proc ::thtml::compiler::tcl_compile_statement_include {codearrVar node} {
         }
         append compiled_include_proc "\n" "return \$__ds_default__"
         append compiled_include_proc "\n" "\}"
-        append codearr(defs) $compiled_include_proc
+        append codearr(tcl_defs) $compiled_include_proc
     }
+    set_seen codearr $proc_name
 
     #puts argnames=$argnames,argvalueVars=$argvalueVars
 
@@ -209,16 +215,18 @@ proc ::thtml::compiler::tcl_compile_statement_include {codearrVar node} {
     foreach argname $argnames argvalue $argvalues {
         append compiled_include "\n" "lappend __list_include${include_num}__ $argname $argvalue"
     }
-    set argdata_code "\$__data__"
+    set argdata_code "\[dict merge \$__data__ \$__list_include${include_num}__\]"
     if { $tcl_code ne {} } {
-        set argdata_code "\[${tcl_proc_name} \$__data__\]"
+        set argdata_code "\[${tcl_proc_name} \[dict merge \$__data__ \$__list_include${include_num}__\]\]"
     }
-    append compiled_include "\n" "set __data_include${include_num}__ \[dict merge $argdata_code \$__list_include${include_num}__\]"
+    #append compiled_include "\n" "set __data_include${include_num}__ \[dict merge $argdata_code \$__list_include${include_num}__\]"
     #append compiled_include "\n" "puts \$__data_include${include_num}__"
-    append compiled_include "\n" "append __ds_default__ \[${proc_name} \$__data_include${include_num}__\]" "\n"
+    append compiled_include "\n" "append __ds_default__ \[${proc_name} $argdata_code\]" "\n"
+    append compiled_include "\n" "unset __list_include${include_num}__"
     append compiled_include "\x02"
 
     pop_block codearr
+    pop_component codearr
 
     return $compiled_include
 }

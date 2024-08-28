@@ -20,7 +20,7 @@ test include-1 {} -body {
     }
     set html [::thtml::renderfile include_1.thtml $data]
     escape $html
-} -result {<html><head><title>Hello, World!</title></head><body><h1>Hello, World!</h1><div><h2>Name and age</h2>\n    John Smith is 47 ye[a]rs old.\n    \n        You are an adult.\n    <div>This is the footer</div>.\n</div></body></html>}
+} -result {<!doctype html><html><head><title>Hello, World!</title></head><body><h1>Hello, World!</h1><div><h2>Name and age</h2>\n    John Smith is 47 ye[a]rs old.\n    \n        You are an adult.\n    <div>This is the footer</div>.\n</div></body></html>}
 
 #test include-2-circular-dependency {} -body {
 #    set data {

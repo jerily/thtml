@@ -14,28 +14,28 @@ proc escape {str} {
 
 test command-in-template-text-1 {} -body {
     ::thtml::renderfile command_in_template_text_1.thtml {a 12345 b "hello world" c "test"}
-} -result {<div>world</div>}
+} -result {<!doctype html><div>world</div>}
 
 test command-in-template-text-2 {} -body {
     ::thtml::renderfile command_in_template_text_2.thtml {a 12345 b "hello world" c "test"}
-} -result {<div>3</div>}
+} -result {<!doctype html><div>3</div>}
 
 test command-in-attribute-1 {} -body {
     ::thtml::renderfile command_in_attribute_1.thtml {a 12345 b "hello world" c "test"}
-} -result {<div class="hi world">this is a test</div>}
+} -result {<!doctype html><div class="hi world">this is a test</div>}
 
 test command-in-attribute-2 {} -body {
     ::thtml::renderfile command_in_attribute_2.thtml {a 12345 b "hello world" c "test"}
-} -result {<div class="just 5 wow">this is a test</div>}
+} -result {<!doctype html><div class="just 5 wow">this is a test</div>}
 
 test command-in-if-1 {} -body {
     ::thtml::renderfile command_in_if_1.thtml {a 12345 b "hello world" c "test"}
-} -result {<div>this is a test</div>}
+} -result {<!doctype html><div>this is a test</div>}
 
 test command-in-foreach-list-1 {} -body {
     ::thtml::renderfile command_in_foreach_list_1.thtml {a 12345 b "hello world" c "test"}
-} -result {<div>this is a test: hi</div><div>this is a test: world</div><div>this is a test: wow</div>}
+} -result {<!doctype html><div>this is a test: hi</div><div>this is a test: world</div><div>this is a test: wow</div>}
 
 test command-in-foreach-list-2 {} -body {
     ::thtml::renderfile command_in_foreach_list_2.thtml {a 12345 b "hello world" c "test"}
-} -result {<div>this is a test: hi</div><div>this is a test: hello world</div><div>this is a test: wow</div>}
+} -result {<!doctype html><div>this is a test: hi</div><div>this is a test: hello world</div><div>this is a test: wow</div>}

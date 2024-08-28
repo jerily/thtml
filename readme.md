@@ -9,6 +9,13 @@ HTML Templating Engine for TCL and [twebserver](https://github.com/jerily/twebse
 * [tcl](https://www.tcl.tk/) (version 9.0) - TCL
 * [tdom](http://www.tdom.org/) (version [0.9.4](http://tdom.org/downloads/tdom-0.9.4-src.tar.gz)) - Tcl XML parser
 
+* If you are planning to use ```import_node_module``` and ```js``` tags, you will need:
+    * [npm](https://www.npmjs.com/) - Node.js package manager
+    * rollup bundler:
+    ```bash
+      sudo npm -g i rollup
+    ```
+
 ## Installation
 
 ```bash
@@ -154,3 +161,39 @@ TCL:
 ```tcl
 ::thtml::render $template {title "Hello World!"}
 ```
+
+## Working with JavaScript
+
+### Plain old script tags
+
+Template:
+```html
+set template {
+    <script>
+        console.log("Hello World!");
+    </script>
+}
+```
+
+### Node modules
+
+Template:
+```html
+set template {
+  <import_node_module name="lodash" src="lodash" />
+  <import_node_module src="purecss/build/pure-min.css" />
+
+  <html>
+    <head>
+      <bundle_css url_prefix="/bundle/" />
+    </head>
+    <body>
+      <div id="version"></div>
+      <js>
+        var el = document.getElementById("version");
+        el.innerText = "lodash version: " + lodash.VERSION;
+      </js>
+      <bundle_js url_prefix="/bundle/" />
+    </body>
+  </html>
+}

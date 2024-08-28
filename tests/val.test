@@ -15,16 +15,16 @@ proc escape {str} {
 test val-1 {} -body {
 
     ::thtml::renderfile val_1.thtml {title "You rock!" loggedin 1}
-} -result {<html><head><title>You rock!</title></head><body><h1>You rock!</h1><p>3</p></body></html>}
+} -result {<!doctype html><html><head><title>You rock!</title></head><body><h1>You rock!</h1><p>3</p></body></html>}
 
 test val-2 {} -body {
     ::thtml::renderfile val_2.thtml {title "You rock!" loggedin 1}
-} -result {<html><head><title>You rock!</title></head><body><h1>You rock!</h1><p>3</p></body></html>}
+} -result {<!doctype html><html><head><title>You rock!</title></head><body><h1>You rock!</h1><p>3</p></body></html>}
 
 test val-3 {} -body {
     ::thtml::renderfile val_3.thtml {title "You rock!" loggedin 1}
-} -result {<html><head><title>You rock!</title></head><body><h1>You rock!</h1><p>3</p></body></html>}
+} -result {<!doctype html><html><head><title>You rock!</title></head><body><h1>You rock!</h1><p>3</p></body></html>}
 
 test val-4 {} -body {
     ::thtml::renderfile val_4.thtml {title "You rock!" loggedin 1}
-} -result {<html><head><title>You rock!</title></head><body><h1>You rock!</h1><p>c must be equal to c</p></body></html>}
+} -result {<!doctype html><html><head><title>You rock!</title></head><body><h1>You rock!</h1><p>c must be equal to c</p></body></html>}
