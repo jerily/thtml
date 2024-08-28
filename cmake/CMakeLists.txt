@@ -21,7 +21,7 @@ set_target_properties(${PROJECT_NAME}
         INSTALL_RPATH_USE_LINK_PATH ON
 )
 
-include_directories(${TCL_INCLUDE_PATH})
+include_directories(${TCL_INCLUDE_PATH} ${THTML_CMAKE_DIR}/include)
 target_link_directories(${PROJECT_NAME} PRIVATE ${TCL_LIBRARY_PATH})
 target_link_libraries(${PROJECT_NAME} PRIVATE ${TCL_LIBRARY})
 get_filename_component(TCL_LIBRARY_PATH "${TCL_LIBRARY}" PATH)
