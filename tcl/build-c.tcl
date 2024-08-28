@@ -61,7 +61,10 @@ proc ::thtml::build::c_build {dirmd5 c_code} {
         file mkdir $builddir
     }
     cd $builddir
-    set msgs [exec -ignorestderr -- cmake $cmakedir -DTHTML_CMAKE_DIR=$cmakedir -DTHTML_PROJECT_NAME=$dirmd5 -DTHTML_PROJECT_CODE=$outfile]
+    set tcl_library_dir [file dirname [file dirname [info nameofexecutable]]]/lib
+    set tcl_include_dir [file dirname [file dirname [info nameofexecutable]]]/include
+    puts tcl_library_dir=$tcl_library_dir
+    set msgs [exec -ignorestderr -- cmake $cmakedir -DTHTML_CMAKE_DIR=$cmakedir -DTHTML_PROJECT_NAME=$dirmd5 -DTHTML_PROJECT_CODE=$outfile -DTCL_INCLUDE_DIR=$tcl_include_dir -DTCL_LIBRARY_DIR=$tcl_library_dir]
     if { $debug } { puts $msgs }
     set msgs [exec -ignorestderr -- make]
     if { $debug } { puts $msgs }

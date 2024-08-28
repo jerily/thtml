@@ -11,16 +11,9 @@ HTML Templating Engine for TCL and [twebserver](https://github.com/jerily/twebse
 
 * If you are planning to use ```import_node_module``` and ```js``` tags, you will need:
     * [npm](https://www.npmjs.com/) - Node.js package manager
-    * In your project directory, run:
+    * rollup bundler:
     ```bash
-      npm i --save-dev rollup \
-        @rollup/plugin-node-resolve \
-        @rollup/plugin-commonjs \
-        @rollup/plugin-babel \
-        rollup-plugin-import-css \
-        rollup-plugin-postcss \
-        rollup-plugin-terser \
-        cssnano
+      sudo npm -g i rollup
     ```
 
 ## Installation
