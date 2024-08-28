@@ -68,7 +68,7 @@ jobs:
         run: |
           mkdir build
           cd build
-          cmake .. -DTCL_INCLUDE_DIR=$HOME/tcl_install/include -DTCL_LIBRARY_DIR=$HOME/tcl_install/lib
+          cmake .. -DCMAKE_INSTALL_PREFIX=$HOME/thtml_install -DCMAKE_PREFIX_PATH=$HOME/thtml_install -DTCL_INCLUDE_DIR=$HOME/tcl_install/include -DTCL_LIBRARY_DIR=$HOME/tcl_install/lib
       - name: Build
         working-directory: build
         run: |
