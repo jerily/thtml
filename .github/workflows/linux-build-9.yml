@@ -43,7 +43,7 @@ jobs:
       - name: Build tdom
         shell: bash
         run: |
-          curl -L http://tdom.org/downloads/tdom-0.9.4-src.tar.gz
+          curl -L -O http://tdom.org/downloads/tdom-0.9.4-src.tar.gz
           tar -xzvf tdom-0.9.4-src.tar.gz
           cd tdom-0.9.4/unix
           ../configure --with-tcl=$HOME/tcl_install/lib --prefix=$HOME/tcl_install || {
