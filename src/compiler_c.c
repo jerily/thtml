@@ -131,17 +131,17 @@ void thtml_CListAppendGC(Tcl_Interp *interp, Tcl_Obj *codearrVar_ptr, const char
     }
     Tcl_DecrRefCount(varname_ptr);
 
-    if (TCL_OK != Tcl_ListObjReplace(interp, gc_list_ptr, 0, gc_list_length, 1, &new_gc_list_ptr)) {
-        Tcl_DecrRefCount(new_gc_list_ptr);
-        return;
-    }
-
-    Tcl_DecrRefCount(new_gc_list_ptr);
+//    if (TCL_OK != Tcl_ListObjReplace(interp, gc_list_ptr, 0, gc_list_length, 1, &new_gc_list_ptr)) {
+//        Tcl_DecrRefCount(new_gc_list_ptr);
+//        return;
+//    }
 
     // replace the last element of gc_lists_ptr
     if (TCL_OK != Tcl_ListObjReplace(interp, gc_lists_ptr, gc_lists_length - 1, gc_lists_length - 1, 1, &new_gc_list_ptr)) {
+        Tcl_DecrRefCount(new_gc_list_ptr);
         return;
     }
+    Tcl_DecrRefCount(new_gc_list_ptr);
 
     // update gc_lists_ptr
     if (TCL_OK != Tcl_ObjSetVar2(interp, codearrVar_ptr, Tcl_NewStringObj("gc_lists", -1), gc_lists_ptr, TCL_LEAVE_ERR_MSG)) {
@@ -503,21 +503,17 @@ int thtml_CCompileScriptCmd(ClientData clientData, Tcl_Interp *interp, int objc,
 
         thtml_CListRemoveGC(interp, objv[1], name, "__");
 
-        // Tcl_DStringFree(__ds_val1__);
-        Tcl_DStringAppend(&ds, "\nTcl_DStringFree(__ds_", -1);
-        Tcl_DStringAppend(&ds, name, name_length);
-        Tcl_DStringAppend(&ds, "__);", -1);
-
-        thtml_CListRemoveGC(interp, objv[1], name, "__ds_");
-
 
     } else {
         Tcl_DStringAppend(&ds, Tcl_DStringValue(&script_ds), Tcl_DStringLength(&script_ds));
     }
 
-    Tcl_DStringAppend(&ds, "\nTcl_DStringFree(&__ds_", -1);
+    // Tcl_DStringFree(__ds_val1__);
+    Tcl_DStringAppend(&ds, "\nTcl_DStringFree(__ds_", -1);
     Tcl_DStringAppend(&ds, name, name_length);
     Tcl_DStringAppend(&ds, "__);", -1);
+
+    thtml_CListRemoveGC(interp, objv[1], name, "__ds_");
 
     Tcl_FreeParse(&parse);
 

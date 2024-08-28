@@ -17,10 +17,13 @@ message(STATUS "TCL_LIBRARY: ${TCL_LIBRARY}")
 add_compile_options(-Wall -Wextra -Wpedantic)
 add_compile_definitions(TCL_THREADS PROJECT_VERSION=${PROJECT_VERSION})
 
-if ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
+if ("${ADDRESS_SANITIZER}" STREQUAL "ON")
     add_compile_options(-fPIC -g -fsanitize=undefined -fsanitize=address)
     add_link_options(-fsanitize=undefined -fsanitize=address)
-    set(CMAKE_C_FLAGS "-DDEBUG ${CMAKE_C_FLAGS}")
+endif ()
+
+if ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
+    set(CMAKE_C_FLAGS "-g -DDEBUG ${CMAKE_C_FLAGS}")
 else()
     # NDEBUG to not generate code for assert
     add_compile_definitions(NDEBUG)
