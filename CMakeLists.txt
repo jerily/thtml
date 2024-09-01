@@ -88,3 +88,7 @@ install(DIRECTORY ${CMAKE_SOURCE_DIR}/tcl
 install(DIRECTORY ${CMAKE_SOURCE_DIR}/cmake
         DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/${TARGET}${PROJECT_VERSION}
 )
+
+install(FILES ${CMAKE_SOURCE_DIR}/bin/thtml-compiledir.tcl
+        DESTINATION ${CMAKE_INSTALL_PREFIX}/bin/
+)
