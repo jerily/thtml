@@ -13,7 +13,8 @@ proc ::thtml::build::c_compiledir {dir} {
     set compiled_code {}
     foreach file $files {
         set filepath [::thtml::resolve_filepath codearr $file]
-        set filemd5 [::thtml::util::md5 $filepath]
+        set relative_filepath [string range $filepath [string length [::thtml::get_rootdir]] end]
+        set filemd5 [::thtml::util::md5 $relative_filepath]
         set proc_name ::thtml::cache::__file__$filemd5
 
         append compiled_code "\n" "// $filepath"
@@ -25,7 +26,8 @@ proc ::thtml::build::c_compiledir {dir} {
     }
 
     set dirpath [::thtml::resolve_filepath codearr $dir]
-    set dirmd5 [::thtml::util::md5 $dirpath]
+    set relative_dirpath [string range $dirpath [string length [::thtml::get_rootdir]] end]
+    set dirmd5 [::thtml::util::md5 $relative_dirpath]
 
     set tcl_code $codearr(tcl_defs)
     tcl_build $dirmd5 $tcl_code

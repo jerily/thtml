@@ -18,7 +18,8 @@ proc ::thtml::build::compilefile {codearrVar filename target_lang} {
     upvar $codearrVar codearr
 
     set filepath [::thtml::resolve_filepath codearr $filename]
-    set md5 [::thtml::util::md5 $filepath]
+    set relative_filepath [string range $filepath [string length [::thtml::get_rootdir]] end]
+    set md5 [::thtml::util::md5 $relative_filepath]
     set compiled_template [::thtml::compilefile codearr $md5 $filepath $target_lang]
     return $compiled_template
 }

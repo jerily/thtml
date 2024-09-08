@@ -158,8 +158,8 @@ proc ::thtml::renderfile {filename __data__} {
     array set codearr [list blocks {} components {} target_lang $target_lang gc_lists {} tcl_defs {} c_defs {} seen {} load_packages 0]
 
     set filepath [::thtml::resolve_filepath codearr $filename]
-
-    set md5 [::thtml::util::md5 $filepath]
+    set relative_filepath [string range $filepath [string length [::thtml::get_rootdir]] end]
+    set md5 [::thtml::util::md5 $relative_filepath]
 
     if { $cache } {
         set proc_name ::thtml::cache::__file__$md5
