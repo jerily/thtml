@@ -7,7 +7,20 @@ set(CMAKE_C_STANDARD_REQUIRED true)
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 
 set(CMAKE_VERBOSE_MAKEFILE ON)
-set(CMAKE_C_FLAGS "-g -DDEBUG -DTCL_THREADS -DPROJECT_VERSION=${PROJECT_VERSION} ${CMAKE_C_FLAGS}")
+add_compile_options(-Wall -Wextra -Wpedantic)
+add_compile_definitions(TCL_THREADS PROJECT_VERSION=${PROJECT_VERSION})
+
+if ("${ADDRESS_SANITIZER}" STREQUAL "ON")
+    add_compile_options(-fPIC -g -fsanitize=undefined -fsanitize=address)
+    add_link_options(-fsanitize=undefined -fsanitize=address)
+endif ()
+
+if ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
+    set(CMAKE_C_FLAGS "-g -DDEBUG ${CMAKE_C_FLAGS}")
+else()
+    # NDEBUG to not generate code for assert
+    add_compile_definitions(NDEBUG)
+endif ()
 
 list(APPEND CMAKE_MODULE_PATH "${THTML_CMAKE_DIR}")
 find_package(TCL 8.6.13 REQUIRED)  # TCL_INCLUDE_PATH TCL_LIBRARY

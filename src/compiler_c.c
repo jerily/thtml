@@ -1530,7 +1530,7 @@ thtml_CAppendExpr_Operator(Tcl_Interp *interp, Tcl_Obj *codearrVar_ptr, Tcl_DStr
 
 static int
 thtml_CAppendCommand_Token(Tcl_Interp *interp, Tcl_Obj *codearrVar_ptr, Tcl_DString *ds_ptr, Tcl_Parse *parse_ptr,
-                           Tcl_Size i, Tcl_Size *out_i, const char *name, Tcl_DString *cmd_ds_ptr, int flags) {
+                           Tcl_Size i, Tcl_Size *out_i, const char *name, Tcl_DString *cmd_ds_ptr, Tcl_DString *after_ds_ptr, int flags) {
     if (i >= parse_ptr->numTokens) {
         return TCL_OK;
     }
@@ -1692,9 +1692,9 @@ thtml_CAppendCommand_Token(Tcl_Interp *interp, Tcl_Obj *codearrVar_ptr, Tcl_DStr
         }
 
         // Tcl_DecrRefCount(__val3_subcmd1_res__);
-        Tcl_DStringAppend(ds_ptr, "\nTcl_DecrRefCount(__", -1);
-        Tcl_DStringAppend(ds_ptr, subcmd_name, -1);
-        Tcl_DStringAppend(ds_ptr, "_res__);", -1);
+        Tcl_DStringAppend(after_ds_ptr, "\nTcl_DecrRefCount(__", -1);
+        Tcl_DStringAppend(after_ds_ptr, subcmd_name, -1);
+        Tcl_DStringAppend(after_ds_ptr, "_res__);", -1);
 
         // Tcl_DStringFree(__ds_subcmd1__);
         Tcl_DStringAppend(ds_ptr, "\nTcl_DStringFree(__ds_", -1);
@@ -1739,7 +1739,7 @@ thtml_CAppendCommand_Token(Tcl_Interp *interp, Tcl_Obj *codearrVar_ptr, Tcl_DStr
         while (i - start_i - 1 < token->numComponents) {
 
             if (TCL_OK != thtml_CAppendCommand_Token(interp, codearrVar_ptr, ds_ptr, parse_ptr, j, &i, word_token_name,
-                                                     cmd_ds_ptr, flags)) {
+                                                     cmd_ds_ptr, after_ds_ptr, flags)) {
                 return TCL_ERROR;
             }
 
@@ -1836,7 +1836,7 @@ thtml_CAppendExpr_Token(Tcl_Interp *interp, Tcl_Obj *codearrVar_ptr, Tcl_DString
 
     } else if (token->type == TCL_TOKEN_COMMAND) {
         if (TCL_OK !=
-            thtml_CAppendCommand_Token(interp, codearrVar_ptr, ds_ptr, parse_ptr, i, &i, name, expr_ds_ptr, flags)) {
+            thtml_CAppendCommand_Token(interp, codearrVar_ptr, ds_ptr, parse_ptr, i, &i, name, expr_ds_ptr, after_ds_ptr, flags)) {
             return TCL_ERROR;
         }
     } else if (token->type == TCL_TOKEN_EXPAND_WORD) {
@@ -2097,6 +2097,9 @@ thtml_CCompileGenericCommand(Tcl_Interp *interp, Tcl_Obj *codearrVar_ptr, Tcl_DS
     Tcl_DStringAppend(&cmd_ds, Tcl_GetString(Tcl_NewIntObj(parse_ptr->tokenPtr[2].numComponents)), -1);
     Tcl_DStringAppend(&cmd_ds, "(__interp__, ", -1);
 
+    Tcl_DString after_ds;
+    Tcl_DStringInit(&after_ds);
+
     int in_eval_p = 0;
     Tcl_Size i = 2;
     int first = 1;
@@ -2105,7 +2108,7 @@ thtml_CCompileGenericCommand(Tcl_Interp *interp, Tcl_Obj *codearrVar_ptr, Tcl_DS
             Tcl_DStringAppend(&cmd_ds, ", ", -1);
         }
         if (TCL_OK !=
-            thtml_CAppendCommand_Token(interp, codearrVar_ptr, ds_ptr, parse_ptr, i, &i, name, &cmd_ds, in_eval_p)) {
+            thtml_CAppendCommand_Token(interp, codearrVar_ptr, ds_ptr, parse_ptr, i, &i, name, &cmd_ds, &after_ds, in_eval_p)) {
             fprintf(stderr, "thtml_CAppendCommand_Token failed\n");
             return TCL_ERROR;
         }
@@ -2117,6 +2120,9 @@ thtml_CCompileGenericCommand(Tcl_Interp *interp, Tcl_Obj *codearrVar_ptr, Tcl_DS
 
     Tcl_DStringAppend(ds_ptr, Tcl_DStringValue(&cmd_ds), Tcl_DStringLength(&cmd_ds));
     Tcl_DStringFree(&cmd_ds);
+
+    Tcl_DStringAppend(ds_ptr, Tcl_DStringValue(&after_ds), Tcl_DStringLength(&after_ds));
+    Tcl_DStringFree(&after_ds);
 
     return TCL_OK;
 }
@@ -2143,6 +2149,9 @@ int thtml_CCompileCommand(Tcl_Interp *interp, Tcl_Obj *codearrVar_ptr, Tcl_DStri
         }
     }
 
+    Tcl_DString after_ds;
+    Tcl_DStringInit(&after_ds);
+
     int in_eval_p = 1;  // it is not a compiled command, so we are in eval
     Tcl_Size i = 0;
     int first = 1;
@@ -2154,13 +2163,16 @@ int thtml_CCompileCommand(Tcl_Interp *interp, Tcl_Obj *codearrVar_ptr, Tcl_DStri
         }
 
         if (TCL_OK !=
-            thtml_CAppendCommand_Token(interp, codearrVar_ptr, ds_ptr, parse_ptr, i, &i, name, NULL, in_eval_p)) {
+            thtml_CAppendCommand_Token(interp, codearrVar_ptr, ds_ptr, parse_ptr, i, &i, name, NULL, &after_ds, in_eval_p)) {
             fprintf(stderr, "thtml_CAppendCommand_Token failed\n");
             return TCL_ERROR;
         }
 
         first = 0;
     }
+
+    Tcl_DStringAppend(ds_ptr, Tcl_DStringValue(&after_ds), Tcl_DStringLength(&after_ds));
+    Tcl_DStringFree(&after_ds);
 
     *compiled_command = 0;
     return TCL_OK;
